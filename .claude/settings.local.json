@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "PowerShell($py = Get-Command python -ErrorAction SilentlyContinue; $node = Get-Command node -ErrorAction SilentlyContinue; \"python: $\\(if\\($py\\){$py.Source}else{'nao'}\\)\"; \"node: $\\(if\\($node\\){$node.Source}else{'nao'}\\)\")",
+      "PowerShell(Get-Partition -DriveLetter H -ErrorAction SilentlyContinue | Out-Null; $d = Get-PSDrive H -ErrorAction SilentlyContinue; \"$\\($d.DisplayRoot\\)\"; \\(Get-WmiObject Win32_LogicalDisk -Filter \"DeviceID='H:'\"\\).DriveType)",
+      "PowerShell($fb = Get-Command firebase -ErrorAction SilentlyContinue; \"firebase: $\\(if\\($fb\\){$fb.Source}else{'nao instalado'}\\)\"; npm --version)",
+      "PowerShell(npm install -g firebase-tools)",
+      "PowerShell(New-Item -ItemType Directory -Force \"H:\\\\DESENVOLVIMENTOS\\\\public\")",
+      "PowerShell(Copy-Item \"H:\\\\DESENVOLVIMENTOS\\\\gestao-desenvolvimentos.html\" \"H:\\\\DESENVOLVIMENTOS\\\\public\\\\index.html\" -Force)",
+      "PowerShell(firebase login)",
+      "PowerShell(Start-Process powershell -ArgumentList '-NoExit','-Command','firebase login')",
+      "PowerShell(firebase login:list)"
+    ]
+  }
+}

@@ -95,3 +95,36 @@ Web, Mobile (responsivo padrão)
 Observações:
 Melhoria de identidade visual (Branding).
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.0.3
+---------------------------------------
+
+Data:
+19/07/2026
+
+Objetivo:
+Permitir atalho de teclado (ESC) para fechar telas e modais.
+
+Arquivos alterados:
+public/index.html
+
+Funcionalidades adicionadas:
+? Pressionar a tecla ESC agora fecha modais abertos e volta para a tela anterior (Kanban ou Lista) ao visualizar a capa de um projeto.
+
+Funcionalidades alteradas:
+? O botão de 'Voltar' na capa do projeto agora retorna dinamicamente para a tela em que o usuário estava (Kanban ou Lista), em vez de voltar obrigatoriamente para o Kanban.
+? Atualização da tag de versão na interface para v1.0.3.
+
+Correções realizadas:
+Nenhuma.
+
+Problemas conhecidos:
+Nenhum.
+
+Compatibilidade:
+Web, Mobile (responsivo padrão)
+
+Observações:
+Melhoria de UX solicitada.
+---------------------------------------

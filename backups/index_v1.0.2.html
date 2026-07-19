@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.0.3</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.0.2</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.0.3</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.0.2</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -716,9 +716,8 @@ function barraFiltros(){
 /* ============================================================
    7. NAVEGAÇÃO ENTRE VIEWS
    ============================================================ */
-let viewAtual = "dashboard", viewAnterior = "kanban", projetoAberto = null, charts = {};
+let viewAtual = "dashboard", projetoAberto = null, charts = {};
 function irPara(v, id){
-  if(v !== "projeto") viewAnterior = v;
   viewAtual = v; projetoAberto = id ?? projetoAberto;
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.toggle("ativo", n.dataset.view===v));
   ["dashboard","kanban","lista","gerencial","usuarios","movimentacoes","projeto"].forEach(x=>
@@ -984,7 +983,7 @@ function renderProjeto(){
     ["Lead Time",leadTime(p)+"d"],["Prazo restante",(concluido(p)?"—":(p.dataPrevista?prazoRestante(p)+"d":"—"))],["Dias em atraso",diasAtraso(p)+"d"]];
 
   document.getElementById("view-projeto").innerHTML = `
-    <button class="btn btn-suave mb-4 no-print" onclick="irPara(viewAnterior)">← Voltar</button>
+    <button class="btn btn-suave mb-4 no-print" onclick="irPara('kanban')">← Voltar</button>
     <div class="flex items-start justify-between flex-wrap gap-3 mb-5 surgir">
       <div>
         <div class="flex items-center gap-3">
@@ -2181,18 +2180,6 @@ function renderTudo(){
   if(viewAtual==="usuarios")  renderUsuarios();
   if(viewAtual==="projeto")   renderProjeto();
 }
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    const modal = document.getElementById("modalCadastro");
-    if (modal && !modal.classList.contains("hidden")) {
-      fecharModal();
-    } else if (viewAtual === "projeto") {
-      irPara(viewAnterior);
-    }
-  }
-});
-
 </script>
 </body>
 </html>

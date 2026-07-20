@@ -128,3 +128,37 @@ Web, Mobile (responsivo padrão)
 Observações:
 Melhoria de UX solicitada.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.0.4
+---------------------------------------
+
+Data:
+20/07/2026
+
+Objetivo:
+Corrigir a invisibilidade de projetos da etapa Programa CNC no Kanban e em Gráficos.
+
+Arquivos alterados:
+public/index.html
+
+Funcionalidades adicionadas:
+Nenhuma.
+
+Funcionalidades alteradas:
+? Atualização da tag visual na interface para v1.0.4.
+
+Correções realizadas:
+? Criada a constante estrutural TODAS_ETAPAS contendo o mapeamento de ambos os fluxos.
+? Ajustado o renderKanban para processar todas as etapas conjuntas, garantindo que projetos no fluxo simplificado na etapa Programa CNC não fiquem mais presos no limbo.
+? Gráficos do Dashboard e Filtros da Movimentação atualizados para considerar a matriz completa.
+
+Problemas conhecidos:
+Nenhum.
+
+Compatibilidade:
+Web, Mobile (responsivo padrão).
+
+Observações:
+Resolução de bug relatado na tela de Kanban.
+---------------------------------------

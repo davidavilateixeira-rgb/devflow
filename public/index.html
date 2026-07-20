@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.0.3</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.0.4</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.0.3</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.0.4</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -302,6 +302,9 @@ const ETAPAS = ["Recebido","Análise","Projeto da Fixação","Orçamento","Solic
   "Recebimento","Validação/FO050","Liberação"];
 // Fluxo simples (sem compras nem recebimento, CNC sequencial)
 const ETAPAS_SIMPLES = ["Recebido","Análise","Programa CNC","Validação/FO050","Liberação"];
+const TODAS_ETAPAS = ["Recebido","Análise","Programa CNC","Projeto da Fixação","Orçamento","Solicitação de Compra",
+  "Aprovação SC","Ordem de Compra","Aprovação OC","Fornecedor",
+  "Recebimento","Validação/FO050","Liberação"];
 // Etapas que caracterizam "Aguardando Compras"
 const ETAPAS_COMPRAS = ["Orçamento","Solicitação de Compra","Aprovação SC","Ordem de Compra","Aprovação OC"];
 const ETAPA_CNC = "Desenvolver Programas CNC";   // tarefa paralela (apenas no fluxo com fixação)
@@ -817,7 +820,7 @@ function renderDashboard(){
     ["Lead Time médio", (ps.reduce((a,p)=>a+leadTime(p),0)/(ps.length||1)).toFixed(0)+" dias", "b-cinza"],
     ["Projetos críticos", ps.filter(p=>semaforo(p)==="vermelho").length, "b-vermelho"],
   ];
-  const porEtapa = ETAPAS.map(e=> ps.filter(p=>etapaNome(p)===e).length);
+  const porEtapa = TODAS_ETAPAS.map(e=> ps.filter(p=>etapaNome(p)===e).length);
   const stCount = {};
   ps.forEach(p=>{const s=statusDe(p);stCount[s]=(stCount[s]||0)+1});
   const porResp = {};
@@ -849,7 +852,7 @@ function renderDashboard(){
 
   const base = {plugins:{legend:{display:false}},responsive:true,
     scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}};
-  grafico("gEtapa",{type:"bar",data:{labels:ETAPAS,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:26}]},
+  grafico("gEtapa",{type:"bar",data:{labels:TODAS_ETAPAS,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:26}]},
     options:{...base,scales:{...base.scales,x:{...base.scales.x,ticks:{font:{size:9},maxRotation:60,minRotation:45}}}}});
   grafico("gStatus",{type:"doughnut",data:{labels:Object.keys(stCount),datasets:[{data:Object.values(stCount),backgroundColor:CORES,borderWidth:2,borderColor:"#fff"}]},
     options:{cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});
@@ -868,7 +871,7 @@ function renderKanban(){
       <h1 class="text-xl font-bold surgir">Kanban de Desenvolvimentos</h1>
     </div>
     <div class="flex gap-3 overflow-x-auto pb-4" style="min-height:60vh">
-      ${ETAPAS.map(et=>{
+      ${TODAS_ETAPAS.map(et=>{
         const cards = ps.filter(p=>etapaNome(p)===et);
         return `<div class="kb-col">
           <div class="flex items-center justify-between px-1 mb-2">
@@ -1181,7 +1184,7 @@ function renderGerencial(){
     ["Retrabalho (Retrocessos)",ps.reduce((a,p)=>a+(p.comentarios||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0)],
     ["Em andamento",ps.filter(p=>!concluido(p)).length],
   ];
-  const etapasLbl = ETAPAS.filter(e=>med[e]!=null);
+  const etapasLbl = TODAS_ETAPAS.filter(e=>med[e]!=null);
   // Lead time médio por responsabilidade: soma o tempo gasto nas etapas de cada grupo, por projeto, e tira a média
   const somaG = {}, contG = {};
   ps.forEach(p=>{
@@ -2100,7 +2103,7 @@ function renderMovimentacoes(){
       </select>
       <select class="inp !w-auto" onchange="estado.movFiltroEtapa=this.value;renderTudo()">
         <option value="">Todas as etapas</option>
-        ${ETAPAS.map(et => `<option value="${et}" ${estado.movFiltroEtapa===et?'selected':''}>Etapa: ${et}</option>`).join("")}
+        ${TODAS_ETAPAS.map(et => `<option value="${et}" ${estado.movFiltroEtapa===et?'selected':''}>Etapa: ${et}</option>`).join("")}
       </select>
       ${(estado.movFiltroData || estado.movFiltroUsuario || estado.movFiltroEtapa) ? `<button class="btn btn-suave !text-vermelho" onclick="estado.movFiltroData='';estado.movFiltroUsuario='';estado.movFiltroEtapa='';renderTudo()" style="color:var(--vermelho)">Limpar</button>` : ''}
     </div>

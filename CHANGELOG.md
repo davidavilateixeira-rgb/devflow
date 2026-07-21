@@ -298,3 +298,20 @@ public/index.html
 Correções realizadas:
 ? Correção do bug de case-sensitivity no filtro de Status. O sistema não estava reconhecendo a opção 'No prazo' com p minúsculo, nem 'Aguardando Técnico'. As opções foram sincronizadas com o banco de dados.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.2.2
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Hotfix do dropdown de Status.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Corrigido bug visual em que clicar na caixa de seleção de Status mantinha a caixa de Família aberta ou com comportamento anômalo devido à gestão de IDs de dropdown.
+---------------------------------------

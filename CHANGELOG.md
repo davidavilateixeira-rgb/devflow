@@ -196,3 +196,20 @@ Web, Mobile (responsivo padrão).
 Observações:
 Melhoria estrutural na forma como a equipe prioriza seus desenvolvimentos com base no histórico de chegada (FIFO).
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.1.1
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Hotfix de inicialização.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Inserida trava lógica para impedir loop infinito gerado pelo script retroativo de migração, liberando a interface.
+---------------------------------------

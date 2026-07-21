@@ -230,3 +230,20 @@ public/index.html
 Correções realizadas:
 ? Correção de sintaxe que impedia o carregamento do Kanban, restaurando o acesso normal ao aplicativo.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.1.3
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Hotfix visual: adicionar ID à tela de lista.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Adicionado selo de DEV-XXX ao lado da Referência do Produto na visualização em grade (Lista) a pedido do usuário.
+---------------------------------------

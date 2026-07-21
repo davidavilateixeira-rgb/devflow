@@ -213,3 +213,20 @@ public/index.html
 Correções realizadas:
 ? Inserida trava lógica para impedir loop infinito gerado pelo script retroativo de migração, liberando a interface.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.1.2
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Hotfix de renderização.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Correção de sintaxe que impedia o carregamento do Kanban, restaurando o acesso normal ao aplicativo.
+---------------------------------------

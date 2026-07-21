@@ -247,3 +247,20 @@ public/index.html
 Correções realizadas:
 ? Adicionado selo de DEV-XXX ao lado da Referência do Produto na visualização em grade (Lista) a pedido do usuário.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.1.4
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Permitir busca por ID DEV-XXX.
+
+Arquivos alterados:
+public/index.html
+
+Funcionalidades adicionadas:
+? Adicionada capacidade de buscar projetos diretamente pelo ID sequencial (DEV-XXX) usando a barra de busca global do sistema.
+---------------------------------------

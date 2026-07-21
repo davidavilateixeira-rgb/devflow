@@ -315,3 +315,20 @@ public/index.html
 Correções realizadas:
 ? Corrigido bug visual em que clicar na caixa de seleção de Status mantinha a caixa de Família aberta ou com comportamento anômalo devido à gestão de IDs de dropdown.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.2.3
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Hotfix do filtro de Status.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Sincronizada a lista de filtros de status na barra de buscas para corresponder exatamente à régua de status real de negócio retornada pelo sistema (Em Andamento, Atrasado, Em Validação, etc.), no lugar dos antigos marcadores de prazo.
+---------------------------------------

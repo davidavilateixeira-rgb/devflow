@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.2.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.2.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.2.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.2.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -719,7 +719,7 @@ function barraFiltros(){
   const nome = m => { const s = new Date(m+"-02T08:00:00").toLocaleDateString("pt-BR",{month:"long",year:"numeric"}); return s[0].toUpperCase()+s.slice(1); };
   const resps = [...new Set(estado.projetos.map(p=>p.responsavel).filter(Boolean))].sort();
   const fams = [...new Set(estado.projetos.map(p=>p.familia).filter(Boolean))].sort();
-  const statusLista = ["No Prazo", "Atenção", "Atrasado", "Concluído"];
+  const statusLista = ["No prazo", "Atenção", "Atrasado", "Concluído", "Aguardando Técnico"];
   
   const showViews = ["dashboard","kanban","lista","gerencial"];
   const bar = document.getElementById("filtros-bar");

@@ -162,3 +162,37 @@ Web, Mobile (responsivo padrão).
 Observações:
 Resolução de bug relatado na tela de Kanban.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.1.0
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Adicionar ID de Cadastro (DEV-XXX) e lógica de ordenação de filas por FIFO (First-In, First-Out).
+
+Arquivos alterados:
+public/index.html
+
+Funcionalidades adicionadas:
+? ID Sequencial de Cadastro visível na interface para todos os projetos (formato DEV-XXX).
+? Identificação retroativa no banco de dados para todos os projetos antigos seguindo a data exata de criação.
+? Nova lógica de renderização automática na tela de Kanban e Lista que empata a Previsão de Lançamento desempatando pela Data de Início (projetos mais antigos ficam no topo).
+
+Funcionalidades alteradas:
+? Tag de versão visual na interface para v1.1.0.
+
+Correções realizadas:
+Nenhuma.
+
+Problemas conhecidos:
+Nenhum.
+
+Compatibilidade:
+Web, Mobile (responsivo padrão).
+
+Observações:
+Melhoria estrutural na forma como a equipe prioriza seus desenvolvimentos com base no histórico de chegada (FIFO).
+---------------------------------------

@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.0.4</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.1.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.0.4</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.1.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -515,6 +515,19 @@ function iniciarApp(){
     unsubProjetos = db.collection("projetos").onSnapshot(s=>{
       estado.projetos = s.docs.map(x=>normalizarProjeto(Object.assign({id:x.id}, x.data())));
       estado.projetos.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
+      
+      // SCRIPT DE MIGRAÇÃO ÚNICO: Gerar DEV-XXX para projetos existentes
+      if (estado.projetos.length > 0 && estado.projetos.some(p => !p.devId)) {
+        console.log("Migrando projetos antigos para DEV-XXX...");
+        const ordemCrescente = estado.projetos.slice().sort((a,b)=>(a.dataInicio||"").localeCompare(b.dataInicio||""));
+        ordemCrescente.forEach((p, i) => {
+          if (!p.devId) {
+            p.devId = "DEV-" + String(i+1).padStart(3, '0');
+            db.collection("projetos").doc(p.id).update({ devId: p.devId });
+          }
+        });
+      }
+
       renderTudo();
     }, e=>console.error("Firestore projetos:", e));
   }
@@ -748,7 +761,7 @@ function cardProjeto(p){
   const sem = semaforo(p), st = statusDe(p);
   return `<div class="card kb-card p-3 mb-2 surgir" onclick="irPara('projeto','${p.id}')">
     <div class="flex items-center justify-between mb-1.5">
-      <span class="font-bold text-[13px]">${esc(p.codigo)}</span>
+      <div class="flex items-center gap-1.5"><span class="font-bold text-[13px]">${esc(p.codigo)}</span>${p.devId ? `<span class="badge b-laranja text-[9px] !px-1 leading-none">${p.devId}</span>` : ""}</div>
       <span class="dot dot-${sem}"></span>
     </div>
     <div class="text-[12px] leading-snug mb-2" style="color:var(--texto-2)">${esc(p.descricao)}</div>
@@ -864,8 +877,13 @@ function renderDashboard(){
 /* ============================================================
    11. VIEW — KANBAN
    ============================================================ */
-function renderKanban(){
   const ps = filtroMes(projetosVisiveis());
+  ps.sort((a,b) => {
+    const dPa = a.dataPrevista || "9999-99-99";
+    const dPb = b.dataPrevista || "9999-99-99";
+    if (dPa !== dPb) return dPa.localeCompare(dPb);
+    return (a.dataInicio || "").localeCompare(b.dataInicio || "");
+  });
   document.getElementById("view-kanban").innerHTML = `
     <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
       <h1 class="text-xl font-bold surgir">Kanban de Desenvolvimentos</h1>
@@ -897,7 +915,12 @@ function renderLista(){
   let ps = filtroMes(projetosVisiveis());
   if(estado.ordLista==="cadastro-desc")      ps.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
   else if(estado.ordLista==="cadastro-asc")  ps.sort((a,b)=>(a.dataInicio||"").localeCompare(b.dataInicio||""));
-  else ps.sort((a,b)=> (semaforo(a)==="vermelho"?-1:1)-(semaforo(b)==="vermelho"?-1:1));
+  else ps.sort((a,b) => {
+    const dPa = a.dataPrevista || "9999-99-99";
+    const dPb = b.dataPrevista || "9999-99-99";
+    if (dPa !== dPb) return dPa.localeCompare(dPb);
+    return (a.dataInicio || "").localeCompare(b.dataInicio || "");
+  });
   const setaOrd = estado.ordLista==="cadastro-desc" ? " ▼" : (estado.ordLista==="cadastro-asc" ? " ▲" : " ⇅");
   document.getElementById("view-lista").innerHTML = `
     <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
@@ -991,7 +1014,7 @@ function renderProjeto(){
     <div class="flex items-start justify-between flex-wrap gap-3 mb-5 surgir">
       <div>
         <div class="flex items-center gap-3">
-          <h1 class="text-xl font-bold">${esc(p.codigo)}</h1>
+          <h1 class="text-xl font-bold">${p.devId ? `<span class="badge b-laranja">${p.devId}</span>` : ""} ${esc(p.codigo)}</h1>
           <span class="dot dot-${semaforo(p)}"></span>
           <span class="badge ${badgeStatus(st)}">${st}</span>
           ${p.prioridade==="Alta"?'<span class="badge b-vermelho">Urgente</span>':""}
@@ -1897,6 +1920,14 @@ function salvarCadastro(id){
     if(mudouFluxo){ p.etapaAtual = Math.min(p.etapaAtual,1); p.historico = p.historico.slice(0,p.etapaAtual+1); } // fluxo mudou: recua p/ análise
     salvarProjeto(p);
   } else {
+    const maxDev = estado.projetos.reduce((max, proj) => {
+      if (proj.devId && proj.devId.startsWith("DEV-")) {
+        const num = parseInt(proj.devId.replace("DEV-", ""), 10);
+        return num > max ? num : max;
+      }
+      return max;
+    }, 0);
+    dados.devId = "DEV-" + String(maxDev + 1).padStart(3, '0');
     const novoId = db.collection("projetos").doc().id;
     const retro = document.getElementById("f-retro");
     if(retro && retro.checked){

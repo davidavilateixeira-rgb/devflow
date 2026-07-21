@@ -281,3 +281,20 @@ public/index.html
 Funcionalidades adicionadas:
 ? Adicionada nova opção 'Status' na barra de filtros avançados (ao lado de Lançamento, Responsável e Família), permitindo filtrar visualmente por status como 'No Prazo', 'Atenção', 'Atrasado' e 'Concluído'.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.2.1
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Hotfix de filtro de Status.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Correção do bug de case-sensitivity no filtro de Status. O sistema não estava reconhecendo a opção 'No prazo' com p minúsculo, nem 'Aguardando Técnico'. As opções foram sincronizadas com o banco de dados.
+---------------------------------------

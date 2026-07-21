@@ -264,3 +264,20 @@ public/index.html
 Funcionalidades adicionadas:
 ? Adicionada capacidade de buscar projetos diretamente pelo ID sequencial (DEV-XXX) usando a barra de busca global do sistema.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.2.0
+---------------------------------------
+
+Data:
+21/07/2026
+
+Objetivo:
+Adicionar filtro múltiplo por status.
+
+Arquivos alterados:
+public/index.html
+
+Funcionalidades adicionadas:
+? Adicionada nova opção 'Status' na barra de filtros avançados (ao lado de Lançamento, Responsável e Família), permitindo filtrar visualmente por status como 'No Prazo', 'Atenção', 'Atrasado' e 'Concluído'.
+---------------------------------------

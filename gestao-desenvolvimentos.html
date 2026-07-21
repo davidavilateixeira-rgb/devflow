@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.1.4</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.2.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.1.4</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.2.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -410,7 +410,7 @@ function novoProjeto(o){
   }, o);
 }
 
-let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[],
+let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[], statusSel:[],
   movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"" };
 let unsubProjetos = null, unsubUsuarios = null, avisoDesativado = false;
 
@@ -648,6 +648,9 @@ function filtroMes(ps){
   if(estado.fams.length > 0) {
     ps = ps.filter(p => estado.fams.includes((p.familia||"")));
   }
+  if(estado.statusSel && estado.statusSel.length > 0) {
+    ps = ps.filter(p => estado.statusSel.includes(statusDe(p)));
+  }
   return ps;
 }
 
@@ -716,6 +719,7 @@ function barraFiltros(){
   const nome = m => { const s = new Date(m+"-02T08:00:00").toLocaleDateString("pt-BR",{month:"long",year:"numeric"}); return s[0].toUpperCase()+s.slice(1); };
   const resps = [...new Set(estado.projetos.map(p=>p.responsavel).filter(Boolean))].sort();
   const fams = [...new Set(estado.projetos.map(p=>p.familia).filter(Boolean))].sort();
+  const statusLista = ["No Prazo", "Atenção", "Atrasado", "Concluído"];
   
   const showViews = ["dashboard","kanban","lista","gerencial"];
   const bar = document.getElementById("filtros-bar");
@@ -726,7 +730,8 @@ function barraFiltros(){
     ${componenteMultiSelect('ms-mes', 'mesesLanc', 'Lançamento', meses.map(m=>({valor:m, label:nome(m)})))}
     ${componenteMultiSelect('ms-resp', 'resps', 'Responsável', resps.map(r=>({valor:esc(r), label:esc(r)})), "Sem responsável")}
     ${componenteMultiSelect('ms-fam', 'fams', 'Família', fams.map(f=>({valor:esc(f), label:esc(f)})))}
-    ${(estado.mesesLanc.length > 0 || estado.resps.length > 0 || estado.fams.length > 0) ? `<button onclick="estado.mesesLanc=[];estado.resps=[];estado.fams=[];renderTudo()" style="font-size:.72rem;padding:.25rem .6rem;border-radius:6px;border:1px solid var(--cinza-borda);background:#fff;cursor:pointer;color:var(--vermelho)">&#x2715; Limpar filtros</button>` : ''}
+    ${componenteMultiSelect('ms-status', 'statusSel', 'Status', statusLista.map(s=>({valor:s, label:s})))}
+    ${(estado.mesesLanc.length > 0 || estado.resps.length > 0 || estado.fams.length > 0 || (estado.statusSel && estado.statusSel.length > 0)) ? `<button onclick="estado.mesesLanc=[];estado.resps=[];estado.fams=[];estado.statusSel=[];renderTudo()" style="font-size:.72rem;padding:.25rem .6rem;border-radius:6px;border:1px solid var(--cinza-borda);background:#fff;cursor:pointer;color:var(--vermelho)">&#x2715; Limpar filtros</button>` : ''}
   </div>`;
 }
 

@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.1.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.1.2</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.1.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.1.2</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -878,6 +878,7 @@ function renderDashboard(){
 /* ============================================================
    11. VIEW — KANBAN
    ============================================================ */
+function renderKanban(){
   const ps = filtroMes(projetosVisiveis());
   ps.sort((a,b) => {
     const dPa = a.dataPrevista || "9999-99-99";

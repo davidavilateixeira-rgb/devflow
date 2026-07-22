@@ -351,3 +351,24 @@ Correções realizadas:
 ? Corrigido o comportamento do botão de desmarcar etapa, que agora reverte corretamente a caixa selecionada de volta ao seu estado pendente (como atual).
 ? Migração transparente de projetos antigos que já estavam 100% concluídos.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.3.0
+---------------------------------------
+
+Data:
+22/07/2026
+
+Objetivo:
+Suporte a múltiplos processos na etapa de Validação/FO050.
+
+Arquivos alterados:
+public/index.html
+
+Novidades e Alterações:
+? Adicionada a capacidade de inserir múltiplos processos de fabricação dentro dos dados da FO050.
+? Implementada lista pré-definida de processos (USI CAIXA, USI PINO, FR EQUIPTOP, etc).
+? Cada processo possui sua própria máquina, tempo de usinagem, tempo de troca, número de OP e data de execução.
+? O painel de Detalhes do Projeto e o painel de edição foram refeitos para listar e somar automaticamente todos os processos parciais.
+? Realizada migração retroativa transparente, onde itens mais antigos com estrutura de máquina única foram convertidos para o novo formato preservando os dados originais.
+---------------------------------------

@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.3.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.2.4</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.3.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.2.4</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -308,8 +308,6 @@ const TODAS_ETAPAS = ["Recebido","Análise","Programa CNC","Projeto da Fixação
 // Etapas que caracterizam "Aguardando Compras"
 const ETAPAS_COMPRAS = ["Orçamento","Solicitação de Compra","Aprovação SC","Ordem de Compra","Aprovação OC"];
 const ETAPA_CNC = "Desenvolver Programas CNC";   // tarefa paralela (apenas no fluxo com fixação)
-
-const LISTA_PROCESSOS = ["USI CAIXA", "USI PINO", "FR EQUIPTOP", "FR TORNO", "USI ESFERA", "USI ESFERA + CANAL", "USI CANAL", "USI COPO AXIAL", "USI COPO PIVÔ", "USI PRÉ-FORMA", "USI COPO PIVÔ 1LD", "USI COPO PIVÔ 2LD"];
 
 // Descrição curta exibida sob cada etapa no checklist
 const DESC_ETAPAS = {
@@ -1618,20 +1616,14 @@ function concluirEtapa(id){
   };
 
   // Verifica FO050 antes de avançar
-  const fo = p.fo050 || { celulas:[], processos:[] };
+  const fo = p.fo050 || { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" };
   const proximaEtapa = flx[p.etapaAtual+1];
   
-  if(fo.maquina && !fo.processos) {
-    // Migração de dados antigos
-    fo.processos = [{ nome:"Processo Principal", maquina:fo.maquina, tempoUsinagem:fo.tempoUsinagem||"", tempoTroca:fo.tempoTroca||"", dataExecucao:fo.dataExecucao||"", numOP:fo.numOP||"" }];
-  }
-  if(!fo.processos) fo.processos = [];
-  
-  if((proximaEtapa === "Validação/FO050" || etapaConcluida === "Programa CNC") && (fo.celulas.length === 0 || fo.processos.length === 0 || fo.processos.some(pr => !pr.maquina || !pr.nome))){
+  if((proximaEtapa === "Validação/FO050" || etapaConcluida === "Programa CNC") && (fo.celulas.length === 0 || !fo.maquina)){
     abrirModalFO050(id, 'maquina', ()=>concluirEtapa(id));
     return;
   }
-  if(etapaConcluida === "Validação/FO050" && (fo.processos.length === 0 || fo.processos.some(pr => !pr.tempoUsinagem || !pr.tempoTroca || !pr.dataExecucao || !pr.numOP))){
+  if(etapaConcluida === "Validação/FO050" && (!fo.tempoUsinagem || !fo.tempoTroca || !fo.dataExecucao || !fo.numOP)){
     abrirModalFO050(id, 'todos', ()=>concluirEtapa(id));
     return;
   }
@@ -1966,17 +1958,37 @@ function salvarCadastro(id){
         if(!inp || !inp.value){ alert(`Informe a data em que entrou em "${flx[i]}".`); return; }
         // "Desenvolver Programas CNC" é atividade paralela: pode ter data anterior às demais etapas
         const paralela = flx[i]==="Desenvolver Programas CNC";
-        if(!paralela && inp.value < anterior){ alert(`A data de "${flx[i]}" não pode ser anterior à da etapa antefunction abrirModalFO050(id, requiredMode, callback){
+        if(!paralela && inp.value < anterior){ alert(`A data de "${flx[i]}" não pode ser anterior à da etapa anterior.`); return; }
+        datas[i] = inp.value;
+        if(!paralela) anterior = inp.value;
+      }
+      const nome = estado.usuario.nome;
+      const hist = [{etapa:flx[0], data:new Date(inicio+"T08:00:00").toISOString(), usuario:nome}];
+      for(let i=1;i<=etapaSel;i++) hist.push({etapa:flx[i], data:new Date(datas[i]+"T08:00:00").toISOString(), usuario:nome});
+      const p = novoProjeto(Object.assign(dados,{
+        id:novoId, dataInicio:inicio, criadoPor:nome, etapaAtual:etapaSel, historico:hist
+      }));
+      if(etapaSel===flx.length-1 && !p.dataReal) p.dataReal = datas[etapaSel];
+      salvarProjeto(p);
+    } else {
+      const p = novoProjeto(Object.assign(dados,{
+        id:novoId,
+        dataInicio:new Date().toISOString().slice(0,10),
+        criadoPor:estado.usuario.nome,
+        etapaAtual:0,
+        historico:[{etapa:"Recebido",data:new Date().toISOString(),usuario:estado.usuario.nome}]
+      }));
+      salvarProjeto(p);
+    }
+  }
+  fecharModal();
+}
+
+function abrirModalFO050(id, requiredMode, callback){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
-  if(!p.fo050) p.fo050 = { celulas:[], processos:[] };
-  if(p.fo050.maquina && !p.fo050.processos) {
-    p.fo050.processos = [{ nome:"Processo Principal", maquina:p.fo050.maquina, tempoUsinagem:p.fo050.tempoUsinagem||"", tempoTroca:p.fo050.tempoTroca||"", dataExecucao:p.fo050.dataExecucao||"", numOP:p.fo050.numOP||"" }];
-  }
-  if(!p.fo050.processos) p.fo050.processos = [];
+  if(!p.fo050) p.fo050 = { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" };
   const fo = p.fo050;
-  
-  let procDraft = JSON.parse(JSON.stringify(fo.processos));
   
   const modal = document.getElementById("modalCadastro");
   modal.className = "overlay";
@@ -2008,90 +2020,34 @@ function salvarCadastro(id){
     document.getElementById("novaCelulaFO050").focus();
   };
 
-  window.__renderProcessosFO050 = () => {
-    if(procDraft.length===0) return '<div class="text-[12px] text-gray-500 mt-2">Nenhum processo adicionado.</div>';
-    return procDraft.map((pr, i) => `
-      <div class="mb-4 p-4 rounded bg-white border border-gray-200 shadow-sm relative">
-        <button class="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1" onclick="window.__remProcessoFO050(${i})" title="Remover processo">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-        </button>
-        <div class="grid md:grid-cols-2 gap-4 mb-3 pr-6">
-          <div>
-            <label class="lbl">Processo ${requiredMode!=='livre'?'*':''}</label>
-            <select class="inp proc-nome" data-idx="${i}" onchange="window.__updateProc(${i}, 'nome', this.value)">
-              <option value="">Selecione...</option>
-              ${LISTA_PROCESSOS.map(opt => `<option value="${opt}" ${pr.nome===opt?'selected':''}>${opt}</option>`).join("")}
-              ${pr.nome && !LISTA_PROCESSOS.includes(pr.nome) ? `<option value="${esc(pr.nome)}" selected>${esc(pr.nome)} (Legado)</option>` : ''}
-            </select>
-          </div>
-          <div>
-            <label class="lbl">Máquina ${requiredMode!=='livre'?'*':''}</label>
-            <input class="inp proc-maq" data-idx="${i}" value="${esc(pr.maquina||"")}" placeholder="Ex: Torno CNC" oninput="window.__updateProc(${i}, 'maquina', this.value)">
-          </div>
-        </div>
-        ${requiredMode !== 'maquina' ? `
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-            <div><label class="lbl">T. Usinagem (s) ${requiredMode==='todos'?'*':''}</label><input type="number" step="0.1" class="inp proc-tu" data-idx="${i}" value="${pr.tempoUsinagem||""}" oninput="window.__updateProc(${i}, 'tempoUsinagem', this.value)"></div>
-            <div><label class="lbl">T. Troca (s) ${requiredMode==='todos'?'*':''}</label><input type="number" step="0.1" class="inp proc-tt" data-idx="${i}" value="${pr.tempoTroca||""}" oninput="window.__updateProc(${i}, 'tempoTroca', this.value)"></div>
-            <div><label class="lbl">Data exec. ${requiredMode==='todos'?'*':''}</label><input type="date" class="inp proc-dt" data-idx="${i}" value="${pr.dataExecucao||""}" oninput="window.__updateProc(${i}, 'dataExecucao', this.value)"></div>
-            <div><label class="lbl">Nº da OP ${requiredMode==='todos'?'*':''}</label><input type="text" class="inp proc-op" data-idx="${i}" value="${esc(pr.numOP||"")}" oninput="window.__updateProc(${i}, 'numOP', this.value)"></div>
-          </div>
-          <div class="text-right text-[12px] font-bold text-blue-800">Parcial: ${pr.tempoUsinagem||pr.tempoTroca ? (Number(pr.tempoUsinagem||0)+Number(pr.tempoTroca||0)).toFixed(1) : "0.0"} s</div>
-        ` : ''}
-      </div>
-    `).join("");
-  };
-
-  window.__updateProc = (i, field, val) => {
-    procDraft[i][field] = val;
-    if(field === 'tempoUsinagem' || field === 'tempoTroca') {
-      document.getElementById("listaProcessosFO050").innerHTML = window.__renderProcessosFO050(); // re-render for total
-      window.__calcTotalGeralFO050();
-    }
-  };
-
-  window.__addProcessoFO050 = () => {
-    procDraft.push({ nome:"", maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" });
-    document.getElementById("listaProcessosFO050").innerHTML = window.__renderProcessosFO050();
-    window.__calcTotalGeralFO050();
-  };
-
-  window.__remProcessoFO050 = (i) => {
-    if(confirm("Remover este processo?")) {
-      procDraft.splice(i, 1);
-      document.getElementById("listaProcessosFO050").innerHTML = window.__renderProcessosFO050();
-      window.__calcTotalGeralFO050();
-    }
-  };
-
   window.__salvarFO050 = () => {
-    // Sincroniza valores caso tenham sido alterados via HTML e não tenham acionado o onchange por algum motivo
-    document.querySelectorAll('.proc-nome').forEach(el => procDraft[el.dataset.idx].nome = el.value.trim());
-    document.querySelectorAll('.proc-maq').forEach(el => procDraft[el.dataset.idx].maquina = el.value.trim());
-    if(requiredMode !== 'maquina') {
-      document.querySelectorAll('.proc-tu').forEach(el => procDraft[el.dataset.idx].tempoUsinagem = el.value);
-      document.querySelectorAll('.proc-tt').forEach(el => procDraft[el.dataset.idx].tempoTroca = el.value);
-      document.querySelectorAll('.proc-dt').forEach(el => procDraft[el.dataset.idx].dataExecucao = el.value);
-      document.querySelectorAll('.proc-op').forEach(el => procDraft[el.dataset.idx].numOP = el.value.trim());
-    }
-
+    const mq = document.getElementById("fo-maquina").value.trim();
+    
     if(requiredMode === 'maquina' || requiredMode === 'todos') {
       if(fo.celulas.length === 0) { alert("Informe pelo menos uma célula."); return; }
-      if(procDraft.length === 0) { alert("Informe pelo menos um processo."); return; }
-      if(procDraft.some(pr => !pr.nome || !pr.maquina)) { alert("Preencha o Processo e a Máquina para todos os itens."); return; }
+      if(!mq) { alert("Informe a máquina."); return; }
     }
     
-    if(requiredMode === 'todos') {
-      if(procDraft.some(pr => !pr.tempoUsinagem || !pr.tempoTroca || !pr.dataExecucao || !pr.numOP)) {
-        alert("Preencha todos os campos obrigatórios (Tempos, Data de execução e OP) para todos os processos.");
-        return;
+    if(requiredMode !== 'maquina') {
+      const tu = document.getElementById("fo-tu").value;
+      const tt = document.getElementById("fo-tt").value;
+      const dt = document.getElementById("fo-dt").value;
+      const op = document.getElementById("fo-op").value.trim();
+      
+      if(requiredMode === 'todos') {
+        if(!tu || !tt || !dt || !op) {
+          alert("Preencha todos os campos obrigatórios (Tempos, Data de execução e OP).");
+          return;
+        }
       }
+      
+      fo.tempoUsinagem = tu;
+      fo.tempoTroca = tt;
+      fo.dataExecucao = dt;
+      fo.numOP = op;
     }
     
-    fo.processos = procDraft;
-    
-    // Remove fields from legacy items just in case
-    delete fo.maquina; delete fo.tempoUsinagem; delete fo.tempoTroca; delete fo.dataExecucao; delete fo.numOP;
+    fo.maquina = mq;
     
     salvarProjeto(p);
     fecharModal();
@@ -2099,7 +2055,7 @@ function salvarCadastro(id){
     else if(viewAtual==="projeto") renderProjeto();
   };
   
-  modal.innerHTML = `<div class="modal p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+  modal.innerHTML = `<div class="modal p-6 w-full max-w-lg" onclick="event.stopPropagation()">
     <h2 class="text-lg font-bold mb-4">Dados FO050</h2>
     
     <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -2111,36 +2067,23 @@ function salvarCadastro(id){
       </div>
     </div>
     
-    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <div class="flex items-center justify-between mb-2">
-        <label class="lbl !mb-0">Processos e Máquinas ${requiredMode!=='livre'?'*':''}</label>
-        <button class="btn btn-suave !py-1 !px-2 text-xs" onclick="window.__addProcessoFO050()">+ Adicionar Processo</button>
-      </div>
-      <div id="listaProcessosFO050">${window.__renderProcessosFO050()}</div>
+    <div class="mb-4">
+      <label class="lbl">Máquina ${requiredMode!=='livre'?'*':''}</label>
+      <input id="fo-maquina" class="inp" value="${esc(fo.maquina)}" placeholder="Nome da máquina">
     </div>
     
     ${requiredMode !== 'maquina' ? `
-      <div class="mb-4 bg-[#E8F1FB] p-3 rounded border border-blue-100 flex items-center justify-between">
-        <div class="text-[12px] font-bold text-blue-800 uppercase tracking-wider">Tempo Total Geral (s)</div>
-        <div id="fo-total-geral" class="text-xl font-bold text-blue-900">0.0 s</div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div><label class="lbl">Tempo usinagem (s) ${requiredMode==='todos'?'*':''}</label><input id="fo-tu" type="number" step="0.1" class="inp" value="${fo.tempoUsinagem||""}" oninput="window.__calcTotalFO050()"></div>
+        <div><label class="lbl">Tempo de troca (s) ${requiredMode==='todos'?'*':''}</label><input id="fo-tt" type="number" step="0.1" class="inp" value="${fo.tempoTroca||""}" oninput="window.__calcTotalFO050()"></div>
       </div>
-    ` : `<div class="text-[12px] text-yellow-800 mb-5 p-3 bg-yellow-50 rounded border border-yellow-200 flex items-start gap-2"><div class="text-yellow-600 font-bold text-lg leading-none">!</div><div>Nesta etapa o sistema exige apenas a Célula e a Máquina. Os demais dados (Tempos, Data e OP) serão solicitados na etapa de <b>Validação/FO050</b>.</div></div>`}
-    
-    <div class="flex justify-end gap-2">
-      <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primario" onclick="window.__salvarFO050()">Salvar${callback?' e continuar':''}</button>
-    </div>
-  </div>`;
-  
-  window.__calcTotalGeralFO050 = () => {
-    const el = document.getElementById("fo-total-geral");
-    if(!el) return;
-    const total = procDraft.reduce((acc, pr) => acc + (Number(pr.tempoUsinagem)||0) + (Number(pr.tempoTroca)||0), 0);
-    el.innerText = total.toFixed(1) + " s";
-  };
-  
-  window.__calcTotalGeralFO050();
-}gem||fo.tempoTroca ? (Number(fo.tempoUsinagem||0)+Number(fo.tempoTroca||0)).toFixed(1) : "0.0"} s</div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div><label class="lbl">Data execução ${requiredMode==='todos'?'*':''}</label><input id="fo-dt" type="date" class="inp" value="${fo.dataExecucao||""}"></div>
+        <div><label class="lbl">Número da OP ${requiredMode==='todos'?'*':''}</label><input id="fo-op" type="text" class="inp" value="${esc(fo.numOP||"")}"></div>
+      </div>
+      <div class="mb-4 bg-[#E8F1FB] p-3 rounded border border-blue-100 flex items-center justify-between">
+        <div class="text-[12px] font-bold text-blue-800 uppercase tracking-wider">Tempo Total (automático)</div>
+        <div id="fo-total" class="text-xl font-bold text-blue-900">${fo.tempoUsinagem||fo.tempoTroca ? (Number(fo.tempoUsinagem||0)+Number(fo.tempoTroca||0)).toFixed(1) : "0.0"} s</div>
       </div>
     ` : `<div class="text-[12px] text-yellow-800 mb-5 p-3 bg-yellow-50 rounded border border-yellow-200 flex items-start gap-2"><div class="text-yellow-600 font-bold text-lg leading-none">⚠</div><div>Nesta etapa o sistema exige apenas a Célula e a Máquina. Os demais dados (Tempos, Data e OP) serão solicitados na etapa de <b>Validação/FO050</b>.</div></div>`}
     

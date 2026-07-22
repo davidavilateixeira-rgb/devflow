@@ -332,3 +332,22 @@ public/index.html
 Correções realizadas:
 ? Sincronizada a lista de filtros de status na barra de buscas para corresponder exatamente à régua de status real de negócio retornada pelo sistema (Em Andamento, Atrasado, Em Validação, etc.), no lugar dos antigos marcadores de prazo.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 1.2.4
+---------------------------------------
+
+Data:
+22/07/2026
+
+Objetivo:
+Hotfix de avanço automático da etapa Liberação.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+? Corrigido o bug onde concluir a etapa 'Validação/FO050' concluía automaticamente a etapa 'Liberação' em seguida.
+? Corrigido o comportamento do botão de desmarcar etapa, que agora reverte corretamente a caixa selecionada de volta ao seu estado pendente (como atual).
+? Migração transparente de projetos antigos que já estavam 100% concluídos.
+---------------------------------------

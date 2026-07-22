@@ -1966,7 +1966,33 @@ function salvarCadastro(id){
         if(!inp || !inp.value){ alert(`Informe a data em que entrou em "${flx[i]}".`); return; }
         // "Desenvolver Programas CNC" é atividade paralela: pode ter data anterior às demais etapas
         const paralela = flx[i]==="Desenvolver Programas CNC";
-        if(!paralela && inp.value < anterior){ alert(`A data de "${flx[i]}" não pode ser anterior à da etapa antefunction abrirModalFO050(id, requiredMode, callback){
+        if(!paralela && inp.value < anterior){ alert(`A data de "${flx[i]}" não pode ser anterior à da etapa anterior.`); return; }
+        datas[i] = inp.value;
+        if(!paralela) anterior = inp.value;
+      }
+      const nome = estado.usuario.nome;
+      const hist = [{etapa:flx[0], data:new Date(inicio+"T08:00:00").toISOString(), usuario:nome}];
+      for(let i=1;i<=etapaSel;i++) hist.push({etapa:flx[i], data:new Date(datas[i]+"T08:00:00").toISOString(), usuario:nome});
+      const p = novoProjeto(Object.assign(dados,{
+        id:novoId, dataInicio:inicio, criadoPor:nome, etapaAtual:etapaSel, historico:hist
+      }));
+      if(etapaSel===flx.length-1 && !p.dataReal) p.dataReal = datas[etapaSel];
+      salvarProjeto(p);
+    } else {
+      const p = novoProjeto(Object.assign(dados,{
+        id:novoId,
+        dataInicio:new Date().toISOString().slice(0,10),
+        criadoPor:estado.usuario.nome,
+        etapaAtual:0,
+        historico:[{etapa:"Recebido",data:new Date().toISOString(),usuario:estado.usuario.nome}]
+      }));
+      salvarProjeto(p);
+    }
+  }
+  fecharModal();
+}
+
+function abrirModalFO050(id, requiredMode, callback){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
   if(!p.fo050) p.fo050 = { celulas:[], processos:[] };
@@ -2139,22 +2165,6 @@ function salvarCadastro(id){
     el.innerText = total.toFixed(1) + " s";
   };
   
-  window.__calcTotalGeralFO050();
-}gem||fo.tempoTroca ? (Number(fo.tempoUsinagem||0)+Number(fo.tempoTroca||0)).toFixed(1) : "0.0"} s</div>
-      </div>
-    ` : `<div class="text-[12px] text-yellow-800 mb-5 p-3 bg-yellow-50 rounded border border-yellow-200 flex items-start gap-2"><div class="text-yellow-600 font-bold text-lg leading-none">⚠</div><div>Nesta etapa o sistema exige apenas a Célula e a Máquina. Os demais dados (Tempos, Data e OP) serão solicitados na etapa de <b>Validação/FO050</b>.</div></div>`}
-    
-    <div class="flex justify-end gap-2">
-      <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
-      <button class="btn btn-primario" onclick="window.__salvarFO050()">Salvar${callback?' e continuar':''}</button>
-    </div>
-  </div>`;
-  
-  window.__calcTotalFO050 = () => {
-    const u = Number(document.getElementById("fo-tu").value) || 0;
-    const t = Number(document.getElementById("fo-tt").value) || 0;
-    document.getElementById("fo-total").innerText = (u + t).toFixed(1) + " s";
-  };
 }
 
 /* ============================================================

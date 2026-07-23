@@ -375,3 +375,6 @@ Novidades e Alterações:
 
 
 - PATCH: Correção na exibição dos processos FO050 no detalhamento do projeto e ajuste de foco nos campos de input ao editar a FO050 (bugfix).
+
+
+- PATCH: Tratamento de erros ao tentar retroceder etapas (Voltar/Desmarcar) em projetos sem histórico ou comentários prévios iniciados (bugfix).

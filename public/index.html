@@ -1697,7 +1697,12 @@ function reabrirEtapa(id, i){
   
   p.etapaAtual = alvo;
   if(!p.historico) p.historico = [];
-  p.historico = p.historico.slice(0, alvo+1);
+  const idxHist = p.historico.findIndex(h => h.etapa === flx[alvo]);
+  if(idxHist >= 0) {
+    p.historico = p.historico.slice(0, idxHist + 1);
+  } else {
+    p.historico.push({etapa: flx[alvo], data: new Date().toISOString(), usuario: estado.usuario.nome || "Sistema"});
+  }
   p.dataReal = "";
   
   // Limpa os dados vinculados às etapas que estão sendo desfeitas

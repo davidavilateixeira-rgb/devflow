@@ -372,3 +372,6 @@ Novidades e Alterações:
 ? O painel de Detalhes do Projeto e o painel de edição foram refeitos para listar e somar automaticamente todos os processos parciais.
 ? Realizada migração retroativa transparente, onde itens mais antigos com estrutura de máquina única foram convertidos para o novo formato preservando os dados originais.
 ---------------------------------------
+
+
+- PATCH: Correção na exibição dos processos FO050 no detalhamento do projeto e ajuste de foco nos campos de input ao editar a FO050 (bugfix).

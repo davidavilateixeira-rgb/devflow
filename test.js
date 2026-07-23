@@ -1418,18 +1418,20 @@ function reabrirEtapa(id, i){
   const flx = fluxoDe(p);
   const alvo = i;
   
-  const msg = `Desmarcar "${flx[i]}"?\n\nO desenvolvimento volta a ficar na etapa "${flx[alvo]}" e as datas das etapas seguintes serão removidas.\n\nInforme o MOTIVO do retrocesso:`;
+  const msg = `Desmarcar a etapa "${flx[alvo]}" e voltar o projeto para cá?\n\nAs datas das etapas seguintes serão removidas.\n\nInforme o MOTIVO do retrocesso:`;
   const motivo = prompt(msg);
   if(motivo === null) return; // cancelou
   if(!motivo.trim()){ alert("Você deve informar o motivo para desmarcar a etapa."); return; }
   
+  if(!p.comentarios) p.comentarios = [];
   p.comentarios.push({
-    usuario: estado.usuario.nome,
+    usuario: estado.usuario.nome || "Sistema",
     data: new Date().toISOString(),
-    texto: `Retrocedeu da etapa "${flx[i]}" para "${flx[alvo]}". Motivo: ${motivo.trim()}`
+    texto: `Retrocedeu o desenvolvimento para a etapa "${flx[alvo]}". Motivo: ${motivo.trim()}`
   });
   
   p.etapaAtual = alvo;
+  if(!p.historico) p.historico = [];
   p.historico = p.historico.slice(0, alvo+1);
   p.dataReal = "";
   
@@ -1456,18 +1458,21 @@ function reabrirEtapa(id, i){
   } else if(etapasDesfeitas.includes("Ordem de Compra")) {
     p.numOC = "";
     p.prazoFornecedor = "";
-  } else if(etapasDesfeitas.includes("Aprovação OC") || etapasDesfeitas.includes("Fornecedor")) {
+  } else if(etapasDesfeitas.includes("Aprovação OC")) {
     p.prazoFornecedor = "";
   }
   
-  p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:`Reabriu a etapa "${flx[alvo]}".`});
+  if(!p.comentarios) p.comentarios = [];
+  p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome || "Sistema", texto:`Reabriu a etapa "${flx[alvo]}".`});
   salvarProjeto(p);
 }
 function voltarEtapa(id){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p || !podeGerenciar(p)) return;
   if(p.etapaAtual<=0) return;
-  p.etapaAtual--; p.historico.pop(); p.dataReal="";
+  p.etapaAtual--; 
+  if(p.historico && p.historico.length > 0) p.historico.pop(); 
+  p.dataReal="";
   salvarProjeto(p);
 }
 function addComentario(id){

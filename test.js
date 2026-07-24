@@ -155,7 +155,7 @@ const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
 const isProduto = ()=> estado.usuario && estado.usuario.papel === "produto";   // visualiza + cadastra, não edita
 const podeCadastrar = ()=> isAdmin() || isProduto();
 const rotuloPapel = pl => ({admin:"Administrador", produto:"Engenharia de Produto", tecnico:"Técnico"}[pl] || "Técnico");
-const podeGerenciar = (p)=> isAdmin() || (estado.usuario && p.responsavelUid === estado.usuario.uid);
+const podeGerenciar = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel !== "produto");
 
 /* ============================================================
    3. AUTENTICAÇÃO
@@ -719,7 +719,7 @@ function renderProjeto(){
   const linhaCnc = ()=>{
     const cnc = p.programaCnc || {feito:false};
     const liberado = analiseConcluida(p);                 // só após a Análise
-    const podeClicar = gerencia && p.responsavel && liberado;
+    const podeClicar = gerencia && liberado;
     const h = cnc.feito && cnc.data ? new Date(cnc.data) : null;
     return `<div class="chk-linha">
       <div class="chk-box ${cnc.feito?'feito':''} ${!podeClicar&&!cnc.feito?'bloq':''}" style="border-style:dashed"
@@ -808,13 +808,13 @@ function renderProjeto(){
       <div class="card p-5 surgir surgir-1">
         <div class="font-semibold text-sm mb-1">Checklist de etapas</div>
         <div class="text-[11px] mb-3" style="color:var(--texto-2)">
-          ${p.responsavel ? (gerencia ? "Concluir uma etapa registra data, hora, usuário e tempo gasto." : "Somente o responsável ("+esc(p.responsavel)+") ou o admin podem concluir etapas.") : "Assuma a tarefa para poder movimentar as etapas."}
+          ${gerencia ? "Concluir uma etapa registra data, hora, usuário e tempo gasto." : "Engenharia de Produto apenas visualiza o fluxo."}
         </div>
         ${flx.map((et,i)=>{
           // "Liberação" (última etapa) é o estado final: quando o projeto conclui, ela também aparece marcada
           const feita = i < p.etapaAtual || (concluido(p) && i === p.etapaAtual);
           const atual = i === p.etapaAtual && !concluido(p);
-          const podeMarcar = atual && gerencia && p.responsavel;
+          const podeMarcar = atual && gerencia;
           const h = p.historico[i+1] || (concluido(p) && i===p.etapaAtual ? p.historico[i] : null);
           const temDuracao = !!p.historico[i+1];
           const prazoEtapa = ({"Análise":p.prazoAnalise,"Projeto da Fixação":p.prazoProjetoFixacao,"Fornecedor":p.prazoFornecedor})[et];
@@ -1306,7 +1306,7 @@ function modalConcluirAnalise(p, aoConfirmar){
 // Marca/desmarca a tarefa paralela "Desenvolver Programas CNC"
 function toggleProgramaCnc(id){
   const p = estado.projetos.find(x=>x.id===id);
-  if(!p || !podeGerenciar(p) || !p.responsavel) return;
+  if(!p || !podeGerenciar(p)) return;
   if(!analiseConcluida(p)){ alert("Conclua a Análise antes de registrar o Programa CNC."); return; }
   if(!p.programaCnc) p.programaCnc = {feito:false, data:"", usuario:""};
   if(p.programaCnc.feito){
@@ -1524,7 +1524,7 @@ function removerFerramenta(id,i){
 function abrirCadastro(id){
   const p = id ? estado.projetos.find(x=>x.id===id) : null;
   if(!p && !podeCadastrar()){ alert("Você não tem permissão para cadastrar desenvolvimentos."); return; }
-  if(p && !podeGerenciar(p)){ alert("Somente o responsável ou o administrador podem editar."); return; }
+  if(p && !podeGerenciar(p)){ alert("Seu perfil de usuário não tem permissão para editar desenvolvimentos."); return; }
   const v = k => p ? (p[k]??"") : "";
   const vr = k => p && p.refs ? (p.refs[k]??"") : "";
   const nec = k => p && p.necessita[k] ? "checked":"";

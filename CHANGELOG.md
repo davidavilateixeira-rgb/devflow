@@ -378,3 +378,26 @@ Novidades e Alterações:
 
 
 - PATCH: Tratamento de erros ao tentar retroceder etapas (Voltar/Desmarcar) em projetos sem histórico ou comentários prévios iniciados (bugfix).
+
+
+- PATCH: Corrigido problema estrutural onde retroceder etapas em desenvolvimentos com histórico irregular (ex: pulos manuais) não alterava o estado na tela, pois o histórico era lido via índice em vez do nome da etapa.
+
+---------------------------------------
+VERSÃO 1.4.0
+---------------------------------------
+
+Data:
+24/07/2026
+
+Objetivo:
+Permitir que qualquer técnico possa manipular desenvolvimentos/atividades, mesmo que assumidos por outro técnico.
+
+Arquivos alterados:
+public/index.html
+
+Novidades e Alterações:
+- Atualizada a regra de gerenciamento (podeGerenciar) para conceder permissão de edição e movimentação de etapas a todos os técnicos e administradores.
+- Removidas restrições que travavam o checklist e o programa CNC apenas para o técnico responsável direto.
+- Perfil Engenharia de Produto permanece restrito a visualização e cadastro.
+---------------------------------------
+

@@ -137,7 +137,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.4.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.4.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -171,7 +171,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.4.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.4.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -1100,7 +1100,7 @@ function renderProjeto(){
               </div>
               ${!feita?`<div class="text-[10px] leading-snug" style="color:#9A9AA3">${DESC_ETAPAS[et]||""}</div>`:""}
               ${h?`<div class="text-[10.5px]" style="color:var(--texto-2)">✓ ${new Date(h.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})} · ${esc(h.usuario)}${temDuracao?` · ${(()=>{const ant=p.historico[i];return ant?Math.max(0,dias(new Date(ant.data),new Date(h.data)))+"d na etapa":""})()}`:""}</div>`:""}
-              ${prazoEtapa?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium" style="background:#E8F1FB;color:#0F5FA8">🎯 Prazo: ${fmtL(prazoEtapa)}</div>`:""}
+              ${feita && prazoEtapa?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium" style="background:#E8F1FB;color:#0F5FA8">🎯 Prazo: ${fmtL(prazoEtapa)}</div>`:""}
               ${p.obsEtapas&&p.obsEtapas[et]?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug" style="background:var(--laranja-claro);color:var(--texto-2)">📝 ${esc(p.obsEtapas[et])}</div>`:""}
             </div>
           </div>`;
@@ -1705,32 +1705,36 @@ function reabrirEtapa(id, i){
   }
   p.dataReal = "";
   
-  // Limpa os dados vinculados às etapas que estão sendo desfeitas
-  const etapasDesfeitas = flx.slice(alvo);
-  if(etapasDesfeitas.includes("Análise")) {
-    // Ao desmarcar Análise, limpa a definição de fixação e datas dependentes
-    p.prazoProjetoFixacao = "";
-    p.necessita.fixacao = false;
-    p.prazoFornecedor = "";
-    p.numSC = "";
-    p.numOC = "";
-    p.ferramentas = [];
-  } else if(etapasDesfeitas.includes("Projeto da Fixação")) {
-    // Ao desmarcar Projeto da Fixação, limpa ferramentas e prazos de compra/fornecedor
-    p.ferramentas = [];
-    p.prazoFornecedor = "";
-    p.numSC = "";
-    p.numOC = "";
-  } else if(etapasDesfeitas.includes("Solicitação de Compra")) {
-    p.numSC = "";
-    p.numOC = "";
-    p.prazoFornecedor = "";
-  } else if(etapasDesfeitas.includes("Ordem de Compra")) {
-    p.numOC = "";
-    p.prazoFornecedor = "";
-  } else if(etapasDesfeitas.includes("Aprovação OC")) {
-    p.prazoFornecedor = "";
-  }
+  // Limpa os dados e prazos vinculados às etapas que estão sendo desfeitas
+  const limparEtapasDesfeitas = (p, alvo, flx) => {
+    const etapasDesfeitas = flx.slice(alvo);
+    if(etapasDesfeitas.includes("Recebido") || etapasDesfeitas.includes("Análise")) {
+      p.prazoAnalise = "";
+      p.prazoProjetoFixacao = "";
+      p.necessita.fixacao = false;
+      p.prazoFornecedor = "";
+      p.numSC = "";
+      p.numOC = "";
+      p.ferramentas = [];
+    } else if(etapasDesfeitas.includes("Projeto da Fixação")) {
+      p.prazoProjetoFixacao = "";
+      p.ferramentas = [];
+      p.prazoFornecedor = "";
+      p.numSC = "";
+      p.numOC = "";
+    } else if(etapasDesfeitas.includes("Solicitação de Compra")) {
+      p.numSC = "";
+      p.numOC = "";
+      p.prazoFornecedor = "";
+    } else if(etapasDesfeitas.includes("Ordem de Compra")) {
+      p.numOC = "";
+      p.prazoFornecedor = "";
+    } else if(etapasDesfeitas.includes("Aprovação OC")) {
+      p.prazoFornecedor = "";
+    }
+  };
+
+  limparEtapasDesfeitas(p, alvo, flx);
   
   if(!p.comentarios) p.comentarios = [];
   p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome || "Sistema", texto:`Reabriu a etapa "${flx[alvo]}".`});
@@ -1740,9 +1744,22 @@ function voltarEtapa(id){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p || !podeGerenciar(p)) return;
   if(p.etapaAtual<=0) return;
-  p.etapaAtual--; 
-  if(p.historico && p.historico.length > 0) p.historico.pop(); 
+  
+  const flx = fluxoDe(p);
+  const alvo = p.etapaAtual - 1;
+  p.etapaAtual = alvo;
+  
+  if(p.historico) {
+    const idxHist = p.historico.findIndex(h => h.etapa === flx[alvo]);
+    if(idxHist >= 0) {
+      p.historico = p.historico.slice(0, idxHist + 1);
+    } else {
+      if(p.historico.length > 0) p.historico.pop();
+      p.historico.push({etapa: flx[alvo], data: new Date().toISOString(), usuario: estado.usuario.nome || "Sistema"});
+    }
+  }
   p.dataReal="";
+  limparEtapasDesfeitas(p, alvo, flx);
   salvarProjeto(p);
 }
 function addComentario(id){

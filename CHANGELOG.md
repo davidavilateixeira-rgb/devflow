@@ -401,3 +401,6 @@ Novidades e Alterações:
 - Perfil Engenharia de Produto permanece restrito a visualização e cadastro.
 ---------------------------------------
 
+
+- PATCH: Ocultada a tag de prazo visual em etapas que não estão concluídas e adicionada limpeza automática de prazoAnalise e prazos pendentes ao retroceder ou voltar etapas.
+

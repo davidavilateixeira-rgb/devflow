@@ -404,3 +404,6 @@ Novidades e Alterações:
 
 - PATCH: Ocultada a tag de prazo visual em etapas que não estão concluídas e adicionada limpeza automática de prazoAnalise e prazos pendentes ao retroceder ou voltar etapas.
 
+
+- PATCH: Preservação da posição de rolagem horizontal (scrollLeft) no Kanban ao navegar entre visões, abrir projetos ou utilizar a tecla ESC ou botão voltar.
+

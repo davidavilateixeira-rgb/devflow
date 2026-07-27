@@ -407,3 +407,23 @@ Novidades e Alterações:
 
 - PATCH: Preservação da posição de rolagem horizontal (scrollLeft) no Kanban ao navegar entre visões, abrir projetos ou utilizar a tecla ESC ou botão voltar.
 
+
+---------------------------------------
+VERSÃO 1.5.0
+---------------------------------------
+
+Data:
+27/07/2026
+
+Objetivo:
+Criar modo e perfil de acesso de Visitante sem senha, permitindo apenas visualização de desenvolvimentos e status sem alterar nada.
+
+Arquivos alterados:
+public/index.html
+
+Novidades e Alterações:
+- Adicionado o botão '??? Entrar como Visitante (sem senha)' na tela inicial de login.
+- Criado o perfil de usuário Visitante em modo estritamente de leitura (sem permissão para alterar, criar ou movimentar itens).
+- Adicionada opção de papel Visitante no painel de gestão de usuários.
+---------------------------------------
+

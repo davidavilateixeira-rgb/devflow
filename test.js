@@ -153,9 +153,11 @@ let unsubProjetos = null, unsubUsuarios = null, avisoDesativado = false;
 
 const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
 const isProduto = ()=> estado.usuario && estado.usuario.papel === "produto";   // visualiza + cadastra, não edita
-const podeCadastrar = ()=> isAdmin() || isProduto();
-const rotuloPapel = pl => ({admin:"Administrador", produto:"Engenharia de Produto", tecnico:"Técnico"}[pl] || "Técnico");
-const podeGerenciar = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel !== "produto");
+const isVisitante = ()=> estado.usuario && estado.usuario.papel === "visitante"; // apenas visualiza
+const isSomenteLeitura = ()=> isProduto() || isVisitante();
+const podeCadastrar = ()=> (isAdmin() || isProduto()) && !isVisitante();
+const rotuloPapel = pl => ({admin:"Administrador", produto:"Engenharia de Produto", tecnico:"Técnico", visitante:"Visitante"}[pl] || "Técnico");
+const podeGerenciar = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel !== "produto" && estado.usuario.papel !== "visitante");
 
 /* ============================================================
    3. AUTENTICAÇÃO
@@ -183,6 +185,37 @@ async function fazerLogin(){
   try{ await auth.signInWithEmailAndPassword(email, senha); }
   catch(e){ msgLogin("loginErro", erroAuthPt(e)); }
   btn.disabled = false;
+}
+async function entrarComoVisitante(){
+  const btn = document.getElementById("loginBotao");
+  const btnV = document.getElementById("visitanteBotao");
+  if(btn) btn.disabled = true;
+  if(btnV) btnV.disabled = true;
+  msgLogin(null);
+  const emailV = "visitante@viemar.com.br";
+  const passV = "visitante123456";
+  try {
+    await auth.signInWithEmailAndPassword(emailV, passV);
+  } catch(e) {
+    const c = (e && e.code) || "";
+    if (c.includes("user-not-found") || c.includes("invalid-credential")) {
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(emailV, passV);
+        await db.collection("usuarios").doc(cred.user.uid).set({
+          nome: "Visitante",
+          email: emailV,
+          papel: "visitante",
+          ativo: true
+        });
+      } catch(err) {
+        try { await auth.signInAnonymously(); } catch(e2) { msgLogin("loginErro", "Erro ao acessar como visitante: " + err.message); }
+      }
+    } else {
+      try { await auth.signInAnonymously(); } catch(e2) { msgLogin("loginErro", "Erro ao acessar como visitante: " + e.message); }
+    }
+  }
+  if(btn) btn.disabled = false;
+  if(btnV) btnV.disabled = false;
 }
 // Cria a conta do administrador na primeira utilização do sistema
 async function primeiroAcesso(){
@@ -219,7 +252,12 @@ auth.onAuthStateChanged(async (u)=>{
     let docu = await ref.get();
     if(!docu.exists){
       const ehAdmin = ehEmailAdmin(u.email);
-      await ref.set({ nome: ehAdmin ? "David" : (u.email||"").split("@")[0], email: u.email||"", papel: ehAdmin ? "admin" : "tecnico" });
+      const ehAnonimo = u.isAnonymous || !u.email || u.email.includes("visitante");
+      await ref.set({
+        nome: ehAnonimo ? "Visitante" : (ehAdmin ? "David" : (u.email||"").split("@")[0]),
+        email: u.email||"",
+        papel: ehAnonimo ? "visitante" : (ehAdmin ? "admin" : "tecnico")
+      });
       docu = await ref.get();
     }
     const dadosU = docu.data();
@@ -544,7 +582,7 @@ function cardProjeto(p){
    9. AÇÃO — ASSUMIR TAREFA
    ============================================================ */
 function assumirTarefa(id){
-  if(isProduto()) return;
+  if(isSomenteLeitura()) return;
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
   if(p.responsavel){ alert("Este desenvolvimento já foi assumido por "+p.responsavel+"."); return; }
@@ -697,7 +735,7 @@ function renderLista(){
             <td class="p-3 max-w-[240px] truncate" style="color:var(--texto-2)">${esc(p.descricao)}</td>
             <td class="p-3">${esc(p.cliente)||"—"}</td>
             <td class="p-3">${p.familia?`<span class="badge b-laranja">${esc(p.familia)}</span>`:"—"}</td>
-            <td class="p-3">${p.responsavel?esc(p.responsavel):(isProduto()?'<span class="text-[11px]" style="color:var(--roxo)">—</span>':`<button class="btn btn-primario !py-0.5 !px-2 !text-[11px] no-print" onclick="event.stopPropagation();assumirTarefa('${p.id}')">✋ Assumir</button>`)}</td>
+            <td class="p-3">${p.responsavel?esc(p.responsavel):(isSomenteLeitura()?'<span class="text-[11px]" style="color:var(--roxo)">—</span>':`<button class="btn btn-primario !py-0.5 !px-2 !text-[11px] no-print" onclick="event.stopPropagation();assumirTarefa('${p.id}')">✋ Assumir</button>`)}</td>
             <td class="p-3">${etapaNome(p)}</td>
             <td class="p-3"><span class="badge ${badgeStatus(statusDe(p))}">${statusDe(p)}</span></td>
             <td class="p-3 text-right">${fmt(p.dataInicio)}</td>
@@ -784,7 +822,7 @@ function renderProjeto(){
           <option value="">${p.responsavel?"— Remover responsável —":"— Direcionar a… —"}</option>
           ${estado.usuarios.filter(u=>u.ativo!==false).map(u=>`<option value="${u.uid}" ${p.responsavelUid===u.uid?"selected":""}>${esc(u.nome)}</option>`).join("")}
         </select>`:""}
-        ${!p.responsavel && !isProduto()?`<button class="btn btn-primario" onclick="assumirTarefa('${p.id}')">✋ Assumir tarefa</button>`:""}
+        ${!p.responsavel && !isSomenteLeitura()?`<button class="btn btn-primario" onclick="assumirTarefa('${p.id}')">✋ Assumir tarefa</button>`:""}
         ${gerencia?`<button class="btn btn-suave" onclick="abrirCadastro('${p.id}')">✎ Editar</button>`:""}
         ${gerencia && p.etapaAtual>0 && !concluido(p) ? `<button class="btn btn-suave" onclick="voltarEtapa('${p.id}')">↩ Voltar etapa</button>`:""}
         ${isAdmin()?`<button class="btn btn-suave" onclick="duplicarProjeto('${p.id}')">⧉ Duplicar</button>`:""}
@@ -813,7 +851,7 @@ function renderProjeto(){
       <div class="card p-5 surgir surgir-1">
         <div class="font-semibold text-sm mb-1">Checklist de etapas</div>
         <div class="text-[11px] mb-3" style="color:var(--texto-2)">
-          ${gerencia ? "Concluir uma etapa registra data, hora, usuário e tempo gasto." : "Engenharia de Produto apenas visualiza o fluxo."}
+          ${gerencia ? "Concluir uma etapa registra data, hora, usuário e tempo gasto." : (isVisitante() ? "Perfil Visitante: apenas visualização de desenvolvimentos e status." : "Engenharia de Produto apenas visualiza o fluxo.")}
         </div>
         ${flx.map((et,i)=>{
           // "Liberação" (última etapa) é o estado final: quando o projeto conclui, ela também aparece marcada
@@ -868,7 +906,7 @@ function renderProjeto(){
             <div class="text-[12.5px]">${esc(c.texto)}</div>
           </div>`).join("") || '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum comentário.</div>'}
         </div>
-        ${!isProduto()?`<div class="flex gap-2 no-print">
+        ${!isSomenteLeitura()?`<div class="flex gap-2 no-print">
           <input id="novoComent" class="inp" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter')addComentario('${p.id}')">
           <button class="btn btn-primario" onclick="addComentario('${p.id}')">Enviar</button>
         </div>`:""}
@@ -880,7 +918,7 @@ function renderProjeto(){
             <span>📎 ${esc(a)}</span>${gerencia?`<button class="text-[11px] no-print" style="color:var(--vermelho)" onclick="removerAnexo('${p.id}',${i})">remover</button>`:""}
           </div>`).join("") || '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum documento anexado.</div>'}
         </div>
-        ${!isProduto()?`<div class="flex gap-2 no-print">
+        ${!isSomenteLeitura()?`<div class="flex gap-2 no-print">
           <input id="novoAnexo" class="inp" placeholder="Nome do documento (ex.: Desenho REV-B.pdf)" onkeydown="if(event.key==='Enter')addAnexo('${p.id}')">
           <button class="btn btn-suave" onclick="addAnexo('${p.id}')">Anexar</button>
         </div>`:""}
@@ -892,7 +930,7 @@ function renderProjeto(){
             <span>🔧 ${esc(f)}</span>${gerencia?`<button class="text-[11px] no-print" style="color:var(--vermelho)" onclick="removerFerramenta('${p.id}',${i})">remover</button>`:""}
           </div>`).join("") || '<div class="text-[12px]" style="color:var(--texto-2)">Nenhuma ferramenta registrada.</div>'}
         </div>
-        ${!isProduto()?`<div class="flex gap-2 no-print">
+        ${!isSomenteLeitura()?`<div class="flex gap-2 no-print">
           <input id="novaFerramenta" class="inp" placeholder="Cód. da ferramenta" onkeydown="if(event.key==='Enter')addFerramenta('${p.id}')">
           <button class="btn btn-suave" onclick="addFerramenta('${p.id}')">Adicionar</button>
         </div>`:""}
@@ -901,7 +939,7 @@ function renderProjeto(){
       <div class="card p-5 surgir md:col-span-3">
         <div class="flex items-center justify-between mb-3">
           <div class="font-semibold text-sm">Dados FO050</div>
-          ${gerencia && !isProduto() ? `<button class="btn btn-suave !p-1.5 no-print" onclick="abrirModalFO050('${p.id}', 'livre')">✎ Editar</button>` : ''}
+          ${gerencia && !isSomenteLeitura() ? `<button class="btn btn-suave !p-1.5 no-print" onclick="abrirModalFO050('${p.id}', 'livre')">✎ Editar</button>` : ''}
         </div>
         ${(()=>{
           const fo = p.fo050 || { celulas:[], processos:[] };
@@ -1056,7 +1094,7 @@ function renderUsuarios(){
           <div><label class="lbl">Nome *</label><input id="u-nome" class="inp" placeholder="Ex.: Oscar"></div>
           <div><label class="lbl">E-mail *</label><input id="u-email" type="email" class="inp" placeholder="oscar@empresa.com"></div>
           <div><label class="lbl">Senha inicial * (mín. 6 caracteres)</label><input id="u-senha" type="text" class="inp" placeholder="Senha que o técnico usará para entrar"></div>
-          <div><label class="lbl">Papel</label><select id="u-papel" class="inp"><option value="tecnico">Técnico</option><option value="produto">Engenharia de Produto (visualiza + cadastra)</option><option value="admin">Administrador</option></select></div>
+          <div><label class="lbl">Papel</label><select id="u-papel" class="inp"><option value="tecnico">Técnico</option><option value="produto">Engenharia de Produto (visualiza + cadastra)</option><option value="visitante">Visitante (apenas visualização)</option><option value="admin">Administrador</option></select></div>
           <div id="u-msg" class="hidden text-[12px] font-medium rounded-md p-2"></div>
           <button id="u-botao" class="btn btn-primario" onclick="criarUsuario()">Criar usuário</button>
           <div class="text-[11px]" style="color:var(--texto-2)">O técnico entra com esse e-mail/senha e pode trocá-la depois em "Esqueci minha senha".</div>
@@ -1071,7 +1109,7 @@ function renderUsuarios(){
               <div class="text-[13px] font-semibold truncate">${esc(u.nome)} ${u.uid===estado.usuario.uid?'<span class="text-[10px] font-normal" style="color:var(--texto-2)">(você)</span>':''}</div>
               <div class="text-[11px] truncate" style="color:var(--texto-2)">${esc(u.email)}</div>
             </div>
-            ${u.ativo===false?'<span class="badge b-vermelho">Desativado</span>':`<span class="badge ${u.papel==='admin'?'b-laranja':(u.papel==='produto'?'b-roxo':'b-azul')}">${u.papel==='admin'?'Admin':(u.papel==='produto'?'Eng. Produto':'Técnico')}</span>`}
+            ${u.ativo===false?'<span class="badge b-vermelho">Desativado</span>':`<span class="badge ${u.papel==='admin'?'b-laranja':(u.papel==='produto'?'b-roxo':(u.papel==='visitante'?'b-cinza':'b-azul'))}">${u.papel==='admin'?'Admin':(u.papel==='produto'?'Eng. Produto':(u.papel==='visitante'?'Visitante':'Técnico'))}</span>`}
             <div class="flex gap-1 flex-none">
               <button class="btn btn-suave !p-1.5 !text-[12px]" title="Editar nome/papel" onclick="editarUsuario('${u.uid}')">✎</button>
               <button class="btn btn-suave !p-1.5 !text-[12px]" title="Enviar e-mail de redefinição de senha" onclick="resetSenhaUsuario('${u.uid}')">🔑</button>
@@ -1127,6 +1165,7 @@ function editarUsuario(uid){
       <div><label class="lbl">Papel</label><select id="eu-papel" class="inp">
         <option value="tecnico" ${u.papel==="tecnico"?"selected":""}>Técnico</option>
         <option value="produto" ${u.papel==="produto"?"selected":""}>Engenharia de Produto (visualiza + cadastra)</option>
+        <option value="visitante" ${u.papel==="visitante"?"selected":""}>Visitante (apenas visualização)</option>
         <option value="admin" ${u.papel==="admin"?"selected":""}>Administrador</option></select></div>
       <div class="text-[11px]" style="color:var(--texto-2)">Para trocar a senha, use o botão 🔑 (envia e-mail de redefinição). Para trocar o e-mail, desative este usuário e crie um novo.</div>
       <div class="flex justify-end gap-2 mt-2">
@@ -1503,7 +1542,7 @@ function voltarEtapa(id){
   salvarProjeto(p);
 }
 function addComentario(id){
-  if(isProduto()) return;
+  if(isSomenteLeitura()) return;
   const el = document.getElementById("novoComent");
   if(!el.value.trim()) return;
   const p = estado.projetos.find(x=>x.id===id);
@@ -1511,7 +1550,7 @@ function addComentario(id){
   salvarProjeto(p);
 }
 function addAnexo(id){
-  if(isProduto()) return;
+  if(isSomenteLeitura()) return;
   const el = document.getElementById("novoAnexo");
   if(!el.value.trim()) return;
   const p = estado.projetos.find(x=>x.id===id);
@@ -1525,7 +1564,7 @@ function removerAnexo(id,i){
   salvarProjeto(p);
 }
 function addFerramenta(id){
-  if(isProduto()) return;
+  if(isSomenteLeitura()) return;
   const el = document.getElementById("novaFerramenta");
   if(!el.value.trim()) return;
   const p = estado.projetos.find(x=>x.id===id);

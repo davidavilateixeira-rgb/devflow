@@ -427,3 +427,6 @@ Novidades e Alterações:
 - Adicionada opção de papel Visitante no painel de gestão de usuários.
 ---------------------------------------
 
+
+- PATCH: Ajustado o texto do botão de acesso visitante para 'Entrar como visitante' (removidos emoji e sufixo).
+

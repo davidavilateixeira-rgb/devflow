@@ -433,3 +433,6 @@ Novidades e Alterações:
 
 - PATCH: Configuração da tag favicon (<link rel="icon">) vinculada ao logotipo do sistema para substituir o ícone genérico do navegador na aba.
 
+
+- PATCH: Atualizado o ícone favicon da aba do navegador para a nova imagem 3D metálica com circuitos da Viemar (public/favicon.png).
+

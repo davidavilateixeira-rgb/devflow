@@ -430,3 +430,6 @@ Novidades e Alterações:
 
 - PATCH: Ajustado o texto do botão de acesso visitante para 'Entrar como visitante' (removidos emoji e sufixo).
 
+
+- PATCH: Configuração da tag favicon (<link rel="icon">) vinculada ao logotipo do sistema para substituir o ícone genérico do navegador na aba.
+

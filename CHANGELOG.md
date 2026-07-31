@@ -436,3 +436,6 @@ Novidades e Alterações:
 
 - PATCH: Atualizado o ícone favicon da aba do navegador para a nova imagem 3D metálica com circuitos da Viemar (public/favicon.png).
 
+
+- PATCH: Recorte ajustado (cropping 1:1) e geração de ícones multi-resolução (.ico e .png 256x256) do favicon 3D da Viemar para garantir nitidez máxima na aba do navegador.
+

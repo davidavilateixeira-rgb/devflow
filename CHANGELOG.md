@@ -439,3 +439,6 @@ Novidades e Alterações:
 
 - PATCH: Recorte ajustado (cropping 1:1) e geração de ícones multi-resolução (.ico e .png 256x256) do favicon 3D da Viemar para garantir nitidez máxima na aba do navegador.
 
+
+- PATCH: Atualizado o favicon para a imagem oficial fornecida (favicon_oficial.png), gerando os arquivos de ícone favicon.png e favicon.ico otimizados.
+

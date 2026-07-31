@@ -442,3 +442,6 @@ Novidades e Alterações:
 
 - PATCH: Atualizado o favicon para a imagem oficial fornecida (favicon_oficial.png), gerando os arquivos de ícone favicon.png e favicon.ico otimizados.
 
+
+- PATCH: Remoção do fundo escuro do favicon oficial com suavização de bordas alpha (transparência transparente .png e .ico).
+

@@ -1,6 +1,27 @@
 ﻿# Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.0.2
+---------------------------------------
+
+Data:
+01/08/2026
+
+Objetivo:
+Correção de bug crítico no Dashboard principal (ReferenceError: moduloAtual is not defined).
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Nenhuma
+
+Funcionalidades alteradas:
+- Refatorado todas as referências diretas de moduloAtual para apontar corretamente para o estado global estado.moduloAtual.
+- Removidos os emojis dos botões de módulo ("Usinagem" e "Montagem") conforme solicitado.
+
+
+---------------------------------------
 VERSÃO 2.0.1
 ---------------------------------------
 
@@ -491,6 +512,7 @@ Novidades e Altera��es:
 
 
 - PATCH: Remo��o do fundo escuro do favicon oficial com suaviza��o de bordas alpha (transpar�ncia transparente .png e .ico).
+
 
 
 

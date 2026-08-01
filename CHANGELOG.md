@@ -1,6 +1,26 @@
 ﻿# Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.0.1
+---------------------------------------
+
+Data:
+01/08/2026
+
+Objetivo:
+Ajuste da visão Dashboard principal.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Nenhuma
+
+Funcionalidades alteradas:
+- Atualizada a função renderDashboard para contemplar adequadamente os KPIs e gráficos quando o módulo ativo for 'Montagem'.
+
+
+---------------------------------------
 VERSÃO 2.0.0
 ---------------------------------------
 
@@ -471,5 +491,6 @@ Novidades e Altera��es:
 
 
 - PATCH: Remo��o do fundo escuro do favicon oficial com suaviza��o de bordas alpha (transpar�ncia transparente .png e .ico).
+
 
 

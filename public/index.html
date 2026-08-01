@@ -140,7 +140,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -175,7 +175,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -962,31 +962,58 @@ function assumirTarefa(id){
    10. VIEW — DASHBOARD
    ============================================================ */
 function renderDashboard(){
-  const ps = filtroMes(projetosVisiveis());
-  const ativos = ps.filter(p=>!concluido(p));
+  let psRaw = filtroMes(projetosVisiveis());
+  const isM = moduloAtual === "montagem";
+  const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido) : psRaw;
+  const cFunc = isM ? concluidoMontagem : concluido;
+  const ltFunc = isM ? leadTimeMontagem : leadTime;
+  const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
+  const statusFunc = isM ? statusDeMontagem : statusDe;
+  const etapaFunc = isM ? etapaNomeMontagem : etapaNome;
+  const semaforoFunc = p => semaforo(p, isM);
+
+  const ativos = ps.filter(p=>!cFunc(p));
+  const respNulo = isM ? (p=>!p.montagem.responsavel) : (p=>!p.responsavel);
+
   const kpis = [
     ["Total de desenvolvimentos", ps.length, "b-laranja"],
     ["Desenvolvimentos ativos", ativos.length, "b-laranja"],
-    ["Sem responsável", ps.filter(p=>!p.responsavel).length, "b-roxo"],
-    ["Concluídos", ps.filter(concluido).length, "b-verde"],
-    ["Atrasados", ps.filter(p=>diasAtraso(p)>0 && !concluido(p)).length, "b-vermelho"],
-    ["Aguardando Compras", ps.filter(p=>ETAPAS_COMPRAS.includes(etapaNome(p))).length, "b-laranja"],
-    ["Aguardando Fornecedor", ps.filter(p=>etapaNome(p)==="Fornecedor").length, "b-azul"],
-    ["Em Setup/FO050", ps.filter(p=>etapaNome(p)==="Validação/FO050").length, "b-amarelo"],
-    ["Lead Time médio", (ps.reduce((a,p)=>a+leadTime(p),0)/(ps.length||1)).toFixed(0)+" dias", "b-cinza"],
-    ["Projetos críticos", ps.filter(p=>semaforo(p)==="vermelho").length, "b-vermelho"],
+    ["Sem responsável", ps.filter(respNulo).length, "b-roxo"],
+    ["Concluídos", ps.filter(cFunc).length, "b-verde"],
+    ["Atrasados", ps.filter(p=>dAtrasoFunc(p)>0 && !cFunc(p)).length, "b-vermelho"],
   ];
-  const porEtapa = TODAS_ETAPAS.map(e=> ps.filter(p=>etapaNome(p)===e).length);
+  
+  if(!isM) {
+    kpis.push(
+      ["Aguardando Compras", ps.filter(p=>ETAPAS_COMPRAS.includes(etapaFunc(p))).length, "b-laranja"],
+      ["Aguardando Fornecedor", ps.filter(p=>etapaFunc(p)==="Fornecedor").length, "b-azul"],
+      ["Em Setup/FO050", ps.filter(p=>etapaFunc(p)==="Validação/FO050").length, "b-amarelo"]
+    );
+  } else {
+    kpis.push(
+      ["Aguardando Análise", ps.filter(p=>etapaFunc(p)==="Análise").length, "b-laranja"],
+      ["Aguardando PCP", ps.filter(p=>["Criar Desenho de Conjunto no ERP", "PCP (Emissão de FO)", "Liberação PCP"].includes(etapaFunc(p))).length, "b-azul"],
+      ["Em FO050", ps.filter(p=>etapaFunc(p)==="Validação/FO050").length, "b-amarelo"]
+    );
+  }
+
+  kpis.push(
+    ["Lead Time médio", (ps.reduce((a,p)=>a+ltFunc(p),0)/(ps.length||1)).toFixed(0)+" dias", "b-cinza"],
+    ["Projetos críticos", ps.filter(p=>semaforoFunc(p)==="vermelho").length, "b-vermelho"]
+  );
+
+  const etapasLista = isM ? MONT_ETAPAS : TODAS_ETAPAS;
+  const porEtapa = etapasLista.map(e=> ps.filter(p=>etapaFunc(p)===e).length);
   const stCount = {};
-  ps.forEach(p=>{const s=statusDe(p);stCount[s]=(stCount[s]||0)+1});
+  ps.forEach(p=>{const s=statusFunc(p);stCount[s]=(stCount[s]||0)+1});
   const porResp = {};
-  ps.forEach(p=>{const r=p.responsavel||"Sem responsável";porResp[r]=(porResp[r]||0)+1});
+  ps.forEach(p=>{const r=(isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável";porResp[r]=(porResp[r]||0)+1});
   const meses={};
   ps.forEach(p=>{if(p.dataInicio){const k=p.dataInicio.slice(0,7);meses[k]=(meses[k]||0)+1}});
   const mesesOrd = Object.keys(meses).sort();
 
   document.getElementById("view-dashboard").innerHTML = `
-    <h1 class="text-xl font-bold mb-1 surgir">Dashboard</h1>
+    <h1 class="text-xl font-bold mb-1 surgir">Dashboard ${isM?"(Montagem)":""}</h1>
     <p class="text-[13px] mb-5 surgir" style="color:var(--texto-2)">Visão geral do desenvolvimento de novos produtos · ${fmtL(HOJE)}</p>
     ${estado.projetos.length===0?`<div class="card p-8 text-center surgir mb-5">
       <div class="text-3xl mb-2">📭</div>
@@ -1008,7 +1035,7 @@ function renderDashboard(){
 
   const base = {plugins:{legend:{display:false}},responsive:true,
     scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}};
-  grafico("gEtapa",{type:"bar",data:{labels:TODAS_ETAPAS,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:26}]},
+  grafico("gEtapa",{type:"bar",data:{labels:etapasLista,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:26}]},
     options:{...base,scales:{...base.scales,x:{...base.scales.x,ticks:{font:{size:9},maxRotation:60,minRotation:45}}}}});
   grafico("gStatus",{type:"doughnut",data:{labels:Object.keys(stCount),datasets:[{data:Object.values(stCount),backgroundColor:CORES,borderWidth:2,borderColor:"#fff"}]},
     options:{cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});

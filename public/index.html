@@ -140,7 +140,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v1.5.6</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -175,10 +175,19 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v1.5.6</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
+  
+  <!-- SELETOR DE MÓDULO -->
+  <div class="px-3 mb-2" id="seletorModulo">
+    <div class="flex p-1 rounded-md" style="background:var(--cinza-bg); border: 1px solid var(--cinza-borda)">
+      <button id="btnModUsinagem" onclick="setModulo('usinagem')" class="flex-1 text-[11px] font-semibold py-1.5 rounded-sm transition-colors bg-white shadow-sm" style="color:var(--texto)">🔧 Usinagem</button>
+      <button id="btnModMontagem" onclick="setModulo('montagem')" class="flex-1 text-[11px] font-semibold py-1.5 rounded-sm transition-colors opacity-70 hover:opacity-100" style="color:var(--texto-2)">🔩 Montagem</button>
+    </div>
+  </div>
+
   <nav class="px-3 space-y-1 mt-2">
     <div class="nav-item ativo" data-view="dashboard" onclick="irPara('dashboard')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
@@ -315,6 +324,20 @@ const ETAPA_CNC = "Desenvolver Programas CNC";   // tarefa paralela (apenas no f
 
 const LISTA_PROCESSOS = ["USI CAIXA", "USI PINO", "FR EQUIPTOP", "FR TORNO", "USI ESFERA", "USI ESFERA + CANAL", "USI CANAL", "USI COPO AXIAL", "USI COPO PIVÔ", "USI PRÉ-FORMA", "USI COPO PIVÔ 1LD", "USI COPO PIVÔ 2LD"];
 
+// Fluxos de Montagem
+const MONT_ETAPAS = ["Recebido","Análise","Projeto de Ferramentas","Criar Desenho de Conjunto no ERP","Solicitação de Fabricação","Fabricação","Validação/FO050","Liberação"];
+const MONT_ETAPAS_SIMPLES = ["Recebido","Análise","Criar Desenho de Conjunto no ERP","Validação/FO050","Liberação"];
+const MONT_DESC_ETAPAS = {
+  "Recebido": "Novo item disponibilizado para montagem.",
+  "Análise": "Análise do processo de montagem. Ao concluir, defina se o fluxo é complexo ou simplificado.",
+  "Projeto de Ferramentas": "Projetar ferramentas necessárias para a montagem. Ao concluir, informe os códigos das ferramentas.",
+  "Criar Desenho de Conjunto no ERP": "Criar o desenho de conjunto. Informe o código do desenho (e ferramentas se simplificado).",
+  "Solicitação de Fabricação": "Abrir solicitação de fabricação das ferramentas. Informe o código da solicitação.",
+  "Fabricação": "Fabricação das ferramentas. Informe a data prevista de entrega.",
+  "Validação/FO050": "Validar tempos e processo na FO050 (Linha de Montagem, Montagem, Embalagem).",
+  "Liberação": "Produto montado liberado para produção em série."
+};
+
 // Descrição curta exibida sob cada etapa no checklist
 const DESC_ETAPAS = {
   "Recebido":"Novo desenvolvimento recebido e registrado no sistema.",
@@ -356,6 +379,17 @@ function normalizarProjeto(p){
   if(!p.historico) p.historico = [];
   if(!p.fo050) p.fo050 = { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" };
   if(!p.programaCnc) p.programaCnc = {feito:false, data:"", usuario:""};
+  
+  if(!p.montagem) p.montagem = {
+    etapaAtual: 0, historico: [], responsavel: "", responsavelUid: "", assumidoEm: "",
+    prazoAnalise: "", prazoProjetoFerramentas: "", ferramentas: [], codigoDesenhoConjunto: "",
+    codigoSolicitacao: "", dataFabricacao: "", necessitaComplexo: true, comentarios: [], obsEtapas: {},
+    fo050: { linhasMontagem: [], processos: [
+      { nome: "Montagem", maquina: "", tempoProcesso: "", dataExecucao: "", numOP: "" },
+      { nome: "Embalagem", maquina: "", tempoProcesso: "", dataExecucao: "", numOP: "" }
+    ]}
+  };
+
   p.historico.forEach(h=>{ if(RENOMES_ETAPAS[h.etapa]) h.etapa = RENOMES_ETAPAS[h.etapa]; });
   // "Desenvolver Programas CNC" deixou de ser etapa linear: se estava no histórico, converte em tarefa paralela concluída
   if(p.historico.some(h=>h.etapa===ETAPA_CNC) && !p.programaCnc.feito){
@@ -376,6 +410,14 @@ function normalizarProjeto(p){
   const ult = p.historico[p.historico.length-1];
   if(ult){ const idx = flx.indexOf(ult.etapa); if(idx>=0) p.etapaAtual = idx; }
   if(p.etapaAtual > flx.length-1) p.etapaAtual = flx.length-1;
+
+  const flxMont = p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES;
+  p.montagem.historico = p.montagem.historico.filter(h=>flxMont.includes(h.etapa));
+  p.montagem.historico = p.montagem.historico.filter((h,i,arr)=> i===0 || h.etapa!==arr[i-1].etapa);
+  const ultMont = p.montagem.historico[p.montagem.historico.length-1];
+  if(ultMont){ const idx = flxMont.indexOf(ultMont.etapa); if(idx>=0) p.montagem.etapaAtual = idx; }
+  if(p.montagem.etapaAtual > flxMont.length-1) p.montagem.etapaAtual = flxMont.length-1;
+
   return p;
 }
 
@@ -417,16 +459,19 @@ function novoProjeto(o){
 }
 
 let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[], statusSel:[],
-  movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"" };
+  movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"", moduloAtual: "usinagem" };
 let unsubProjetos = null, unsubUsuarios = null, avisoDesativado = false;
 
 const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
 const isProduto = ()=> estado.usuario && estado.usuario.papel === "produto";   // visualiza + cadastra, não edita
 const isVisitante = ()=> estado.usuario && estado.usuario.papel === "visitante"; // apenas visualiza
-const isSomenteLeitura = ()=> isProduto() || isVisitante();
+const isTecnicoMontagem = ()=> estado.usuario && estado.usuario.papel === "tecnico_montagem"; // apenas montagem
+const isSomenteLeitura = ()=> isProduto() || isVisitante() || (estado.moduloAtual === "montagem" && estado.usuario?.papel === "tecnico") || (estado.moduloAtual === "usinagem" && estado.usuario?.papel === "tecnico_montagem");
 const podeCadastrar = ()=> (isAdmin() || isProduto()) && !isVisitante();
-const rotuloPapel = pl => ({admin:"Administrador", produto:"Engenharia de Produto", tecnico:"Técnico", visitante:"Visitante"}[pl] || "Técnico");
-const podeGerenciar = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel !== "produto" && estado.usuario.papel !== "visitante");
+const rotuloPapel = pl => ({admin:"Administrador", produto:"Engenharia de Produto", tecnico:"Técnico Usinagem", tecnico_montagem:"Técnico Montagem", visitante:"Visitante"}[pl] || "Técnico");
+const podeGerenciarUsinagem = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel === "tecnico");
+const podeGerenciarMontagem = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel === "tecnico_montagem");
+const podeGerenciar = (p)=> estado.moduloAtual === "montagem" ? podeGerenciarMontagem(p) : podeGerenciarUsinagem(p);
 
 /* ============================================================
    3. AUTENTICAÇÃO
@@ -611,13 +656,24 @@ function diasNaEtapa(p){
   const ult = p.historico[p.historico.length-1];
   return Math.max(0, dias(ult ? new Date(ult.data) : d(p.dataInicio), HOJE));
 }
+function diasNaEtapaMontagem(p){
+  const ult = p.montagem.historico[p.montagem.historico.length-1];
+  return Math.max(0, dias(ult ? new Date(ult.data) : d(p.dataInicio), HOJE));
+}
 const diasDesdeInicio = p => Math.max(0, dias(d(p.dataInicio), HOJE));
 const leadTime = p => dias(d(p.dataInicio), p.dataReal ? d(p.dataReal) : HOJE);
+const leadTimeMontagem = p => dias(d(p.dataInicio), p.montagem.dataReal ? d(p.montagem.dataReal) : HOJE);
 const prazoRestante = p => p.dataPrevista ? dias(HOJE, d(p.dataPrevista)) : 0;
 function diasAtraso(p){
   if(!p.dataPrevista) return 0;
   const fim = p.dataReal ? d(p.dataReal) : HOJE;
   return concluido(p) && p.dataReal ? Math.max(0, dias(d(p.dataPrevista), d(p.dataReal)))
+                                    : Math.max(0, dias(d(p.dataPrevista), fim));
+}
+function diasAtrasoMontagem(p){
+  if(!p.dataPrevista) return 0;
+  const fim = p.montagem.dataReal ? d(p.montagem.dataReal) : HOJE;
+  return concluidoMontagem(p) && p.montagem.dataReal ? Math.max(0, dias(d(p.dataPrevista), d(p.montagem.dataReal)))
                                     : Math.max(0, dias(d(p.dataPrevista), fim));
 }
 function statusDe(p){
@@ -631,11 +687,14 @@ function statusDe(p){
   return "Em Andamento";
 }
 // Semáforo: vermelho = atrasado ou parado além do limite; amarelo = vence em ≤5 dias
-function semaforo(p){
-  if(concluido(p)) return "verde";
+function semaforo(p, isM = false){
+  const isConcluido = isM ? concluidoMontagem(p) : concluido(p);
+  if(isConcluido) return "verde";
   const el = document.getElementById("cfgDiasAlerta");
   const limite = el ? (+el.value||5) : 5;
-  if(diasAtraso(p)>0 || diasNaEtapa(p)>limite) return "vermelho";
+  const atraso = isM ? diasAtrasoMontagem(p) : diasAtraso(p);
+  const dEtapa = isM ? diasNaEtapaMontagem(p) : diasNaEtapa(p);
+  if(atraso>0 || dEtapa>limite) return "vermelho";
   if(p.dataPrevista && prazoRestante(p)<=5) return "amarelo";
   return "verde";
 }
@@ -647,6 +706,21 @@ function temposPorEtapa(projs){
       const ini = new Date(p.historico[i].data);
       const fim = p.historico[i+1] ? new Date(p.historico[i+1].data) : (concluido(p)? ini : HOJE);
       const et = p.historico[i].etapa;
+      (acc[et] = acc[et]||[]).push(Math.max(0,dias(ini,fim)));
+    }
+  });
+  const med = {};
+  for(const k in acc) med[k] = acc[k].reduce((a,b)=>a+b,0)/acc[k].length;
+  return med;
+}
+function temposPorEtapaMontagem(projs){
+  const acc = {};
+  projs.forEach(p=>{
+    const h = p.montagem.historico;
+    for(let i=0;i<h.length;i++){
+      const ini = new Date(h[i].data);
+      const fim = h[i+1] ? new Date(h[i+1].data) : (concluidoMontagem(p)? ini : HOJE);
+      const et = h[i].etapa;
       (acc[et] = acc[et]||[]).push(Math.max(0,dias(ini,fim)));
     }
   });
@@ -790,6 +864,18 @@ function barraFiltros(){
    7. NAVEGAÇÃO ENTRE VIEWS
    ============================================================ */
 let viewAtual = "dashboard", viewAnterior = "kanban", projetoAberto = null, charts = {};
+
+function setModulo(mod){
+  estado.moduloAtual = mod;
+  document.getElementById("btnModUsinagem").className = mod==="usinagem" ? "flex-1 text-[11px] font-semibold py-1.5 rounded-sm transition-colors bg-white shadow-sm" : "flex-1 text-[11px] font-semibold py-1.5 rounded-sm transition-colors opacity-70 hover:opacity-100";
+  document.getElementById("btnModUsinagem").style.color = mod==="usinagem" ? "var(--texto)" : "var(--texto-2)";
+  document.getElementById("btnModMontagem").className = mod==="montagem" ? "flex-1 text-[11px] font-semibold py-1.5 rounded-sm transition-colors bg-white shadow-sm" : "flex-1 text-[11px] font-semibold py-1.5 rounded-sm transition-colors opacity-70 hover:opacity-100";
+  document.getElementById("btnModMontagem").style.color = mod==="montagem" ? "var(--texto)" : "var(--texto-2)";
+  
+  if(viewAtual==="projeto") irPara("kanban"); // fecha o modal de projeto se estiver aberto
+  else renderTudo();
+}
+
 function irPara(v, id){
   if(v !== "projeto") viewAnterior = v;
   viewAtual = v; projetoAberto = id ?? projetoAberto;
@@ -938,20 +1024,26 @@ let kanbanScrollLeft = 0;
 function renderKanban(){
   const containerOld = document.getElementById("kanbanContainer");
   if (containerOld) kanbanScrollLeft = containerOld.scrollLeft;
-  const ps = filtroMes(projetosVisiveis());
+  let ps = filtroMes(projetosVisiveis());
+  const isM = (moduloAtual === "montagem");
+  if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido);
+  
   ps.sort((a,b) => {
     const dPa = a.dataPrevista || "9999-99-99";
     const dPb = b.dataPrevista || "9999-99-99";
     if (dPa !== dPb) return dPa.localeCompare(dPb);
     return (a.dataInicio || "").localeCompare(b.dataInicio || "");
   });
+  
+  const etapas = isM ? MONT_ETAPAS : TODAS_ETAPAS;
+  
   document.getElementById("view-kanban").innerHTML = `
     <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
-      <h1 class="text-xl font-bold surgir">Kanban de Desenvolvimentos</h1>
+      <h1 class="text-xl font-bold surgir">Kanban de Desenvolvimentos ${isM ? "(Montagem)" : ""}</h1>
     </div>
     <div id="kanbanContainer" class="flex gap-3 overflow-x-auto pb-4" style="min-height:60vh" onscroll="kanbanScrollLeft = this.scrollLeft">
-      ${TODAS_ETAPAS.map(et=>{
-        const cards = ps.filter(p=>etapaNome(p)===et);
+      ${etapas.map(et=>{
+        const cards = ps.filter(p=> (isM ? etapaNomeMontagem(p) : etapaNome(p)) === et);
         return `<div class="kb-col">
           <div class="flex items-center justify-between px-1 mb-2">
             <span class="text-[12px] font-bold uppercase tracking-wide" style="color:var(--texto-2)">${et}</span>
@@ -976,6 +1068,9 @@ function alternarOrdemLista(){
 }
 function renderLista(){
   let ps = filtroMes(projetosVisiveis());
+  const isM = (moduloAtual === "montagem");
+  if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido);
+
   if(estado.ordLista==="cadastro-desc")      ps.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
   else if(estado.ordLista==="cadastro-asc")  ps.sort((a,b)=>(a.dataInicio||"").localeCompare(b.dataInicio||""));
   else ps.sort((a,b) => {
@@ -987,7 +1082,7 @@ function renderLista(){
   const setaOrd = estado.ordLista==="cadastro-desc" ? " ▼" : (estado.ordLista==="cadastro-asc" ? " ▲" : " ⇅");
   document.getElementById("view-lista").innerHTML = `
     <div class="flex items-center justify-between flex-wrap gap-2 mb-4">
-      <h1 class="text-xl font-bold surgir">Desenvolvimentos <span class="text-sm font-normal" style="color:var(--texto-2)">(${ps.length})</span></h1>
+      <h1 class="text-xl font-bold surgir">Desenvolvimentos ${isM ? "(Montagem) " : ""}<span class="text-sm font-normal" style="color:var(--texto-2)">(${ps.length})</span></h1>
     </div>
     <div class="card overflow-x-auto surgir">
       <table class="w-full text-[12.5px]">
@@ -997,22 +1092,29 @@ function renderLista(){
           <th class="p-3 text-right cursor-pointer select-none" title="Clique para ordenar por data de cadastro" onclick="alternarOrdemLista()">Cadastro${setaOrd}</th>
           <th class="p-3 text-right">Dias etapa</th><th class="p-3 text-right">Lead Time</th><th class="p-3 text-right">Lançamento</th><th class="p-3 text-right">Atraso</th>
         </tr></thead>
-        <tbody>${ps.map(p=>`
+        <tbody>${ps.map(p=>{
+          const status = isM ? statusDeMontagem(p) : statusDe(p);
+          const nomeE = isM ? etapaNomeMontagem(p) : etapaNome(p);
+          const responsavel = isM ? p.montagem.responsavel : p.responsavel;
+          const dn = isM ? diasNaEtapaMontagem(p) : diasNaEtapa(p);
+          const lt = isM ? leadTimeMontagem(p) : leadTime(p);
+          const atraso = isM ? diasAtrasoMontagem(p) : diasAtraso(p);
+          return `
           <tr class="border-t hover:bg-orange-50/40 cursor-pointer transition" style="border-color:var(--cinza-borda)" onclick="irPara('projeto','${p.id}')">
-            <td class="p-3"><span class="dot dot-${semaforo(p)}"></span></td>
+            <td class="p-3"><span class="dot dot-${semaforo(p, isM)}"></span></td>
             <td class="p-3"><div class="font-bold flex items-center gap-1.5">${esc(p.codigo)}${p.devId ? `<span class="badge b-laranja text-[9px] !px-1 leading-none mt-0.5">${p.devId}</span>` : ""}</div></td>
             <td class="p-3 max-w-[240px] truncate" style="color:var(--texto-2)">${esc(p.descricao)}</td>
             <td class="p-3">${esc(p.cliente)||"—"}</td>
             <td class="p-3">${p.familia?`<span class="badge b-laranja">${esc(p.familia)}</span>`:"—"}</td>
-            <td class="p-3">${p.responsavel?esc(p.responsavel):(isSomenteLeitura()?'<span class="text-[11px]" style="color:var(--roxo)">—</span>':`<button class="btn btn-primario !py-0.5 !px-2 !text-[11px] no-print" onclick="event.stopPropagation();assumirTarefa('${p.id}')">✋ Assumir</button>`)}</td>
-            <td class="p-3">${etapaNome(p)}</td>
-            <td class="p-3"><span class="badge ${badgeStatus(statusDe(p))}">${statusDe(p)}</span></td>
+            <td class="p-3">${responsavel?esc(responsavel):(isSomenteLeitura()?'<span class="text-[11px]" style="color:var(--roxo)">—</span>':`<button class="btn btn-primario !py-0.5 !px-2 !text-[11px] no-print" onclick="event.stopPropagation();assumirTarefa('${p.id}')">✋ Assumir</button>`)}</td>
+            <td class="p-3">${nomeE}</td>
+            <td class="p-3"><span class="badge ${badgeStatus(status)}">${status}</span></td>
             <td class="p-3 text-right">${fmt(p.dataInicio)}</td>
-            <td class="p-3 text-right">${diasNaEtapa(p)}</td>
-            <td class="p-3 text-right">${leadTime(p)}d</td>
+            <td class="p-3 text-right">${dn}</td>
+            <td class="p-3 text-right">${lt}d</td>
             <td class="p-3 text-right">${fmt(p.dataPrevista)}</td>
-            <td class="p-3 text-right font-semibold" style="color:${diasAtraso(p)>0?'var(--vermelho)':'var(--verde)'}">${diasAtraso(p)>0? diasAtraso(p)+"d":"—"}</td>
-          </tr>`).join("")}
+            <td class="p-3 text-right font-semibold" style="color:${atraso>0?'var(--vermelho)':'var(--verde)'}">${atraso>0? atraso+"d":"—"}</td>
+          </tr>`}).join("")}
         </tbody>
       </table>
       ${ps.length===0?'<div class="p-8 text-center text-[13px]" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado.</div>':""}
@@ -1022,11 +1124,35 @@ function renderLista(){
 /* ============================================================
    13. VIEW — PÁGINA DO PROJETO
    ============================================================ */
+function statusDeMontagem(p){
+  if(concluidoMontagem(p)) return "Concluído";
+  if(!concluido(p)) return "Aguardando Usinagem"; // Etapa zero (Usinagem precisa estar concluída)
+  const m = p.montagem;
+  const et = (m.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES)[m.etapaAtual];
+  if(["Projeto de Ferramentas","Criar Desenho de Conjunto no ERP","Solicitação de Fabricação","Fabricação"].includes(et)) return "Aguardando Ferramentas";
+  if(["Validação/FO050"].includes(et)) return "Em Validação";
+  return "Em Andamento";
+}
+
+function concluidoMontagem(p) { return p.montagem.etapaAtual === (p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES).length - 1; }
+const isConcluidoGlobal = (p, isM) => isM ? concluidoMontagem(p) : concluido(p);
+const etapaNomeMontagem = (p) => (p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES)[p.montagem.etapaAtual];
+
 function renderProjeto(){
   const p = estado.projetos.find(x=>x.id===projetoAberto);
   if(!p){irPara("dashboard");return}
-  const flx = fluxoDe(p), st = statusDe(p);
+  const isMontagem = (estado.moduloAtual === "montagem");
+  
+  if (isMontagem && nomesComponentes(p).includes("Pistão")) {
+    document.getElementById("view-projeto").innerHTML = `<button class="btn btn-suave mb-4 no-print" onclick="irPara(viewAnterior)">← Voltar</button><div class="p-8 text-center text-lg text-[var(--texto-2)]">O componente Pistão não gera fluxo de montagem.</div>`;
+    return;
+  }
+  
+  const obj = isMontagem ? p.montagem : p;
+  const flx = isMontagem ? (obj.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES) : fluxoDe(p);
+  const st = isMontagem ? statusDeMontagem(p) : statusDe(p);
   const gerencia = podeGerenciar(p);
+
   // Linha da tarefa paralela "Desenvolver Programas CNC" (Técnico Fase 1)
   const linhaCnc = ()=>{
     const cnc = p.programaCnc || {feito:false};
@@ -1050,27 +1176,42 @@ function renderProjeto(){
 
   // Pendências geradas automaticamente
   const pend = [];
-  if(!concluido(p)){
-    if(!p.responsavel) pend.push("Nenhum técnico assumiu este desenvolvimento ainda.");
-    if(diasAtraso(p)>0) pend.push(`Projeto atrasado em <b>${diasAtraso(p)} dias</b> em relação à previsão de lançamento.`);
-    if(diasNaEtapa(p) > (+document.getElementById("cfgDiasAlerta").value||5)) pend.push(`Parado há <b>${diasNaEtapa(p)} dias</b> na etapa "${etapaNome(p)}".`);
-    if(p.necessita.fixacao && ["Solicitação de Compra","Aprovação SC"].includes(etapaNome(p)) && !p.numSC) pend.push("Número da SC não registrado.");
-    if(p.necessita.fixacao && ["Ordem de Compra","Aprovação OC","Fornecedor"].includes(etapaNome(p)) && !p.numOC) pend.push("Número da OC não registrado.");
-    if(etapaNome(p)==="Fornecedor" && p.prazoFornecedor && d(p.prazoFornecedor)<HOJE) pend.push(`Prazo do fornecedor vencido em ${fmtL(p.prazoFornecedor)}.`);
+  if(!isConcluidoGlobal(p, isMontagem)){
+    if(!obj.responsavel) pend.push("Nenhum técnico assumiu este desenvolvimento ainda.");
+    if(!isMontagem) {
+      if(diasAtraso(p)>0) pend.push(`Projeto atrasado em <b>${diasAtraso(p)} dias</b> em relação à previsão de lançamento.`);
+      if(diasNaEtapa(p) > (+document.getElementById("cfgDiasAlerta").value||5)) pend.push(`Parado há <b>${diasNaEtapa(p)} dias</b> na etapa "${etapaNome(p)}".`);
+      if(p.necessita.fixacao && ["Solicitação de Compra","Aprovação SC"].includes(etapaNome(p)) && !p.numSC) pend.push("Número da SC não registrado.");
+      if(p.necessita.fixacao && ["Ordem de Compra","Aprovação OC","Fornecedor"].includes(etapaNome(p)) && !p.numOC) pend.push("Número da OC não registrado.");
+      if(etapaNome(p)==="Fornecedor" && p.prazoFornecedor && d(p.prazoFornecedor)<HOJE) pend.push(`Prazo do fornecedor vencido em ${fmtL(p.prazoFornecedor)}.`);
+    }
   }
 
   const r = p.refs||{};
-  const info = [["Componentes",nomesComponentes(p).join(", ")||"—"],
+  const info = isMontagem ? [
+    ["Ref. produto final",esc(p.codigo)],
+    ["Código Desenho Conjunto",esc(obj.codigoDesenhoConjunto)||"—"],
+    ["Código Solicitação Fab.",esc(obj.codigoSolicitacao)||"—"],
+    ["Data Prev. Fabricação",obj.dataFabricacao?fmtL(obj.dataFabricacao):"—"],
+    ["Responsável Montagem",obj.responsavel?esc(obj.responsavel):"—"],
+    ["Ferramentas", (obj.ferramentas && obj.ferramentas.length) ? obj.ferramentas.join(", ") : "—"]
+  ] : [
+    ["Componentes",nomesComponentes(p).join(", ")||"—"],
     ["Ref. produto final",esc(p.codigo)],["Ref. Alojamento",esc(r.alojamento)||"—"],["Ref. Forjado Alojamento",esc(r.forjadoAlojamento)||"—"],
     ["Ref. Pino",esc(r.pino)||"—"],["Ref. Forjado Pino",esc(r.forjadoPino)||"—"],["NP de Usinagem",esc(r.npUsinagem)||"—"],
     ["Cliente",esc(p.cliente)||"—"],["Família",esc(p.familia)||"—"],["Tipo",esc(p.tipo)],
     ["Responsável",p.responsavel?esc(p.responsavel):"—"],["Prioridade",esc(p.prioridade)],["Cadastro",fmtL(p.dataInicio)],["Previsão de lançamento",fmtL(p.dataPrevista)],
     ["Data real",p.dataReal?fmtL(p.dataReal):"—"],["Fornecedor",esc(p.fornecedor)||"—"],["Nº SC",esc(p.numSC)||"—"],["Nº OC",esc(p.numOC)||"—"],
     ["Análise prevista",p.prazoAnalise?fmtL(p.prazoAnalise):"—"],["Prazo fornecedor",p.prazoFornecedor?fmtL(p.prazoFornecedor):"—"],["Projeto fixação previsto",p.prazoProjetoFixacao?fmtL(p.prazoProjetoFixacao):"—"],
-    ["Programa CNC",p.programaCnc&&p.programaCnc.feito?("✓ concluído "+(p.programaCnc.data?fmtL(p.programaCnc.data):"")):"pendente"],["Cadastrado por",esc(p.criadoPor)||"—"]];
+    ["Programa CNC",p.programaCnc&&p.programaCnc.feito?("✓ concluído "+(p.programaCnc.data?fmtL(p.programaCnc.data):"")):"pendente"],["Cadastrado por",esc(p.criadoPor)||"—"]
+  ];
 
-  const indicadores = [["Dias desde o cadastro",diasDesdeInicio(p)+"d"],["Dias na etapa",diasNaEtapa(p)+"d"],
-    ["Lead Time",leadTime(p)+"d"],["Prazo restante",(concluido(p)?"—":(p.dataPrevista?prazoRestante(p)+"d":"—"))],["Dias em atraso",diasAtraso(p)+"d"]];
+  const indicadores = isMontagem ? [
+    ["Dias na etapa", (obj.historico && obj.historico[obj.etapaAtual] ? dias(new Date(obj.historico[obj.etapaAtual].data), HOJE) : 0) + "d"]
+  ] : [
+    ["Dias desde o cadastro",diasDesdeInicio(p)+"d"],["Dias na etapa",diasNaEtapa(p)+"d"],
+    ["Lead Time",leadTime(p)+"d"],["Prazo restante",(concluido(p)?"—":(p.dataPrevista?prazoRestante(p)+"d":"—"))],["Dias em atraso",diasAtraso(p)+"d"]
+  ];
 
   document.getElementById("view-projeto").innerHTML = `
     <button class="btn btn-suave mb-4 no-print" onclick="irPara(viewAnterior)">← Voltar</button>
@@ -1084,18 +1225,18 @@ function renderProjeto(){
         </div>
         <p class="text-[13px] mt-1" style="color:var(--texto-2)">${esc(p.descricao)}</p>
         ${p.observacao?`<div class="card !shadow-none p-3 mt-2 text-[12.5px]" style="background:var(--laranja-claro);border-color:#F5CBAF"><b>Observação:</b> ${esc(p.observacao)}</div>`:""}
-        <div class="mt-2 flex gap-1.5 flex-wrap">${nomesComponentes(p).map(l=>`<span class="badge b-azul">${l}</span>`).join(" ")} ${nec}</div>
+        ${!isMontagem ? `<div class="mt-2 flex gap-1.5 flex-wrap">${nomesComponentes(p).map(l=>`<span class="badge b-azul">${l}</span>`).join(" ")} ${nec}</div>` : ""}
       </div>
       <div class="flex gap-2 no-print flex-wrap items-center">
         ${isAdmin()?`<select class="inp !w-auto !text-[12px]" title="Direcionar a um técnico" onchange="atribuirTecnico('${p.id}',this.value)">
-          <option value="">${p.responsavel?"— Remover responsável —":"— Direcionar a… —"}</option>
-          ${estado.usuarios.filter(u=>u.ativo!==false).map(u=>`<option value="${u.uid}" ${p.responsavelUid===u.uid?"selected":""}>${esc(u.nome)}</option>`).join("")}
+          <option value="">${obj.responsavel?"— Remover responsável —":"— Direcionar a… —"}</option>
+          ${estado.usuarios.filter(u=>u.ativo!==false).map(u=>`<option value="${u.uid}" ${obj.responsavelUid===u.uid?"selected":""}>${esc(u.nome)}</option>`).join("")}
         </select>`:""}
-        ${!p.responsavel && !isSomenteLeitura()?`<button class="btn btn-primario" onclick="assumirTarefa('${p.id}')">✋ Assumir tarefa</button>`:""}
-        ${gerencia?`<button class="btn btn-suave" onclick="abrirCadastro('${p.id}')">✎ Editar</button>`:""}
-        ${gerencia && p.etapaAtual>0 && !concluido(p) ? `<button class="btn btn-suave" onclick="voltarEtapa('${p.id}')">↩ Voltar etapa</button>`:""}
-        ${isAdmin()?`<button class="btn btn-suave" onclick="duplicarProjeto('${p.id}')">⧉ Duplicar</button>`:""}
-        ${isAdmin()?`<button class="btn btn-suave" style="color:var(--vermelho);border-color:#F5C6C0" onclick="excluirProjeto('${p.id}')">🗑 Excluir</button>`:""}
+        ${!obj.responsavel && !isSomenteLeitura()?`<button class="btn btn-primario" onclick="assumirTarefa('${p.id}')">✋ Assumir tarefa</button>`:""}
+        ${gerencia && !isMontagem?`<button class="btn btn-suave" onclick="abrirCadastro('${p.id}')">✎ Editar</button>`:""}
+        ${gerencia && obj.etapaAtual>0 && !isConcluidoGlobal(p, isMontagem) ? `<button class="btn btn-suave" onclick="voltarEtapa('${p.id}')">↩ Voltar etapa</button>`:""}
+        ${isAdmin() && !isMontagem?`<button class="btn btn-suave" onclick="duplicarProjeto('${p.id}')">⧉ Duplicar</button>`:""}
+        ${isAdmin() && !isMontagem?`<button class="btn btn-suave" style="color:var(--vermelho);border-color:#F5C6C0" onclick="excluirProjeto('${p.id}')">🗑 Excluir</button>`:""}
       </div>
     </div>
 
@@ -1120,10 +1261,9 @@ function renderProjeto(){
       <div class="card p-5 surgir surgir-1">
         <div class="font-semibold text-sm mb-1">Checklist de etapas</div>
         <div class="text-[11px] mb-3" style="color:var(--texto-2)">
-          ${gerencia ? "Concluir uma etapa registra data, hora, usuário e tempo gasto." : (isVisitante() ? "Perfil Visitante: apenas visualização de desenvolvimentos e status." : "Engenharia de Produto apenas visualiza o fluxo.")}
+          ${gerencia ? "Concluir uma etapa registra data, hora, usuário e tempo gasto." : "Modo somente leitura."}
         </div>
-        ${flx.map((et,i)=>{
-          // "Liberação" (última etapa) é o estado final: quando o projeto conclui, ela também aparece marcada
+        ${!isMontagem ? flx.map((et,i)=>{
           const feita = i < p.etapaAtual || (concluido(p) && i === p.etapaAtual);
           const atual = i === p.etapaAtual && !concluido(p);
           const podeMarcar = atual && gerencia;
@@ -1151,14 +1291,41 @@ function renderProjeto(){
               ${p.obsEtapas&&p.obsEtapas[et]?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug" style="background:var(--laranja-claro);color:var(--texto-2)">📝 ${esc(p.obsEtapas[et])}</div>`:""}
             </div>
           </div>`;
-          // Tarefa paralela "Desenvolver Programas CNC" — renderizada logo após a Análise (apenas no fluxo com fixação)
           return (et==="Análise" && flx===ETAPAS) ? linhaEtapa + linhaCnc() : linhaEtapa;
+        }).join("") 
+        
+        // --- MONTAGEM CHECKLIST ---
+        : flx.map((et,i)=>{
+          const feita = i < obj.etapaAtual || (concluidoMontagem(p) && i === obj.etapaAtual);
+          const aguardandoUsinagem = !concluido(p);
+          const atual = i === obj.etapaAtual && !concluidoMontagem(p) && !aguardandoUsinagem;
+          const podeMarcar = atual && gerencia;
+          const bloqUsi = aguardandoUsinagem && i===0 ? 'bloq' : '';
+          const h = obj.historico[i+1] || (concluidoMontagem(p) && i===obj.etapaAtual ? obj.historico[i] : null);
+          const temDuracao = !!obj.historico[i+1];
+          const desc = MONT_DESC_ETAPAS[et]||"";
+
+          return `<div class="chk-linha ${atual?'!bg-orange-50':''} ${aguardandoUsinagem && i===0?'!bg-gray-100':''}">
+            <div class="chk-box ${feita?'feito':''} ${!podeMarcar&&!feita?'bloq':''} ${bloqUsi}"
+                 ${podeMarcar?`onclick="concluirEtapaMontagem('${p.id}')"`:(feita&&gerencia?`onclick="reabrirEtapa('${p.id}',${i})" title="Clique para desmarcar e voltar a esta etapa"`:"")}>
+              ${feita?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke-width="3.5"><path d="M4 12l5 5L20 7"/></svg>':""}
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <div class="text-[12.5px] font-medium ${feita?'line-through opacity-60':''}">${et} ${atual?'<span class="badge b-laranja ml-1">Atual</span>':''} ${aguardandoUsinagem && i===0?'<span class="badge b-vermelho ml-1">Aguardando Usinagem</span>':''}</div>
+                ${gerencia?`<button class="text-[10px] font-semibold no-print flex-none" style="color:var(--laranja)" title="Observação desta etapa" onclick="editarObsEtapa('${p.id}','${et}')">${obj.obsEtapas&&obj.obsEtapas[et]?'✎ obs':'+ obs'}</button>`:""}
+              </div>
+              ${!feita?`<div class="text-[10px] leading-snug" style="color:#9A9AA3">${desc}</div>`:""}
+              ${h?`<div class="text-[10.5px]" style="color:var(--texto-2)">✓ ${new Date(h.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})} · ${esc(h.usuario)}${temDuracao?` · ${(()=>{const ant=obj.historico[i];return ant?Math.max(0,dias(new Date(ant.data),new Date(h.data)))+"d na etapa":""})()}`:""}</div>`:""}
+              ${obj.obsEtapas&&obj.obsEtapas[et]?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug" style="background:var(--laranja-claro);color:var(--texto-2)">📝 ${esc(obj.obsEtapas[et])}</div>`:""}
+            </div>
+          </div>`;
         }).join("")}
       </div>
 
       <div class="card p-5 surgir surgir-2">
         <div class="font-semibold text-sm mb-3">Linha do tempo</div>
-        ${p.historico.slice().reverse().map(h=>`<div class="tl-item">
+        ${obj.historico.slice().reverse().map(h=>`<div class="tl-item">
           <div class="tl-ponto"></div>
           <div class="text-[12.5px] font-semibold">${esc(h.etapa)}</div>
           <div class="text-[11px]" style="color:var(--texto-2)">${new Date(h.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"})} · ${esc(h.usuario)}</div>
@@ -1170,7 +1337,7 @@ function renderProjeto(){
       <div class="card p-5 surgir">
         <div class="font-semibold text-sm mb-3">Comentários</div>
         <div class="space-y-3 mb-3 max-h-72 overflow-y-auto">
-          ${p.comentarios.slice().reverse().map(c=>`<div class="rounded-lg p-3" style="background:var(--cinza-bg)">
+          ${obj.comentarios.slice().reverse().map(c=>`<div class="rounded-lg p-3" style="background:var(--cinza-bg)">
             <div class="flex justify-between text-[11px] mb-1"><b>${esc(c.usuario)}</b><span style="color:var(--texto-2)">${new Date(c.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span></div>
             <div class="text-[12.5px]">${esc(c.texto)}</div>
           </div>`).join("") || '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum comentário.</div>'}
@@ -1272,8 +1439,11 @@ function renderProjeto(){
    14. VIEW — DASHBOARD GERENCIAL
    ============================================================ */
 function renderGerencial(){
-  const ps = filtroMes(projetosVisiveis());
-  const med = temposPorEtapa(ps);
+  let psRaw = filtroMes(projetosVisiveis());
+  const isM = moduloAtual === "montagem";
+  const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido) : psRaw;
+  
+  const med = isM ? temposPorEtapaMontagem(ps) : temposPorEtapa(ps);
   const mediaDe = etapas => {
     const vals = etapas.filter(e=>med[e]!=null).map(e=>med[e]);
     return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
@@ -1281,43 +1451,77 @@ function renderGerencial(){
   const porCliente = {}, porResp = {};
   ps.forEach(p=>{
     if(p.cliente) porCliente[p.cliente]=(porCliente[p.cliente]||0)+1;
-    const r = p.responsavel||"Sem responsável";
-    porResp[r]=(porResp[r]||0)+1;
+    const resp = isM ? (p.montagem.responsavel||"Sem responsável") : (p.responsavel||"Sem responsável");
+    porResp[resp]=(porResp[resp]||0)+1;
   });
+  
+  const cFunc = isM ? concluidoMontagem : concluido;
+  const ltFunc = isM ? leadTimeMontagem : leadTime;
+  const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
+  
   const kpis = [
-    ["Tempo médio de desenvolvimento",ps.length?(ps.reduce((a,p)=>a+leadTime(p),0)/ps.length).toFixed(0)+" dias":"—"],
-    ["Lead Time (concluídos)",(()=>{const c=ps.filter(x=>concluido(x));return c.length?(c.reduce((a,p)=>a+leadTime(p),0)/c.length).toFixed(0)+" dias":"—"})()],
-    ["Projetos atrasados",ps.filter(p=>diasAtraso(p)>0&&!concluido(p)).length],
-    ["Projetos finalizados",ps.filter(concluido).length],
-    ["Tempo médio em Compras",mediaDe(ETAPAS_COMPRAS)+" dias"],
-    ["Tempo médio no Fornecedor",mediaDe(["Fornecedor"])+" dias"],
-    ["Tempo médio Programas CNC",mediaDe(["Desenvolver Programas CNC", "Programa CNC"])+" dias"],
-    ["Retrabalho (Retrocessos)",ps.reduce((a,p)=>a+(p.comentarios||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0)],
-    ["Em andamento",ps.filter(p=>!concluido(p)).length],
+    ["Tempo médio de desenvolvimento",ps.length?(ps.reduce((a,p)=>a+ltFunc(p),0)/ps.length).toFixed(0)+" dias":"—"],
+    ["Lead Time (concluídos)",(()=>{const c=ps.filter(x=>cFunc(x));return c.length?(c.reduce((a,p)=>a+ltFunc(p),0)/c.length).toFixed(0)+" dias":"—"})()],
+    ["Projetos atrasados",ps.filter(p=>dAtrasoFunc(p)>0&&!cFunc(p)).length],
+    ["Projetos finalizados",ps.filter(cFunc).length],
+    ["Em andamento",ps.filter(p=>!cFunc(p)).length],
   ];
-  const etapasLbl = TODAS_ETAPAS.filter(e=>med[e]!=null);
-  // Lead time médio por responsabilidade: soma o tempo gasto nas etapas de cada grupo, por projeto, e tira a média
+
+  if(!isM) {
+    kpis.splice(4, 0,
+      ["Tempo médio em Compras",mediaDe(ETAPAS_COMPRAS)+" dias"],
+      ["Tempo médio no Fornecedor",mediaDe(["Fornecedor"])+" dias"],
+      ["Tempo médio Programas CNC",mediaDe(["Desenvolver Programas CNC", "Programa CNC"])+" dias"],
+      ["Retrabalho (Retrocessos)",ps.reduce((a,p)=>a+(p.comentarios||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0)]
+    );
+  } else {
+    kpis.splice(4, 0,
+      ["Tempo médio em Analise",mediaDe(["Análise"])+" dias"],
+      ["Tempo médio em PCP",mediaDe(["PCP (Emissão de FO)", "Liberação PCP"])+" dias"],
+      ["Tempo médio Projetos/Fab",mediaDe(["Projeto de Ferramentas", "Fabricação"])+" dias"],
+      ["Retrabalho (Retrocessos)",ps.reduce((a,p)=>a+(p.montagem.comentarios||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0)]
+    );
+  }
+
+  const etapasLbl = (isM ? MONT_ETAPAS : TODAS_ETAPAS).filter(e=>med[e]!=null);
+  
   const somaG = {}, contG = {};
-  ps.forEach(p=>{
-    const porGrupo = {};
-    for(let i=0;i<p.historico.length;i++){
-      const fim = p.historico[i+1] ? new Date(p.historico[i+1].data) : (concluido(p) ? null : HOJE);
-      if(!fim) continue;
-      const g = GRUPO_ETAPA[p.historico[i].etapa];
-      if(!g) continue;
-      porGrupo[g] = (porGrupo[g]||0) + Math.max(0, dias(new Date(p.historico[i].data), fim));
-    }
-    for(const g in porGrupo){ somaG[g]=(somaG[g]||0)+porGrupo[g]; contG[g]=(contG[g]||0)+1; }
-  });
-  const gruposLbl = ["Técnico","Analista","PCP"].filter(g=>contG[g]);
+  if(!isM) {
+    ps.forEach(p=>{
+      const porGrupo = {};
+      for(let i=0;i<p.historico.length;i++){
+        const fim = p.historico[i+1] ? new Date(p.historico[i+1].data) : (cFunc(p) ? null : HOJE);
+        if(!fim) continue;
+        const g = GRUPO_ETAPA[p.historico[i].etapa];
+        if(!g) continue;
+        porGrupo[g] = (porGrupo[g]||0) + Math.max(0, dias(new Date(p.historico[i].data), fim));
+      }
+      for(const g in porGrupo){ somaG[g]=(somaG[g]||0)+porGrupo[g]; contG[g]=(contG[g]||0)+1; }
+    });
+  } else {
+    ps.forEach(p=>{
+      const porGrupo = {};
+      for(let i=0;i<p.montagem.historico.length;i++){
+        const fim = p.montagem.historico[i+1] ? new Date(p.montagem.historico[i+1].data) : (cFunc(p) ? null : HOJE);
+        if(!fim) continue;
+        const et = p.montagem.historico[i].etapa;
+        let g = "Técnico";
+        if(["Criar Desenho de Conjunto no ERP", "PCP (Emissão de FO)", "Liberação PCP"].includes(et)) g = "PCP";
+        porGrupo[g] = (porGrupo[g]||0) + Math.max(0, dias(new Date(p.montagem.historico[i].data), fim));
+      }
+      for(const g in porGrupo){ somaG[g]=(somaG[g]||0)+porGrupo[g]; contG[g]=(contG[g]||0)+1; }
+    });
+  }
+  
+  const gruposLbl = (isM ? ["Técnico","PCP"] : ["Técnico","Analista","PCP"]).filter(g=>contG[g]);
   const medG = gruposLbl.map(g=>+(somaG[g]/contG[g]).toFixed(1));
   document.getElementById("view-gerencial").innerHTML = `
-    <h1 class="text-xl font-bold mb-1 surgir">Dashboard Gerencial</h1>
+    <h1 class="text-xl font-bold mb-1 surgir">Dashboard Gerencial ${isM?"(Montagem)":""}</h1>
     <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos do processo de desenvolvimento</p>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
       ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%5)+1}">
-        <div class="text-[11px] font-semibold mb-1.5" style="color:var(--texto-2)">${k[0]}</div>
-        <div class="text-2xl font-bold">${k[1]}</div></div>`).join("")}
+        <div class="text-[11px] font-semibold mb-1.5 leading-tight min-h-[28px]" style="color:var(--texto-2)">${k[0]}</div>
+        <div class="text-xl font-bold truncate">${k[1]}</div></div>`).join("")}
     </div>
     <div class="grid md:grid-cols-2 gap-4">
       <div class="card p-5 surgir md:col-span-2">
@@ -1325,7 +1529,7 @@ function renderGerencial(){
           <div class="font-semibold text-sm">Lead time por etapa (dias)</div>
           <div class="flex gap-3 text-[11px]" style="color:var(--texto-2)">
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#EA5B0C"></span>Técnico</span>
-            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#0F5FA8"></span>Analista</span>
+            ${!isM ? '<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#0F5FA8"></span>Analista</span>' : ''}
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#107C41"></span>PCP</span>
           </div>
         </div>
@@ -1333,7 +1537,7 @@ function renderGerencial(){
       </div>
       <div class="card p-5 surgir"><div class="font-semibold text-sm mb-3">Lead time por responsabilidade (dias)</div><canvas id="gGrupo" height="200"></canvas></div>
       <div class="card p-5 surgir surgir-1"><div class="font-semibold text-sm mb-3">Projetos por cliente</div><canvas id="gCliente" height="200"></canvas></div>
-      <div class="card p-5 surgir surgir-2"><div class="font-semibold text-sm mb-3">Projetos por responsável</div><div class="max-w-[240px] mx-auto"><canvas id="gRespG"></canvas></div></div>
+      <div class="card p-5 surgir surgir-2 md:col-span-2 lg:col-span-1"><div class="font-semibold text-sm mb-3">Projetos por responsável</div><div class="max-w-[240px] mx-auto"><canvas id="gRespG"></canvas></div></div>
     </div>`;
 
   const base = {plugins:{legend:{display:false}},responsive:true,
@@ -1675,6 +1879,117 @@ function modalFerramentas(p, aoConfirmar){
   render();
   const el = document.getElementById("mf-cod"); if(el) el.focus();
 }
+function modalConcluirAnaliseMontagem(p, aoConfirmar){
+  const modal = document.getElementById("modalCadastro");
+  modal.className = "overlay";
+  modal.innerHTML = `<div class="modal p-6 !w-[420px]" onclick="event.stopPropagation()">
+    <h2 class="text-base font-bold mb-3">Concluir: Análise (Montagem)</h2>
+    <p class="text-[12.5px] mb-4">Selecione o tipo de fluxo de montagem para este produto:</p>
+    <div class="space-y-2 mb-5 text-[12.5px]">
+      <label class="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50"><input type="radio" name="mca-fluxo" value="complexo" checked class="w-4 h-4"> <div><strong class="block">Fluxo Complexo</strong>Requer projeto de ferramentas, solicitação e fabricação.</div></label>
+      <label class="flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-gray-50"><input type="radio" name="mca-fluxo" value="simples" class="w-4 h-4"> <div><strong class="block">Fluxo Simplificado</strong>Apenas desenho de conjunto e PCP.</div></label>
+    </div>
+    <div class="flex justify-end gap-2 mt-2">
+      <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primario" id="mca-ok">Concluir</button>
+    </div></div>`;
+  modal.onclick = fecharModal;
+  document.getElementById("mca-ok").onclick = ()=>{
+    const comp = document.querySelector('input[name="mca-fluxo"]:checked').value === "complexo";
+    p.montagem.necessitaComplexo = comp;
+    if(!p.montagem.comentarios) p.montagem.comentarios = [];
+    p.montagem.comentarios.push({
+      usuario: estado.usuario.nome || "Sistema", data: new Date().toISOString(),
+      texto: comp ? "Análise definiu: fluxo de montagem complexo." : "Análise definiu: fluxo de montagem simplificado."});
+    fecharModal();
+    aoConfirmar();
+  };
+}
+
+function modalFerramentasMontagem(p, aoConfirmar){
+  if(!p.montagem.ferramentas) p.montagem.ferramentas = [];
+  const modal = document.getElementById("modalCadastro");
+  modal.className = "overlay";
+  const render = ()=>{
+    modal.innerHTML = `<div class="modal p-6 !w-[460px]" onclick="event.stopPropagation()">
+      <h2 class="text-base font-bold mb-1">Ferramentas de Montagem</h2>
+      <p class="text-[12px] mb-3" style="color:var(--texto-2)">Informe o(s) código(s) da(s) ferramenta(s) gerada(s). É obrigatório pelo menos uma.</p>
+      <div class="space-y-2 mb-3">
+        ${p.montagem.ferramentas.length?p.montagem.ferramentas.map((f,i)=>`<div class="flex items-center justify-between rounded-lg p-2.5 text-[12.5px]" style="background:var(--cinza-bg)">
+          <span>🔧 ${esc(f)}</span><button class="text-[11px]" style="color:var(--vermelho)" onclick="__ferrMMRemover(${i})">remover</button>
+        </div>`).join(""):'<div class="text-[12px]" style="color:var(--texto-2)">Nenhuma ferramenta adicionada.</div>'}
+      </div>
+      <div class="flex gap-2">
+        <input id="mfm-cod" class="inp" placeholder="Código da ferramenta (ex.: FX-1042)" onkeydown="if(event.key==='Enter'){event.preventDefault();__ferrMMAdd();}">
+        <button class="btn btn-suave" onclick="__ferrMMAdd()">Adicionar</button>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primario" id="mfm-ok">Concluir etapa</button>
+      </div></div>`;
+    modal.onclick = fecharModal;
+    document.getElementById("mfm-ok").onclick = ()=>{
+      if(!p.montagem.ferramentas.length){ alert("Adicione ao menos um código de ferramenta."); return; }
+      fecharModal(); aoConfirmar();
+    };
+  };
+  window.__ferrMMAdd = ()=>{ const el = document.getElementById("mfm-cod"); const v = el.value.trim(); if(!v) return; p.montagem.ferramentas.push(v); render(); };
+  window.__ferrMMRemover = (i)=>{ p.montagem.ferramentas.splice(i,1); render(); };
+  render();
+  const el = document.getElementById("mfm-cod"); if(el) el.focus();
+}
+
+function concluirEtapaMontagem(id){
+  const p = estado.projetos.find(x=>x.id===id);
+  if(!p || !podeGerenciar(p)) return;
+  const m = p.montagem;
+  const flx = m.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES;
+  if(concluidoMontagem(p)) return;
+  const etapaConcluida = flx[m.etapaAtual];
+  const efetivar = ()=>{
+    const f2 = m.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES;
+    m.etapaAtual++;
+    const nome = m.etapaAtual >= f2.length ? "Concluído" : f2[m.etapaAtual];
+    m.historico.push({etapa:nome, data:new Date().toISOString(), usuario:estado.usuario.nome});
+    if(concluidoMontagem(p) && !m.dataReal) m.dataReal = new Date().toISOString().slice(0,10);
+    salvarProjeto(p);
+  };
+
+  // Verifica FO050 antes de avançar
+  const fo = m.fo050 || { linhasMontagem:[], processos:[] };
+  const proximaEtapa = flx[m.etapaAtual+1];
+  
+  if(proximaEtapa === "Validação/FO050" && (fo.linhasMontagem.length === 0)){
+    abrirModalFO050Montagem(id, 'maquina', ()=>concluirEtapaMontagem(id));
+    return;
+  }
+  if(etapaConcluida === "Validação/FO050" && (fo.processos.length === 0 || fo.processos.some(pr => !pr.tempoProcesso || !pr.dataExecucao || !pr.numOP))){
+    abrirModalFO050Montagem(id, 'todos', ()=>concluirEtapaMontagem(id));
+    return;
+  }
+
+  if(etapaConcluida==="Análise"){
+    modalConcluirAnaliseMontagem(p, efetivar);
+  } else if(etapaConcluida==="Projeto de Ferramentas"){
+    modalFerramentasMontagem(p, efetivar);
+  } else if(etapaConcluida==="Criar Desenho de Conjunto no ERP"){
+    pedirCampo("Concluir: Desenho de Conjunto", "Código do Desenho de Conjunto", "text", m.codigoDesenhoConjunto, (v)=>{
+      m.codigoDesenhoConjunto = v;
+      if(!m.necessitaComplexo) {
+        modalFerramentasMontagem(p, efetivar);
+      } else {
+        efetivar();
+      }
+    });
+  } else if(etapaConcluida==="Solicitação de Fabricação"){
+    pedirCampo("Concluir: Solicitação de Fabricação", "Código da Solicitação", "text", m.codigoSolicitacao, (v)=>{ m.codigoSolicitacao = v; efetivar(); });
+  } else if(etapaConcluida==="Fabricação"){
+    pedirCampo("Concluir: Fabricação", "Data de conclusão da fabricação", "date", m.dataFabricacao, (v)=>{ m.dataFabricacao = v; efetivar(); });
+  } else {
+    efetivar();
+  }
+}
+
 function concluirEtapa(id){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p || !podeGerenciar(p)) return;
@@ -2090,6 +2405,126 @@ function salvarCadastro(id){
     }
   }
   fecharModal();
+}
+function abrirModalFO050Montagem(id, requiredMode, callback){
+  const p = estado.projetos.find(x=>x.id===id);
+  if(!p) return;
+  const fo = p.montagem.fo050 || { linhasMontagem:[], processos:[] };
+  if(!fo.processos || fo.processos.length===0) fo.processos = [{ nome: "Montagem", maquina: "", tempoProcesso: "", dataExecucao: "", numOP: "" }, { nome: "Embalagem", maquina: "", tempoProcesso: "", dataExecucao: "", numOP: "" }];
+  
+  let procDraft = JSON.parse(JSON.stringify(fo.processos));
+  
+  const modal = document.getElementById("modalCadastro");
+  modal.className = "overlay";
+  
+  window.__renderLinhasFO050M = () => {
+    if(fo.linhasMontagem.length===0) return '<div class="text-[12px] text-gray-500 mb-2">Nenhuma linha adicionada.</div>';
+    return fo.linhasMontagem.map((c, i) => `
+      <div class="flex items-center justify-between p-2 rounded bg-white border border-gray-200 mb-2 shadow-sm">
+        <div class="flex items-center gap-2">
+          ${i===0 ? `<span class="badge b-verde text-[10px] leading-none">Principal</span>` : `<span class="badge b-cinza text-[10px] leading-none">Alternativa</span>`}
+          <span class="text-[13px] font-semibold">${esc(c)}</span>
+        </div>
+        <button class="text-[11px] text-red-500 hover:text-red-700 font-medium px-2 py-1" onclick="window.__remLinhaFO050M(${i})">Remover</button>
+      </div>
+    `).join("");
+  };
+  
+  window.__remLinhaFO050M = (i) => { fo.linhasMontagem.splice(i, 1); document.getElementById("listaLinhasFO050M").innerHTML = window.__renderLinhasFO050M(); };
+  window.__addLinhaFO050M = () => {
+    const v = document.getElementById("novaLinhaFO050M").value.trim(); if(!v) return;
+    fo.linhasMontagem.push(v); document.getElementById("novaLinhaFO050M").value = "";
+    document.getElementById("listaLinhasFO050M").innerHTML = window.__renderLinhasFO050M();
+    document.getElementById("novaLinhaFO050M").focus();
+  };
+
+  window.__renderProcessosFO050M = () => {
+    if(procDraft.length===0) return '<div class="text-[12px] text-gray-500 mt-2">Nenhum processo adicionado.</div>';
+    return procDraft.map((pr, i) => `
+      <div class="mb-4 p-4 rounded bg-white border border-gray-200 shadow-sm relative">
+        <button class="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1" onclick="window.__remProcessoFO050M(${i})" title="Remover processo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
+        <div class="grid md:grid-cols-2 gap-4 mb-3 pr-6">
+          <div>
+            <label class="lbl">Processo ${requiredMode!=='livre'?'*':''}</label>
+            <select class="inp proc-nome" data-idx="${i}">
+              <option value="Montagem" ${pr.nome==='Montagem'?'selected':''}>Montagem</option>
+              <option value="Embalagem" ${pr.nome==='Embalagem'?'selected':''}>Embalagem</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Posto de Trabalho (Máquina)</label>
+            <input class="inp proc-maq" data-idx="${i}" value="${esc(pr.maquina||"")}">
+          </div>
+        </div>
+        ${requiredMode !== 'maquina' ? `
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+            <div><label class="lbl">Tempo Processo (s) ${requiredMode==='todos'?'*':''}</label><input type="number" step="0.1" class="inp proc-tp" data-idx="${i}" value="${pr.tempoProcesso||""}"></div>
+            <div><label class="lbl">Data exec. ${requiredMode==='todos'?'*':''}</label><input type="date" class="inp proc-dt" data-idx="${i}" value="${pr.dataExecucao||""}"></div>
+            <div><label class="lbl">Nº da OP ${requiredMode==='todos'?'*':''}</label><input type="text" class="inp proc-op" data-idx="${i}" value="${esc(pr.numOP||"")}"></div>
+          </div>
+        ` : ''}
+      </div>
+    `).join("");
+  };
+
+  window.__addProcessoFO050M = () => { procDraft.push({ nome:"Montagem", maquina:"", tempoProcesso:"", dataExecucao:"", numOP:"" }); document.getElementById("listaProcessosFO050M").innerHTML = window.__renderProcessosFO050M(); };
+  window.__remProcessoFO050M = (i) => { if(confirm("Remover este processo?")) { procDraft.splice(i, 1); document.getElementById("listaProcessosFO050M").innerHTML = window.__renderProcessosFO050M(); } };
+
+  window.__salvarFO050M = () => {
+    document.querySelectorAll('.proc-nome').forEach(el => procDraft[el.dataset.idx].nome = el.value.trim());
+    document.querySelectorAll('.proc-maq').forEach(el => procDraft[el.dataset.idx].maquina = el.value.trim());
+    if(requiredMode !== 'maquina') {
+      document.querySelectorAll('.proc-tp').forEach(el => procDraft[el.dataset.idx].tempoProcesso = el.value);
+      document.querySelectorAll('.proc-dt').forEach(el => procDraft[el.dataset.idx].dataExecucao = el.value);
+      document.querySelectorAll('.proc-op').forEach(el => procDraft[el.dataset.idx].numOP = el.value.trim());
+    }
+
+    if(requiredMode === 'maquina' || requiredMode === 'todos') {
+      if(fo.linhasMontagem.length === 0) { alert("Informe pelo menos uma linha de montagem."); return; }
+      if(procDraft.length === 0) { alert("Informe pelo menos um processo."); return; }
+    }
+    
+    if(requiredMode === 'todos') {
+      if(procDraft.some(pr => !pr.tempoProcesso || !pr.dataExecucao || !pr.numOP)) {
+        alert("Preencha todos os campos obrigatórios (Tempos, Data de execução e OP) para todos os processos.");
+        return;
+      }
+    }
+    
+    fo.processos = procDraft;
+    p.montagem.fo050 = fo;
+    salvarProjeto(p);
+    fecharModal();
+    if(callback) callback();
+    else if(viewAtual==="projeto") renderProjeto();
+  };
+  
+  modal.innerHTML = `<div class="modal p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+    <h2 class="text-lg font-bold mb-4">Dados FO050 (Montagem)</h2>
+    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <label class="lbl">Linhas de Montagem ${requiredMode!=='livre'?'* ':''}</label>
+      <div id="listaLinhasFO050M" class="mb-2 max-h-32 overflow-y-auto pr-2">${window.__renderLinhasFO050M()}</div>
+      <div class="flex gap-2">
+        <input id="novaLinhaFO050M" class="inp" placeholder="Nome da linha" onkeydown="if(event.key==='Enter') window.__addLinhaFO050M()">
+        <button class="btn btn-suave flex-none" onclick="window.__addLinhaFO050M()">+ Adicionar</button>
+      </div>
+    </div>
+    
+    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <div class="flex items-center justify-between mb-2">
+        <label class="lbl !mb-0">Processos ${requiredMode!=='livre'?'*':''}</label>
+        <button class="btn btn-suave !py-1 !px-2 text-xs" onclick="window.__addProcessoFO050M()">+ Adicionar Processo</button>
+      </div>
+      <div id="listaProcessosFO050M">${window.__renderProcessosFO050M()}</div>
+    </div>
+    
+    <div class="flex justify-end gap-2 mt-6 border-t pt-4">
+      <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primario font-bold px-6" onclick="window.__salvarFO050M()">Gravar Dados</button>
+    </div>
+  </div>`;
 }
 
 function abrirModalFO050(id, requiredMode, callback){

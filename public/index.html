@@ -140,7 +140,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.3</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.4</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -175,7 +175,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.3</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.4</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -429,6 +429,7 @@ const FAMILIAS = ["TERMINAL DE DIREÇÃO","PISTÃO DE FREIO","ARTICULAÇÃO AXIA
 // Componentes a serem desenvolvidos
 const COMPONENTES = [["pinoHaste","Pino/Haste"],["cachimboAlojamento","Cachimbo/Alojamento"],["copo","Copo"],["pistao","Pistão"]];
 const nomesComponentes = p => COMPONENTES.filter(([k])=>p.componentes && p.componentes[k]).map(([,l])=>l);
+const isPistao = p => !!((p.componentes && p.componentes.pistao) || nomesComponentes(p).includes("Pistão") || (p.familia && p.familia.toUpperCase().includes("PISTÃO")) || (p.produto && p.produto.toLowerCase().includes("pistão")));
 
 /* ============================================================
    2. ESTADO GLOBAL + UTILITÁRIOS
@@ -734,6 +735,9 @@ function temposPorEtapaMontagem(projs){
    ============================================================ */
 function projetosVisiveis(){
   let ps = estado.projetos.slice();
+  if (estado.moduloAtual === "montagem") {
+    ps = ps.filter(p => !isPistao(p));
+  }
   
   if (!estado.filtrosChip.includes("Todos")) {
     ps = ps.filter(p => {
@@ -964,7 +968,7 @@ function assumirTarefa(id){
 function renderDashboard(){
   let psRaw = filtroMes(projetosVisiveis());
   const isM = estado.moduloAtual === "montagem";
-  const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido) : psRaw;
+  const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x)) : psRaw;
   const cFunc = isM ? concluidoMontagem : concluido;
   const ltFunc = isM ? leadTimeMontagem : leadTime;
   const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
@@ -1053,7 +1057,7 @@ function renderKanban(){
   if (containerOld) kanbanScrollLeft = containerOld.scrollLeft;
   let ps = filtroMes(projetosVisiveis());
   const isM = (estado.moduloAtual === "montagem");
-  if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido);
+  if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x));
   
   ps.sort((a,b) => {
     const dPa = a.dataPrevista || "9999-99-99";
@@ -1096,7 +1100,7 @@ function alternarOrdemLista(){
 function renderLista(){
   let ps = filtroMes(projetosVisiveis());
   const isM = (estado.moduloAtual === "montagem");
-  if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido);
+  if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x));
 
   if(estado.ordLista==="cadastro-desc")      ps.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
   else if(estado.ordLista==="cadastro-asc")  ps.sort((a,b)=>(a.dataInicio||"").localeCompare(b.dataInicio||""));
@@ -1170,7 +1174,7 @@ function renderProjeto(){
   if(!p){irPara("dashboard");return}
   const isMontagem = (estado.moduloAtual === "montagem");
   
-  if (isMontagem && nomesComponentes(p).includes("Pistão")) {
+  if (isMontagem && isPistao(p)) {
     document.getElementById("view-projeto").innerHTML = `<button class="btn btn-suave mb-4 no-print" onclick="irPara(viewAnterior)">← Voltar</button><div class="p-8 text-center text-lg text-[var(--texto-2)]">O componente Pistão não gera fluxo de montagem.</div>`;
     return;
   }
@@ -1468,7 +1472,7 @@ function renderProjeto(){
 function renderGerencial(){
   let psRaw = filtroMes(projetosVisiveis());
   const isM = estado.moduloAtual === "montagem";
-  const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido) : psRaw;
+  const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x)) : psRaw;
   
   const med = isM ? temposPorEtapaMontagem(ps) : temposPorEtapa(ps);
   const mediaDe = etapas => {

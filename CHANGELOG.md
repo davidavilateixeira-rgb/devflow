@@ -1,6 +1,26 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.0.4
+---------------------------------------
+
+Data:
+03/08/2026
+
+Objetivo:
+Ocultar automaticamente itens do tipo Pistão / Pistão de Freio do módulo de Montagem (Kanban, Listas e Dashboard).
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Função utilitária `isPistao` para identificação precisa de componentes e famílias de pistão.
+
+Funcionalidades alteradas:
+- Filtragem automática em todas as telas e indicadores do módulo de Montagem para excluir pistões, mantendo o Kanban e métricas limpas e focadas exclusivamente em conjuntos montados.
+- Preservação integral do ciclo de desenvolvimento de pistões no módulo de Usinagem.
+
+---------------------------------------
 VERSÃO 2.0.3
 ---------------------------------------
 

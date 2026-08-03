@@ -140,7 +140,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.5</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.4</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -175,7 +175,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.5</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.4</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -905,11 +905,7 @@ const badgeStatus = s => ({
 }[s]||"b-cinza");
 
 function cardProjeto(p){
-  const isM = (estado.moduloAtual === "montagem");
-  const sem = semaforo(p, isM), st = isM ? statusDeMontagem(p) : statusDe(p);
-  const resp = isM ? (p.montagem && p.montagem.responsavel) : p.responsavel;
-  const dEtapa = isM ? diasNaEtapaMontagem(p) : diasNaEtapa(p);
-  const dAtraso = isM ? diasAtrasoMontagem(p) : diasAtraso(p);
+  const sem = semaforo(p), st = statusDe(p);
   return `<div class="card kb-card p-3 mb-2 surgir" onclick="irPara('projeto','${p.id}')">
     <div class="flex items-center justify-between mb-1.5">
       <div class="flex items-center gap-1.5"><span class="font-bold text-[13px]">${esc(p.codigo)}</span>${p.devId ? `<span class="badge b-laranja text-[9px] !px-1 leading-none">${p.devId}</span>` : ""}</div>
@@ -924,18 +920,18 @@ function cardProjeto(p){
       ${p.prioridade==="Alta"?'<span class="badge b-vermelho">Urgente</span>':""}
     </div>
     <div class="flex items-center justify-between text-[11px]" style="color:var(--texto-2)">
-      ${resp
+      ${p.responsavel
         ? `<span class="flex items-center gap-1">
-            <span class="w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center" style="background:#8A8A93">${esc(resp[0])}</span>
-            ${esc(resp)}
+            <span class="w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center" style="background:#8A8A93">${esc(p.responsavel[0])}</span>
+            ${esc(p.responsavel)}
           </span>`
-        : (isProduto() || isSomenteLeitura()
+        : (isProduto()
             ? `<span class="badge b-roxo">Aguardando técnico</span>`
             : `<button class="btn btn-primario !py-0.5 !px-2 !text-[11px] no-print" onclick="event.stopPropagation();assumirTarefa('${p.id}')">✋ Assumir tarefa</button>`)}
-      <span>${dEtapa}d na etapa</span>
+      <span>${diasNaEtapa(p)}d na etapa</span>
     </div>
     <div class="flex items-center justify-between text-[11px] mt-1" style="color:var(--texto-2)">
-      <span>Lançamento: <b style="color:${dAtraso>0?'var(--vermelho)':'var(--texto)'}">${fmt(p.dataPrevista)}</b></span>
+      <span>Lançamento: <b style="color:${diasAtraso(p)>0?'var(--vermelho)':'var(--texto)'}">${fmt(p.dataPrevista)}</b></span>
       <span class="badge ${badgeStatus(st)}">${st}</span>
     </div>
   </div>`;
@@ -948,53 +944,22 @@ function assumirTarefa(id){
   if(isSomenteLeitura()) return;
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
-  const isM = (estado.moduloAtual === "montagem");
-  if(isM){
-    if(!p.montagem) {
-      p.montagem = {
-        etapaAtual: 0,
-        necessitaComplexo: true,
-        historico: [{etapa:"Recebido", data: p.dataInicio || new Date().toISOString(), usuario: "Engenharia de Produto"}],
-        responsavel: "",
-        responsavelUid: "",
-        assumidoEm: "",
-        prazoAnalise: "",
-        codigoDesenhoConjunto: "",
-        codigoSolicitacao: "",
-        dataFabricacao: "",
-        ferramentas: [],
-        comentarios: []
-      };
+  if(p.responsavel){ alert("Este desenvolvimento já foi assumido por "+p.responsavel+"."); return; }
+  // Ao assumir, o técnico deve informar obrigatoriamente um prazo para a análise rápida
+  pedirCampo("Assumir "+p.codigo, "Prazo para a análise rápida", "date", p.prazoAnalise, (v)=>{
+    p.responsavel = estado.usuario.nome;
+    p.responsavelUid = estado.usuario.uid;
+    p.assumidoEm = new Date().toISOString();
+    p.prazoAnalise = v;
+    // "Recebido" é concluído automaticamente ao assumir; a Análise passa a ser a etapa atual
+    if(p.etapaAtual===0){
+      const flx = fluxoDe(p);
+      p.etapaAtual = 1;
+      p.historico.push({etapa:flx[1], data:new Date().toISOString(), usuario:estado.usuario.nome});
     }
-    if(p.montagem.responsavel){ alert("Este desenvolvimento na montagem já foi assumido por "+p.montagem.responsavel+"."); return; }
-    pedirCampo("Assumir "+p.codigo+" (Montagem)", "Prazo para a análise rápida de montagem", "date", p.montagem.prazoAnalise, (v)=>{
-      p.montagem.responsavel = estado.usuario.nome;
-      p.montagem.responsavelUid = estado.usuario.uid;
-      p.montagem.assumidoEm = new Date().toISOString();
-      p.montagem.prazoAnalise = v;
-      if(p.montagem.etapaAtual===0){
-        p.montagem.etapaAtual = 1;
-        p.montagem.historico.push({etapa:"Análise", data:new Date().toISOString(), usuario:estado.usuario.nome});
-      }
-      p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Assumiu o desenvolvimento na Montagem. Prazo da análise: "+fmtL(v)+"."});
-      salvarProjeto(p);
-    });
-  } else {
-    if(p.responsavel){ alert("Este desenvolvimento já foi assumido por "+p.responsavel+"."); return; }
-    pedirCampo("Assumir "+p.codigo, "Prazo para a análise rápida", "date", p.prazoAnalise, (v)=>{
-      p.responsavel = estado.usuario.nome;
-      p.responsavelUid = estado.usuario.uid;
-      p.assumidoEm = new Date().toISOString();
-      p.prazoAnalise = v;
-      if(p.etapaAtual===0){
-        const flx = fluxoDe(p);
-        p.etapaAtual = 1;
-        p.historico.push({etapa:flx[1], data:new Date().toISOString(), usuario:estado.usuario.nome});
-      }
-      p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Assumiu o desenvolvimento. Prazo da análise: "+fmtL(v)+"."});
-      salvarProjeto(p);
-    });
-  }
+    p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Assumiu o desenvolvimento. Prazo da análise: "+fmtL(v)+"."});
+    salvarProjeto(p);
+  });
 }
 
 /* ============================================================
@@ -1244,10 +1209,7 @@ function renderProjeto(){
   const pend = [];
   if(!isConcluidoGlobal(p, isMontagem)){
     if(!obj.responsavel) pend.push("Nenhum técnico assumiu este desenvolvimento ainda.");
-    if(isMontagem) {
-      if(diasAtrasoMontagem(p)>0) pend.push(`Projeto atrasado em <b>${diasAtrasoMontagem(p)} dias</b> em relação à previsão de lançamento.`);
-      if(diasNaEtapaMontagem(p) > (+document.getElementById("cfgDiasAlerta").value||5)) pend.push(`Parado há <b>${diasNaEtapaMontagem(p)} dias</b> na etapa "${etapaNomeMontagem(p)}".`);
-    } else {
+    if(!isMontagem) {
       if(diasAtraso(p)>0) pend.push(`Projeto atrasado em <b>${diasAtraso(p)} dias</b> em relação à previsão de lançamento.`);
       if(diasNaEtapa(p) > (+document.getElementById("cfgDiasAlerta").value||5)) pend.push(`Parado há <b>${diasNaEtapa(p)} dias</b> na etapa "${etapaNome(p)}".`);
       if(p.necessita.fixacao && ["Solicitação de Compra","Aprovação SC"].includes(etapaNome(p)) && !p.numSC) pend.push("Número da SC não registrado.");
@@ -1258,24 +1220,12 @@ function renderProjeto(){
 
   const r = p.refs||{};
   const info = isMontagem ? [
-    ["Componentes",nomesComponentes(p).join(", ")||"—"],
     ["Ref. produto final",esc(p.codigo)],
-    ["Ref. Alojamento",esc(r.alojamento)||"—"],["Ref. Forjado Alojamento",esc(r.forjadoAlojamento)||"—"],
-    ["Ref. Pino",esc(r.pino)||"—"],["Ref. Forjado Pino",esc(r.forjadoPino)||"—"],
-    ["NP de Usinagem",esc(r.npUsinagem)||"—"],
-    ["Cliente",esc(p.cliente)||"—"],["Família",esc(p.familia)||"—"],["Tipo",esc(p.tipo)],
-    ["Responsável Montagem",obj.responsavel?esc(obj.responsavel):"—"],
-    ["Responsável Usinagem",p.responsavel?esc(p.responsavel):"—"],
-    ["Prioridade",esc(p.prioridade)],
-    ["Cadastro",fmtL(p.dataInicio)],
-    ["Previsão de lançamento",fmtL(p.dataPrevista)],
-    ["Data real",obj.dataReal?fmtL(obj.dataReal):"—"],
     ["Código Desenho Conjunto",esc(obj.codigoDesenhoConjunto)||"—"],
     ["Código Solicitação Fab.",esc(obj.codigoSolicitacao)||"—"],
     ["Data Prev. Fabricação",obj.dataFabricacao?fmtL(obj.dataFabricacao):"—"],
-    ["Análise prevista",obj.prazoAnalise?fmtL(obj.prazoAnalise):"—"],
-    ["Ferramentas", (obj.ferramentas && obj.ferramentas.length) ? obj.ferramentas.join(", ") : "—"],
-    ["Cadastrado por",esc(p.criadoPor)||"—"]
+    ["Responsável Montagem",obj.responsavel?esc(obj.responsavel):"—"],
+    ["Ferramentas", (obj.ferramentas && obj.ferramentas.length) ? obj.ferramentas.join(", ") : "—"]
   ] : [
     ["Componentes",nomesComponentes(p).join(", ")||"—"],
     ["Ref. produto final",esc(p.codigo)],["Ref. Alojamento",esc(r.alojamento)||"—"],["Ref. Forjado Alojamento",esc(r.forjadoAlojamento)||"—"],
@@ -1288,11 +1238,7 @@ function renderProjeto(){
   ];
 
   const indicadores = isMontagem ? [
-    ["Dias desde o cadastro",diasDesdeInicio(p)+"d"],
-    ["Dias na etapa",diasNaEtapaMontagem(p)+"d"],
-    ["Lead Time",leadTimeMontagem(p)+"d"],
-    ["Prazo restante",(concluidoMontagem(p)?"—":(p.dataPrevista?prazoRestante(p)+"d":"—"))],
-    ["Dias em atraso",diasAtrasoMontagem(p)+"d"]
+    ["Dias na etapa", (obj.historico && obj.historico[obj.etapaAtual] ? dias(new Date(obj.historico[obj.etapaAtual].data), HOJE) : 0) + "d"]
   ] : [
     ["Dias desde o cadastro",diasDesdeInicio(p)+"d"],["Dias na etapa",diasNaEtapa(p)+"d"],
     ["Lead Time",leadTime(p)+"d"],["Prazo restante",(concluido(p)?"—":(p.dataPrevista?prazoRestante(p)+"d":"—"))],["Dias em atraso",diasAtraso(p)+"d"]
@@ -1304,13 +1250,13 @@ function renderProjeto(){
       <div>
         <div class="flex items-center gap-3">
           <h1 class="text-xl font-bold">${p.devId ? `<span class="badge b-laranja">${p.devId}</span>` : ""} ${esc(p.codigo)}</h1>
-          <span class="dot dot-${semaforo(p, isMontagem)}"></span>
+          <span class="dot dot-${semaforo(p)}"></span>
           <span class="badge ${badgeStatus(st)}">${st}</span>
           ${p.prioridade==="Alta"?'<span class="badge b-vermelho">Urgente</span>':""}
         </div>
         <p class="text-[13px] mt-1" style="color:var(--texto-2)">${esc(p.descricao)}</p>
         ${p.observacao?`<div class="card !shadow-none p-3 mt-2 text-[12.5px]" style="background:var(--laranja-claro);border-color:#F5CBAF"><b>Observação:</b> ${esc(p.observacao)}</div>`:""}
-        <div class="mt-2 flex gap-1.5 flex-wrap">${nomesComponentes(p).map(l=>`<span class="badge b-azul">${l}</span>`).join(" ")} ${!isMontagem?nec:""}</div>
+        ${!isMontagem ? `<div class="mt-2 flex gap-1.5 flex-wrap">${nomesComponentes(p).map(l=>`<span class="badge b-azul">${l}</span>`).join(" ")} ${nec}</div>` : ""}
       </div>
       <div class="flex gap-2 no-print flex-wrap items-center">
         ${isAdmin()?`<select class="inp !w-auto !text-[12px]" title="Direcionar a um técnico" onchange="atribuirTecnico('${p.id}',this.value)">
@@ -1777,17 +1723,15 @@ function atribuirTecnico(id, uid){
   if(!isAdmin()) return;
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
-  const isM = (estado.moduloAtual === "montagem");
-  const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(!uid){
-    if(!confirm("Remover o responsável de "+p.codigo+" ("+(isM?"Montagem":"Usinagem")+")? O desenvolvimento volta para \"Aguardando Técnico\".")) { renderTudo(); return; }
-    obj.responsavel=""; obj.responsavelUid=""; obj.assumidoEm="";
-    p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Removeu o responsável"+(isM?" na Montagem.":".")});
+    if(!confirm("Remover o responsável de "+p.codigo+"? O desenvolvimento volta para \"Aguardando Técnico\".")) { renderTudo(); return; }
+    p.responsavel=""; p.responsavelUid=""; p.assumidoEm="";
+    p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Removeu o responsável."});
   }else{
     const u = estado.usuarios.find(x=>x.uid===uid);
     if(!u) return;
-    obj.responsavel = u.nome; obj.responsavelUid = u.uid; obj.assumidoEm = new Date().toISOString();
-    p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Direcionou o desenvolvimento"+(isM?" na Montagem ":" ")+"para "+u.nome+"."});
+    p.responsavel = u.nome; p.responsavelUid = u.uid; p.assumidoEm = new Date().toISOString();
+    p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome, texto:"Direcionou o desenvolvimento para "+u.nome+"."});
   }
   salvarProjeto(p);
 }
@@ -2194,30 +2138,23 @@ function reabrirEtapa(id, i){
 function voltarEtapa(id){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p || !podeGerenciar(p)) return;
-  const isM = (estado.moduloAtual === "montagem");
-  const obj = isM ? p.montagem : p;
-  if(!obj || obj.etapaAtual<=0) return;
+  if(p.etapaAtual<=0) return;
   
-  const flx = isM ? (obj.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES) : fluxoDe(p);
-  const alvo = obj.etapaAtual - 1;
-  obj.etapaAtual = alvo;
+  const flx = fluxoDe(p);
+  const alvo = p.etapaAtual - 1;
+  p.etapaAtual = alvo;
   
-  if(obj.historico) {
-    const idxHist = obj.historico.findIndex(h => h.etapa === flx[alvo]);
+  if(p.historico) {
+    const idxHist = p.historico.findIndex(h => h.etapa === flx[alvo]);
     if(idxHist >= 0) {
-      obj.historico = obj.historico.slice(0, idxHist + 1);
+      p.historico = p.historico.slice(0, idxHist + 1);
     } else {
-      if(obj.historico.length > 0) obj.historico.pop();
-      obj.historico.push({etapa: flx[alvo], data: new Date().toISOString(), usuario: estado.usuario.nome || "Sistema"});
+      if(p.historico.length > 0) p.historico.pop();
+      p.historico.push({etapa: flx[alvo], data: new Date().toISOString(), usuario: estado.usuario.nome || "Sistema"});
     }
   }
-  if(isM){
-    obj.dataReal="";
-  } else {
-    p.dataReal="";
-    limparEtapasDesfeitas(p, alvo, flx);
-  }
-  p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome || "Sistema", texto:`Reabriu a etapa "${flx[alvo]}"${isM?" na Montagem":""}.`});
+  p.dataReal="";
+  limparEtapasDesfeitas(p, alvo, flx);
   salvarProjeto(p);
 }
 function addComentario(id){

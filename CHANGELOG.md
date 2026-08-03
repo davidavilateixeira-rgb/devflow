@@ -1,6 +1,28 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.0.5
+---------------------------------------
+
+Data:
+03/08/2026
+
+Objetivo:
+Permitir que técnicos de montagem assumam tarefas independentemente da usinagem, exibir dados cadastrais completos e indicadores no módulo de montagem, e suportar retorno de etapa na montagem.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Suporte dedicado para técnicos de montagem assumirem o desenvolvimento na Montagem (`p.montagem.responsavel`), informando prazo de análise e avançando a etapa de Recebido para Análise na Montagem de forma 100% independente da Usinagem.
+- Exibição completa de todos os dados do produto (componentes, referências de alojamento, pino, forjados, NP usinagem, cliente, família, tipo, prioridade, responsável de usinagem e montagem, datas) na tela de detalhes da Montagem.
+- Exibição de todos os 5 indicadores principais no cabeçalho da Montagem (Dias desde o cadastro, Dias na etapa, Lead Time, Prazo restante e Dias em atraso).
+- Suporte a "Voltar etapa" e "Direcionar a um técnico" (Admin) no módulo de Montagem.
+
+Funcionalidades alteradas:
+- Cards do Kanban e linhas da Lista agora refletem o responsável, dias na etapa e status do módulo de Montagem quando visualizados no módulo de Montagem.
+
+---------------------------------------
 VERSÃO 2.0.4
 ---------------------------------------
 

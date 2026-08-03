@@ -1,6 +1,26 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.0.6
+---------------------------------------
+
+Data:
+03/08/2026
+
+Objetivo:
+Corrigir o retrocesso de etapas no módulo de Montagem (tanto pelo clique na etapa anterior do checklist quanto pelo botão "Voltar etapa").
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Função utilitária `limparEtapasDesfeitasMontagem` para redefinir campos e prazos ao retroceder etapas da montagem.
+
+Funcionalidades alteradas:
+- Ajuste na função `reabrirEtapa` para identificar o módulo atual (Montagem vs Usinagem), solicitar o motivo do retrocesso e atualizar corretamente o fluxo, histórico e dados da montagem.
+- Ajuste na função `voltarEtapa` para suportar limpeza de campos e reabertura de projetos concluídos na montagem.
+
+---------------------------------------
 VERSÃO 2.0.5
 ---------------------------------------
 

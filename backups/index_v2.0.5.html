@@ -140,7 +140,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.6</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.5</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -175,7 +175,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.6</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.5</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -1319,7 +1319,7 @@ function renderProjeto(){
         </select>`:""}
         ${!obj.responsavel && !isSomenteLeitura()?`<button class="btn btn-primario" onclick="assumirTarefa('${p.id}')">✋ Assumir tarefa</button>`:""}
         ${gerencia && !isMontagem?`<button class="btn btn-suave" onclick="abrirCadastro('${p.id}')">✎ Editar</button>`:""}
-        ${gerencia && obj.etapaAtual>0 ? `<button class="btn btn-suave" onclick="voltarEtapa('${p.id}')">↩ Voltar etapa</button>`:""}
+        ${gerencia && obj.etapaAtual>0 && !isConcluidoGlobal(p, isMontagem) ? `<button class="btn btn-suave" onclick="voltarEtapa('${p.id}')">↩ Voltar etapa</button>`:""}
         ${isAdmin() && !isMontagem?`<button class="btn btn-suave" onclick="duplicarProjeto('${p.id}')">⧉ Duplicar</button>`:""}
         ${isAdmin() && !isMontagem?`<button class="btn btn-suave" style="color:var(--vermelho);border-color:#F5C6C0" onclick="excluirProjeto('${p.id}')">🗑 Excluir</button>`:""}
       </div>
@@ -2127,74 +2127,11 @@ function concluirEtapa(id){
     efetivar();
   }
 }
-const limparEtapasDesfeitasUsinagem = (p, alvo, flx) => {
-  const etapasDesfeitas = flx.slice(alvo);
-  if(etapasDesfeitas.includes("Recebido") || etapasDesfeitas.includes("Análise")) {
-    p.prazoAnalise = "";
-    p.prazoProjetoFixacao = "";
-    p.necessita.fixacao = false;
-    p.prazoFornecedor = "";
-    p.numSC = "";
-    p.numOC = "";
-    p.ferramentas = [];
-  } else if(etapasDesfeitas.includes("Projeto da Fixação")) {
-    p.prazoProjetoFixacao = "";
-    p.ferramentas = [];
-    p.prazoFornecedor = "";
-    p.numSC = "";
-    p.numOC = "";
-  } else if(etapasDesfeitas.includes("Solicitação de Compra")) {
-    p.numSC = "";
-    p.numOC = "";
-    p.prazoFornecedor = "";
-  } else if(etapasDesfeitas.includes("Ordem de Compra")) {
-    p.numOC = "";
-    p.prazoFornecedor = "";
-  } else if(etapasDesfeitas.includes("Aprovação OC")) {
-    p.prazoFornecedor = "";
-  }
-};
-
-const limparEtapasDesfeitasMontagem = (m, alvo, flx) => {
-  const etapasDesfeitas = flx.slice(alvo);
-  if(etapasDesfeitas.includes("Recebido") || etapasDesfeitas.includes("Análise")) {
-    m.prazoAnalise = "";
-    m.ferramentas = [];
-    m.codigoDesenhoConjunto = "";
-    m.codigoSolicitacao = "";
-    m.dataFabricacao = "";
-    m.dadosFO050 = null;
-  } else if(etapasDesfeitas.includes("Projeto de Ferramentas")) {
-    m.ferramentas = [];
-    m.codigoDesenhoConjunto = "";
-    m.codigoSolicitacao = "";
-    m.dataFabricacao = "";
-    m.dadosFO050 = null;
-  } else if(etapasDesfeitas.includes("Criar Desenho de Conjunto no ERP")) {
-    m.codigoDesenhoConjunto = "";
-    m.codigoSolicitacao = "";
-    m.dataFabricacao = "";
-    m.dadosFO050 = null;
-  } else if(etapasDesfeitas.includes("Solicitação de Fabricação")) {
-    m.codigoSolicitacao = "";
-    m.dataFabricacao = "";
-    m.dadosFO050 = null;
-  } else if(etapasDesfeitas.includes("Fabricação")) {
-    m.dataFabricacao = "";
-    m.dadosFO050 = null;
-  } else if(etapasDesfeitas.includes("Validação/FO050")) {
-    m.dadosFO050 = null;
-  }
-};
-
 // Desmarca uma etapa já concluída: o desenvolvimento volta a ficar nela e as datas seguintes são removidas
 function reabrirEtapa(id, i){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p || !podeGerenciar(p)) return;
-  const isM = (estado.moduloAtual === "montagem");
-  const obj = isM ? p.montagem : p;
-  if(!obj) return;
-  const flx = isM ? (obj.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES) : fluxoDe(p);
+  const flx = fluxoDe(p);
   const alvo = i;
   
   const msg = `Desmarcar a etapa "${flx[alvo]}" e voltar o projeto para cá?\n\nAs datas das etapas seguintes serão removidas.\n\nInforme o MOTIVO do retrocesso:`;
@@ -2206,29 +2143,54 @@ function reabrirEtapa(id, i){
   p.comentarios.push({
     usuario: estado.usuario.nome || "Sistema",
     data: new Date().toISOString(),
-    texto: `Retrocedeu o desenvolvimento para a etapa "${flx[alvo]}"${isM?" na Montagem":""}. Motivo: ${motivo.trim()}`
+    texto: `Retrocedeu o desenvolvimento para a etapa "${flx[alvo]}". Motivo: ${motivo.trim()}`
   });
   
-  obj.etapaAtual = alvo;
-  if(!obj.historico) obj.historico = [];
-  const idxHist = obj.historico.findIndex(h => h.etapa === flx[alvo]);
+  p.etapaAtual = alvo;
+  if(!p.historico) p.historico = [];
+  const idxHist = p.historico.findIndex(h => h.etapa === flx[alvo]);
   if(idxHist >= 0) {
-    obj.historico = obj.historico.slice(0, idxHist + 1);
+    p.historico = p.historico.slice(0, idxHist + 1);
   } else {
-    obj.historico.push({etapa: flx[alvo], data: new Date().toISOString(), usuario: estado.usuario.nome || "Sistema"});
+    p.historico.push({etapa: flx[alvo], data: new Date().toISOString(), usuario: estado.usuario.nome || "Sistema"});
   }
+  p.dataReal = "";
   
-  if(isM){
-    obj.dataReal = "";
-    limparEtapasDesfeitasMontagem(obj, alvo, flx);
-  } else {
-    p.dataReal = "";
-    limparEtapasDesfeitasUsinagem(p, alvo, flx);
-  }
+  // Limpa os dados e prazos vinculados às etapas que estão sendo desfeitas
+  const limparEtapasDesfeitas = (p, alvo, flx) => {
+    const etapasDesfeitas = flx.slice(alvo);
+    if(etapasDesfeitas.includes("Recebido") || etapasDesfeitas.includes("Análise")) {
+      p.prazoAnalise = "";
+      p.prazoProjetoFixacao = "";
+      p.necessita.fixacao = false;
+      p.prazoFornecedor = "";
+      p.numSC = "";
+      p.numOC = "";
+      p.ferramentas = [];
+    } else if(etapasDesfeitas.includes("Projeto da Fixação")) {
+      p.prazoProjetoFixacao = "";
+      p.ferramentas = [];
+      p.prazoFornecedor = "";
+      p.numSC = "";
+      p.numOC = "";
+    } else if(etapasDesfeitas.includes("Solicitação de Compra")) {
+      p.numSC = "";
+      p.numOC = "";
+      p.prazoFornecedor = "";
+    } else if(etapasDesfeitas.includes("Ordem de Compra")) {
+      p.numOC = "";
+      p.prazoFornecedor = "";
+    } else if(etapasDesfeitas.includes("Aprovação OC")) {
+      p.prazoFornecedor = "";
+    }
+  };
+
+  limparEtapasDesfeitas(p, alvo, flx);
   
+  if(!p.comentarios) p.comentarios = [];
+  p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome || "Sistema", texto:`Reabriu a etapa "${flx[alvo]}".`});
   salvarProjeto(p);
 }
-
 function voltarEtapa(id){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p || !podeGerenciar(p)) return;
@@ -2251,13 +2213,11 @@ function voltarEtapa(id){
   }
   if(isM){
     obj.dataReal="";
-    limparEtapasDesfeitasMontagem(obj, alvo, flx);
   } else {
     p.dataReal="";
-    limparEtapasDesfeitasUsinagem(p, alvo, flx);
+    limparEtapasDesfeitas(p, alvo, flx);
   }
-  if(!p.comentarios) p.comentarios = [];
-  p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome || "Sistema", texto:`Voltou para a etapa "${flx[alvo]}"${isM?" na Montagem":""}.`});
+  p.comentarios.push({data:new Date().toISOString(), usuario:estado.usuario.nome || "Sistema", texto:`Reabriu a etapa "${flx[alvo]}"${isM?" na Montagem":""}.`});
   salvarProjeto(p);
 }
 function addComentario(id){

@@ -1,4 +1,24 @@
-﻿# Histórico de Versões (Changelog)
+# Histórico de Versões (Changelog)
+
+---------------------------------------
+VERSÃO 2.0.3
+---------------------------------------
+
+Data:
+03/08/2026
+
+Objetivo:
+Inclusão explícita das opções "Técnico Usinagem" e "Técnico Montagem" no cadastro e edição de usuários.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Opção explícita de perfil "Técnico Montagem" (`tecnico_montagem`) no cadastro e na edição de usuários.
+- Renomeação da opção "Técnico" para "Técnico Usinagem" (`tecnico`) para clareza na distinção dos papéis.
+
+Funcionalidades alteradas:
+- Atualização visual dos badges de usuários para exibir o rótulo preciso de acordo com a área do técnico (Usinagem vs Montagem).
 
 ---------------------------------------
 VERSÃO 2.0.2

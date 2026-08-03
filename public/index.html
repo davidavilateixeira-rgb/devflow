@@ -140,7 +140,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.2</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.0.3</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -175,7 +175,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.2</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.0.3</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -1594,7 +1594,7 @@ function renderUsuarios(){
           <div><label class="lbl">Nome *</label><input id="u-nome" class="inp" placeholder="Ex.: Oscar"></div>
           <div><label class="lbl">E-mail *</label><input id="u-email" type="email" class="inp" placeholder="oscar@empresa.com"></div>
           <div><label class="lbl">Senha inicial * (mín. 6 caracteres)</label><input id="u-senha" type="text" class="inp" placeholder="Senha que o técnico usará para entrar"></div>
-          <div><label class="lbl">Papel</label><select id="u-papel" class="inp"><option value="tecnico">Técnico</option><option value="produto">Engenharia de Produto (visualiza + cadastra)</option><option value="visitante">Visitante (apenas visualização)</option><option value="admin">Administrador</option></select></div>
+          <div><label class="lbl">Papel</label><select id="u-papel" class="inp"><option value="tecnico">Técnico Usinagem</option><option value="tecnico_montagem">Técnico Montagem</option><option value="produto">Engenharia de Produto (visualiza + cadastra)</option><option value="visitante">Visitante (apenas visualização)</option><option value="admin">Administrador</option></select></div>
           <div id="u-msg" class="hidden text-[12px] font-medium rounded-md p-2"></div>
           <button id="u-botao" class="btn btn-primario" onclick="criarUsuario()">Criar usuário</button>
           <div class="text-[11px]" style="color:var(--texto-2)">O técnico entra com esse e-mail/senha e pode trocá-la depois em "Esqueci minha senha".</div>
@@ -1609,7 +1609,7 @@ function renderUsuarios(){
               <div class="text-[13px] font-semibold truncate">${esc(u.nome)} ${u.uid===estado.usuario.uid?'<span class="text-[10px] font-normal" style="color:var(--texto-2)">(você)</span>':''}</div>
               <div class="text-[11px] truncate" style="color:var(--texto-2)">${esc(u.email)}</div>
             </div>
-            ${u.ativo===false?'<span class="badge b-vermelho">Desativado</span>':`<span class="badge ${u.papel==='admin'?'b-laranja':(u.papel==='produto'?'b-roxo':(u.papel==='visitante'?'b-cinza':'b-azul'))}">${u.papel==='admin'?'Admin':(u.papel==='produto'?'Eng. Produto':(u.papel==='visitante'?'Visitante':'Técnico'))}</span>`}
+            ${u.ativo===false?'<span class="badge b-vermelho">Desativado</span>':`<span class="badge ${u.papel==='admin'?'b-laranja':(u.papel==='produto'?'b-roxo':(u.papel==='visitante'?'b-cinza':(u.papel==='tecnico_montagem'?'b-amarelo':'b-azul')))}">${rotuloPapel(u.papel)}</span>`}
             <div class="flex gap-1 flex-none">
               <button class="btn btn-suave !p-1.5 !text-[12px]" title="Editar nome/papel" onclick="editarUsuario('${u.uid}')">✎</button>
               <button class="btn btn-suave !p-1.5 !text-[12px]" title="Enviar e-mail de redefinição de senha" onclick="resetSenhaUsuario('${u.uid}')">🔑</button>
@@ -1663,7 +1663,8 @@ function editarUsuario(uid){
       <div><label class="lbl">Nome</label><input id="eu-nome" class="inp" value="${esc(u.nome)}"></div>
       <div><label class="lbl">E-mail (não editável)</label><input class="inp" value="${esc(u.email)}" disabled style="opacity:.6"></div>
       <div><label class="lbl">Papel</label><select id="eu-papel" class="inp">
-        <option value="tecnico" ${u.papel==="tecnico"?"selected":""}>Técnico</option>
+        <option value="tecnico" ${u.papel==="tecnico"?"selected":""}>Técnico Usinagem</option>
+        <option value="tecnico_montagem" ${u.papel==="tecnico_montagem"?"selected":""}>Técnico Montagem</option>
         <option value="produto" ${u.papel==="produto"?"selected":""}>Engenharia de Produto (visualiza + cadastra)</option>
         <option value="visitante" ${u.papel==="visitante"?"selected":""}>Visitante (apenas visualização)</option>
         <option value="admin" ${u.papel==="admin"?"selected":""}>Administrador</option></select></div>

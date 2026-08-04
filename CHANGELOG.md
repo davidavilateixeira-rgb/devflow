@@ -1,6 +1,26 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.2.0
+---------------------------------------
+
+Data:
+04/08/2026
+
+Objetivo:
+Implementação da nova aba de navegação lateral "Status Report" executivo com acompanhamento rápido de prazos, etapas atuais, próximas etapas, alertas visuais de atraso e recurso de cópia rápida para WhatsApp/E-mail.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Nova aba "Status Report" no menu lateral para visualização sintética e executiva de todos os desenvolvimentos ativos e concluídos (tanto na Usinagem quanto na Montagem).
+- Cards superiores de resumo com filtragem por clique: Total Cadastrado, 🔴 Em Atraso, 🟡 Vencendo em Breve, 🟢 No Prazo e ✅ Concluídos.
+- Tabela executiva com colunas de: Status/Semáforo, Produto/Referência, Responsável com avatar, Mini Barra de Progresso (%) e etapas concluídas, Etapa Atual com contagem de dias parado, Prazo da Etapa Atual com badges destacados e cálculo de atraso, Próxima Etapa do fluxo, Última Atualização/Comentário recente e Ação Rápida de abertura.
+- Botão "Copiar Resumo (WhatsApp / E-mail)" com geração automática de texto executivo pronto para colar e enviar para a equipe ou gerência.
+- Botão "Imprimir / PDF" para emissão e exportação rápida de relatórios de reunião.
+
+---------------------------------------
 VERSÃO 2.1.0
 ---------------------------------------
 

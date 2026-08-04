@@ -1,6 +1,25 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.0
+---------------------------------------
+
+Data:
+04/08/2026
+
+Objetivo:
+Integração da barra de filtros rápidos multi-seleção (Lançamento, Responsável, Família e Status) na nova aba de Status Report Executivo, permitindo segmentações dinâmicas e sincronizadas tanto para o módulo de Usinagem quanto de Montagem.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Ativação da barra superior de segmentação multi-seleção (`filtros-bar`) na view `Status Report`.
+- Suporte a filtros combinados de mês de lançamento, múltiplos responsáveis, múltiplas famílias de produtos e status do desenvolvimento.
+- Compatibilidade automática com o módulo de Montagem (filtrando os responsáveis específicos e status de montagem).
+- Botão "Limpar filtros" para reset rápido de todas as seleções ativas.
+
+---------------------------------------
 VERSÃO 2.2.1
 ---------------------------------------
 

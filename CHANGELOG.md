@@ -1,6 +1,29 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.1.0
+---------------------------------------
+
+Data:
+04/08/2026
+
+Objetivo:
+Implementar solicitação obrigatória de prazo ao avançar etapas no checklist, sincronização bidirecional do card de ferramentas desenvolvidas, gravação de motivos de retrocesso nos comentários e segmentação precisa dos indicadores de desempenho por módulo (Montagem vs Usinagem).
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Solicitação interativa de prazo limite para a próxima etapa em cada conclusão de item do checklist (tanto na Usinagem quanto na Montagem), armazenando os prazos por etapa em `prazosEtapas`.
+- Cálculo e segmentação dedicada de indicadores de tempo para a Montagem (`diasNaEtapaMontagem`, `leadTimeMontagem`, `diasAtrasoMontagem`).
+- Exibição de prazos individuais por etapa no checklist de Montagem e Usinagem.
+
+Funcionalidades alteradas:
+- Registro automático nos comentários (do módulo correspondente) ao avançar ou retroceder etapas, incluindo o motivo informado no retrocesso.
+- Vinculação correta do card "Ferramentas desenvolvidas" ao array do módulo ativo (`p.montagem.ferramentas` na Montagem e `p.ferramentas` na Usinagem).
+- Roteamento modular de comentários, anexos e ferramentas para garantir total independência entre Montagem e Usinagem.
+
+---------------------------------------
 VERSÃO 2.0.6
 ---------------------------------------
 

@@ -1,6 +1,25 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.2.1
+---------------------------------------
+
+Data:
+04/08/2026
+
+Objetivo:
+Ajustes visuais na aba Status Report Executivo conforme alinhamento com usuário: remoção total de emojis nos cards, badges e textos; remoção dos botões de exportação rápida (WhatsApp/E-mail e PDF) e remoção da coluna "Ação" para maximizar a área útil da tabela.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades alteradas:
+- Substituição de emojis por indicadores de status limpos (dots coloridos padronizados do sistema nos cards superiores e badges profissionais na tabela).
+- Remoção dos botões "Copiar Resumo (WhatsApp / E-mail)" e "Imprimir / PDF" do cabeçalho da visualização.
+- Remoção da coluna redundante "Ação" da tabela executiva (a navegação para os detalhes do projeto já é feita diretamente clicando em qualquer ponto da linha).
+- Otimização do espaçamento e largura das colunas de Produto/Referência e Última Atualização.
+
+---------------------------------------
 VERSÃO 2.2.0
 ---------------------------------------
 

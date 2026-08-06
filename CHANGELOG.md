@@ -1,6 +1,23 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.1
+---------------------------------------
+
+Data:
+06/08/2026
+
+Objetivo:
+Inclusão da opção "Internalização" no campo de seleção Tipo no formulário de criação e edição de desenvolvimentos.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas:
+- Nova opção de classificação "Internalização" disponibilizada no dropdown `Tipo` (ao lado de Novo, Alteração, Melhoria e BGI).
+- Constante global `TIPOS` padronizada na aplicação.
+
+---------------------------------------
 VERSÃO 2.3.0
 ---------------------------------------
 

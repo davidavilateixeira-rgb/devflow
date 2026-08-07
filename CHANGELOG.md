@@ -1,6 +1,22 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.4
+---------------------------------------
+
+Data:
+07/08/2026
+
+Objetivo:
+Inclusão de nota orientativa de usabilidade e navegação (scroll, arrasto e setas) no cabeçalho do Kanban.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas / Correções:
+- Adicionado banner informativo discreto no cabeçalho do Kanban instruindo os usuários sobre todas as formas de rolagem horizontal disponíveis (Roda do mouse / Scroll, Arraste com cursor e Botões de setas).
+
+---------------------------------------
 VERSÃO 2.3.3
 ---------------------------------------
 

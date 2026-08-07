@@ -1,6 +1,24 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.3
+---------------------------------------
+
+Data:
+07/08/2026
+
+Objetivo:
+Correção no cálculo de diferença em dias de prazos e alinhamento dos indicadores visuais no Status Report.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas / Correções:
+- Criação da função utilitária `diffDiasData()` para cálculo exato de dias corridos entre a data atual (zerada à meia-noite) e a data-alvo.
+- Correção de cálculo no Status Report: prazos de ontem agora são identificados corretamente como "1d em atraso", prazos de hoje como "Vence hoje" e prazos de amanhã como "Vence em 1d".
+- Alinhamento dos pontos indicadores de status (Semáforo da tabela) com o status real do prazo (Atrasado = Vermelho, Vencendo em breve = Amarelo, No prazo = Verde).
+
+---------------------------------------
 VERSÃO 2.3.2
 ---------------------------------------
 

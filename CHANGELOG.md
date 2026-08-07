@@ -1,6 +1,25 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.2
+---------------------------------------
+
+Data:
+07/08/2026
+
+Objetivo:
+Melhorias ergonômicas e correção de usabilidade no scroll horizontal do quadro Kanban.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas / Correções:
+- Suporte a rolagem horizontal via roda do mouse (Mouse Wheel) ao passar o cursor sobre o quadro Kanban.
+- Botões de navegação rápida "Esquerda" e "Direita" adicionados ao cabeçalho do Kanban.
+- Suporte a arraste com o mouse (Grab & Drag to scroll) ao clicar e arrastar em áreas livres do Kanban.
+- Barra de rolagem horizontal com estilo aprimorado e trilha visível (#kanbanContainer).
+
+---------------------------------------
 VERSÃO 2.3.1
 ---------------------------------------
 

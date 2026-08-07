@@ -1,6 +1,23 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.5
+---------------------------------------
+
+Data:
+07/08/2026
+
+Objetivo:
+Restauração da rolagem vertical nativa da página e refinamento da navegação horizontal no Kanban.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas / Correções:
+- Removido o bloqueio/interceptação incondicional da roda vertical do mouse no Kanban, permitindo a rolagem normal para cima e para baixo na página.
+- Mantidas e refinadas as formas ergonômicas de navegação horizontal no Kanban: `Shift + Scroll`, Arraste do fundo com o mouse (Grab & Drag), Botões `Esquerda`/`Direita` e barra de rolagem horizontal inferior.
+
+---------------------------------------
 VERSÃO 2.3.4
 ---------------------------------------
 

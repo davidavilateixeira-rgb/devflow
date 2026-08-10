@@ -1,6 +1,23 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.6
+---------------------------------------
+
+Data:
+10/08/2026
+
+Objetivo:
+Correção do mapeamento de cores dos status no gráfico "Distribuição por status" (Dashboard).
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas / Correções:
+- Criada a constante `COR_STATUS_HEX` para definir cores exatas para cada status (ex: "Atrasado" = Vermelho, "Concluído" = Verde).
+- Modificada a renderização do gráfico de status (`gStatus`) para utilizar o mapeamento semântico exato, abandonando a paleta sequencial (que atribuía cores indesejadas dependendo da ordem dos dados).
+
+---------------------------------------
 VERSÃO 2.3.5
 ---------------------------------------
 

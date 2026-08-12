@@ -840,3 +840,20 @@ Correções realizadas:
 - Formatação dos números de estoque com separador de milhar (ex: 7.080 pçs).
 - Inserido status "Não Encontrado" (cinza) para referências cadastradas no sistema do projeto que não constam na planilha do ERP.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.2
+---------------------------------------
+
+Data:
+12/08/2026
+
+Objetivo:
+Omitir cobrança de prazo na etapa de Validação/FO050.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+- O sistema não exige mais que o técnico informe um prazo ao avançar para a etapa "Validação/FO050". Em vez disso, ele avança a etapa de forma automática e silenciosa, gerando a anotação padrão "Aguardando data do PCP" no histórico, visto que o cronograma dessa fase é regido externamente.
+---------------------------------------

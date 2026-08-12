@@ -152,7 +152,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.2</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -187,7 +187,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.2</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -2550,19 +2550,31 @@ function concluirEtapaMontagem(id){
     const proximaEtapa = proxIdx >= f2.length ? "Concluído" : f2[proxIdx];
     
     if(proximaEtapa !== "Concluído") {
-      pedirCampo(`Próxima Etapa: ${proximaEtapa}`, `Informe o prazo previsto para a etapa "${proximaEtapa}"`, "date", (m.prazosEtapas&&m.prazosEtapas[proximaEtapa])||"", (prazo)=>{
-        if(!m.prazosEtapas) m.prazosEtapas = {};
-        if(prazo) m.prazosEtapas[proximaEtapa] = prazo;
+      if(proximaEtapa === "Validação/FO050") {
         m.etapaAtual++;
         m.historico.push({etapa:proximaEtapa, data:new Date().toISOString(), usuario:estado.usuario.nome});
         if(!m.comentarios) m.comentarios = [];
         m.comentarios.push({
           usuario: estado.usuario.nome || "Sistema",
           data: new Date().toISOString(),
-          texto: `Concluiu a etapa "${etapaConcluida}" na Montagem e avançou para "${proximaEtapa}".${prazo ? ` Prazo: ${fmtL(prazo)}.` : ""}`
+          texto: `Concluiu a etapa "${etapaConcluida}" na Montagem e avançou para "${proximaEtapa}". Aguardando data do PCP.`
         });
         salvarProjeto(p);
-      });
+      } else {
+        pedirCampo(`Próxima Etapa: ${proximaEtapa}`, `Informe o prazo previsto para a etapa "${proximaEtapa}"`, "date", (m.prazosEtapas&&m.prazosEtapas[proximaEtapa])||"", (prazo)=>{
+          if(!m.prazosEtapas) m.prazosEtapas = {};
+          if(prazo) m.prazosEtapas[proximaEtapa] = prazo;
+          m.etapaAtual++;
+          m.historico.push({etapa:proximaEtapa, data:new Date().toISOString(), usuario:estado.usuario.nome});
+          if(!m.comentarios) m.comentarios = [];
+          m.comentarios.push({
+            usuario: estado.usuario.nome || "Sistema",
+            data: new Date().toISOString(),
+            texto: `Concluiu a etapa "${etapaConcluida}" na Montagem e avançou para "${proximaEtapa}".${prazo ? ` Prazo: ${fmtL(prazo)}.` : ""}`
+          });
+          salvarProjeto(p);
+        });
+      }
     } else {
       m.etapaAtual++;
       m.historico.push({etapa:"Concluído", data:new Date().toISOString(), usuario:estado.usuario.nome});
@@ -2625,22 +2637,34 @@ function concluirEtapa(id){
     const proximaEtapa = proxIdx >= f2.length ? "Concluído" : f2[proxIdx];
     
     if(proximaEtapa !== "Concluído") {
-      const prazoExistente = (p.prazosEtapas&&p.prazosEtapas[proximaEtapa]) || (proximaEtapa==="Projeto da Fixação"?p.prazoProjetoFixacao:(proximaEtapa==="Fornecedor"?p.prazoFornecedor:""));
-      pedirCampo(`Próxima Etapa: ${proximaEtapa}`, `Informe o prazo previsto para a etapa "${proximaEtapa}"`, "date", prazoExistente||"", (prazo)=>{
-        if(!p.prazosEtapas) p.prazosEtapas = {};
-        if(prazo) p.prazosEtapas[proximaEtapa] = prazo;
-        if(proximaEtapa==="Projeto da Fixação" && prazo) p.prazoProjetoFixacao = prazo;
-        if(proximaEtapa==="Fornecedor" && prazo) p.prazoFornecedor = prazo;
+      if(proximaEtapa === "Validação/FO050") {
         p.etapaAtual++;
         p.historico.push({etapa:proximaEtapa, data:new Date().toISOString(), usuario:estado.usuario.nome});
         if(!p.comentarios) p.comentarios = [];
         p.comentarios.push({
           usuario: estado.usuario.nome || "Sistema",
           data: new Date().toISOString(),
-          texto: `Concluiu a etapa "${etapaConcluida}" na Usinagem e avançou para "${proximaEtapa}".${prazo ? ` Prazo: ${fmtL(prazo)}.` : ""}`
+          texto: `Concluiu a etapa "${etapaConcluida}" na Usinagem e avançou para "${proximaEtapa}". Aguardando data do PCP.`
         });
         salvarProjeto(p);
-      });
+      } else {
+        const prazoExistente = (p.prazosEtapas&&p.prazosEtapas[proximaEtapa]) || (proximaEtapa==="Projeto da Fixação"?p.prazoProjetoFixacao:(proximaEtapa==="Fornecedor"?p.prazoFornecedor:""));
+        pedirCampo(`Próxima Etapa: ${proximaEtapa}`, `Informe o prazo previsto para a etapa "${proximaEtapa}"`, "date", prazoExistente||"", (prazo)=>{
+          if(!p.prazosEtapas) p.prazosEtapas = {};
+          if(prazo) p.prazosEtapas[proximaEtapa] = prazo;
+          if(proximaEtapa==="Projeto da Fixação" && prazo) p.prazoProjetoFixacao = prazo;
+          if(proximaEtapa==="Fornecedor" && prazo) p.prazoFornecedor = prazo;
+          p.etapaAtual++;
+          p.historico.push({etapa:proximaEtapa, data:new Date().toISOString(), usuario:estado.usuario.nome});
+          if(!p.comentarios) p.comentarios = [];
+          p.comentarios.push({
+            usuario: estado.usuario.nome || "Sistema",
+            data: new Date().toISOString(),
+            texto: `Concluiu a etapa "${etapaConcluida}" na Usinagem e avançou para "${proximaEtapa}".${prazo ? ` Prazo: ${fmtL(prazo)}.` : ""}`
+          });
+          salvarProjeto(p);
+        });
+      }
     } else {
       p.etapaAtual++;
       p.historico.push({etapa:"Concluído", data:new Date().toISOString(), usuario:estado.usuario.nome});

@@ -802,3 +802,23 @@ Novidades e Alteraï¿½ï¿½es:
 
 
 
+
+---------------------------------------
+VERSÃO 2.4.0
+---------------------------------------
+
+Data:
+12/08/2026
+
+Objetivo:
+Integração em tempo real de saldo de estoque do ERP via Firebase.
+
+Arquivos alterados:
+public/index.html
+script_estoque/sincronizar_estoque.py (Novo)
+
+Novidades e Alterações:
+- Criado script Python sincronizar_estoque.py que consulta a planilha de saldo do ERP, dispara atualização no Power Query invisivelmente e sobe os saldos para o Firebase (coleção estoque).
+- Front-end do DevFlow atualizado para assinar a coleção estoque em tempo real.
+- Na aba de Detalhes do Projeto, os componentes (Produto Final, Alojamento, Pino, Forjados) agora exibem um selo informando se há saldo no ERP ("Em Estoque" verde ou "Sem Estoque" vermelho).
+---------------------------------------

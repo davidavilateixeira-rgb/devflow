@@ -152,7 +152,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.3.7</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -187,7 +187,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.3.7</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -499,9 +499,9 @@ function novoProjeto(o){
   }, o);
 }
 
-let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[], statusSel:[],
+let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[], statusSel:[], estoque: {},
   movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"", moduloAtual: "usinagem" };
-let unsubProjetos = null, unsubUsuarios = null, avisoDesativado = false;
+let unsubProjetos = null, unsubUsuarios = null, unsubEstoque = null, avisoDesativado = false;
 
 const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
 const isProduto = ()=> estado.usuario && estado.usuario.papel === "produto";   // visualiza + cadastra, não edita
@@ -593,7 +593,8 @@ auth.onAuthStateChanged(async (u)=>{
   if(!u){
     if(unsubProjetos){unsubProjetos();unsubProjetos=null}
     if(unsubUsuarios){unsubUsuarios();unsubUsuarios=null}
-    estado.usuario = null; estado.projetos = []; estado.usuarios = [];
+    if(unsubEstoque){unsubEstoque();unsubEstoque=null}
+    estado.usuario = null; estado.projetos = []; estado.usuarios = []; estado.estoque = {};
     document.getElementById("app").classList.add("hidden");
     document.getElementById("telaLogin").classList.remove("hidden");
     document.getElementById("loginCarregando").classList.add("hidden");
@@ -667,6 +668,13 @@ function iniciarApp(){
       estado.usuarios = s.docs.map(x=>Object.assign({uid:x.id}, x.data()));
       if(viewAtual==="usuarios") renderTudo();
     }, e=>console.error("Firestore usuarios:", e));
+  }
+  if(!unsubEstoque){
+    unsubEstoque = db.collection("estoque").onSnapshot(s=>{
+      estado.estoque = {};
+      s.docs.forEach(doc => { estado.estoque[doc.id] = doc.data().saldo; });
+      if(viewAtual==="projeto") renderTudo();
+    }, e=>console.error("Firestore estoque:", e));
   }
   renderTudo();
 }
@@ -1699,8 +1707,10 @@ function renderProjeto(){
   const info = isMontagem ? [
     ["Componentes",nomesComponentes(p).join(", ")||"—"],
     ["Ref. produto final",esc(p.codigo)],
-    ["Ref. Alojamento",esc(r.alojamento)||"—"],["Ref. Forjado Alojamento",esc(r.forjadoAlojamento)||"—"],
-    ["Ref. Pino",esc(r.pino)||"—"],["Ref. Forjado Pino",esc(r.forjadoPino)||"—"],
+    ["Ref. Alojamento",`${esc(r.alojamento)||"—"} ${r.alojamento&&estado.estoque[r.alojamento]!==undefined?(estado.estoque[r.alojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.alojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Forjado Alojamento",`${esc(r.forjadoAlojamento)||"—"} ${r.forjadoAlojamento&&estado.estoque[r.forjadoAlojamento]!==undefined?(estado.estoque[r.forjadoAlojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoAlojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Pino",`${esc(r.pino)||"—"} ${r.pino&&estado.estoque[r.pino]!==undefined?(estado.estoque[r.pino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.pino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Forjado Pino",`${esc(r.forjadoPino)||"—"} ${r.forjadoPino&&estado.estoque[r.forjadoPino]!==undefined?(estado.estoque[r.forjadoPino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoPino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
     ["NP de Usinagem",esc(r.npUsinagem)||"—"],
     ["Cliente",esc(p.cliente)||"—"],["Família",esc(p.familia)||"—"],["Tipo",esc(p.tipo)],
     ["Responsável Montagem",obj.responsavel?esc(obj.responsavel):"—"],
@@ -1717,8 +1727,12 @@ function renderProjeto(){
     ["Cadastrado por",esc(p.criadoPor)||"—"]
   ] : [
     ["Componentes",nomesComponentes(p).join(", ")||"—"],
-    ["Ref. produto final",esc(p.codigo)],["Ref. Alojamento",esc(r.alojamento)||"—"],["Ref. Forjado Alojamento",esc(r.forjadoAlojamento)||"—"],
-    ["Ref. Pino",esc(r.pino)||"—"],["Ref. Forjado Pino",esc(r.forjadoPino)||"—"],["NP de Usinagem",esc(r.npUsinagem)||"—"],
+    ["Ref. produto final",esc(p.codigo)],
+    ["Ref. Alojamento",`${esc(r.alojamento)||"—"} ${r.alojamento&&estado.estoque[r.alojamento]!==undefined?(estado.estoque[r.alojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.alojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Forjado Alojamento",`${esc(r.forjadoAlojamento)||"—"} ${r.forjadoAlojamento&&estado.estoque[r.forjadoAlojamento]!==undefined?(estado.estoque[r.forjadoAlojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoAlojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Pino",`${esc(r.pino)||"—"} ${r.pino&&estado.estoque[r.pino]!==undefined?(estado.estoque[r.pino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.pino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Forjado Pino",`${esc(r.forjadoPino)||"—"} ${r.forjadoPino&&estado.estoque[r.forjadoPino]!==undefined?(estado.estoque[r.forjadoPino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoPino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["NP de Usinagem",esc(r.npUsinagem)||"—"],
     ["Cliente",esc(p.cliente)||"—"],["Família",esc(p.familia)||"—"],["Tipo",esc(p.tipo)],
     ["Responsável",p.responsavel?esc(p.responsavel):"—"],["Prioridade",esc(p.prioridade)],["Cadastro",fmtL(p.dataInicio)],["Previsão de lançamento",fmtL(p.dataPrevista)],
     ["Data real",p.dataReal?fmtL(p.dataReal):"—"],["Fornecedor",esc(p.fornecedor)||"—"],["Nº SC",esc(p.numSC)||"—"],["Nº OC",esc(p.numOC)||"—"],

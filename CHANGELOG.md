@@ -1,6 +1,25 @@
 # Histórico de Versões (Changelog)
 
 ---------------------------------------
+VERSÃO 2.3.7
+---------------------------------------
+
+Data:
+12/08/2026
+
+Objetivo:
+Otimização do layout de impressão da página de projetos.
+
+Arquivos alterados:
+- public/index.html
+
+Funcionalidades adicionadas / Correções:
+- Configurado tamanho de página nativo para `A4 Paisagem` no CSS de impressão (`@page`), para que a janela de impressão já venha com as orientações adequadas.
+- Aplicado `zoom: 90%` e redimensionamento elegante das fontes apenas no momento da impressão, para garantir que as 3 colunas principais caibam perfeitamente na mesma folha.
+- Adicionadas regras de CSS `break-inside: avoid` nos blocos de conteúdo para impedir que os quadros sejam cortados ao meio entre as páginas.
+- Ajuste das margens e recuos internos dos relatórios apenas na impressão, maximizando o espaço útil da folha A4.
+
+---------------------------------------
 VERSÃO 2.3.6
 ---------------------------------------
 

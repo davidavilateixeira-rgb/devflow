@@ -152,7 +152,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.3</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.4</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -187,7 +187,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.3</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.4</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -438,7 +438,13 @@ function normalizarProjeto(p){
   return p;
 }
 
-const FILTROS = ["Todos","Sem responsável","Meu desenvolvimento","Urgentes","Atrasados","Compras","Fornecedor","Liberados"];
+function getFiltros() {
+  const base = ["Todos","Sem responsável","Meu desenvolvimento","Urgentes","Atrasados"];
+  if (estado.moduloAtual === "montagem") {
+    return [...base, "Somente Usinados", "Aguardando Usinagem"];
+  }
+  return [...base, "Compras", "Fornecedor", "Liberados"];
+}
 
 // Tipos de desenvolvimento
 const TIPOS = ["Novo","Alteração","Melhoria","Internalização","BGI"];
@@ -821,9 +827,15 @@ function projetosVisiveis(){
         if(f==="Meu desenvolvimento" && p.responsavelUid===estado.usuario.uid) return true;
         if(f==="Urgentes" && p.prioridade==="Alta" && !concluido(p)) return true;
         if(f==="Atrasados" && diasAtraso(p)>0 && !concluido(p)) return true;
-        if(f==="Compras" && ETAPAS_COMPRAS.includes(etapaNome(p))) return true;
-        if(f==="Fornecedor" && etapaNome(p)==="Fornecedor") return true;
-        if(f==="Liberados" && concluido(p)) return true;
+        
+        if (estado.moduloAtual === "montagem") {
+          if(f==="Somente Usinados" && concluido(p)) return true;
+          if(f==="Aguardando Usinagem" && !concluido(p)) return true;
+        } else {
+          if(f==="Compras" && ETAPAS_COMPRAS.includes(etapaNome(p))) return true;
+          if(f==="Fornecedor" && etapaNome(p)==="Fornecedor") return true;
+          if(f==="Liberados" && concluido(p)) return true;
+        }
       }
       return false; // se tem filtros marcados mas não atendeu a nenhum
     });
@@ -832,8 +844,12 @@ function projetosVisiveis(){
   const q = estado.busca.trim().toLowerCase();
   if(q) ps = ps.filter(p=>{
     const r = p.refs||{};
+    const ferramentas = p.ferramentas || [];
+    const montFerramentas = (p.montagem && p.montagem.ferramentas) ? p.montagem.ferramentas : [];
+    
     return [p.devId,p.codigo,p.descricao,p.cliente,p.responsavel,p.fornecedor,p.familia,p.prioridade,statusDe(p),
-      r.alojamento,r.forjadoAlojamento,r.pino,r.forjadoPino,p.numSC,p.numOC,nomesComponentes(p).join(" "),(p.ferramentas||[]).join(" ")].join(" ").toLowerCase().includes(q);
+      r.alojamento,r.forjadoAlojamento,r.pino,r.forjadoPino,p.numSC,p.numOC,nomesComponentes(p).join(" "),
+      ferramentas.join(" "), montFerramentas.join(" ")].join(" ").toLowerCase().includes(q);
   });
   return ps;
 }
@@ -1014,6 +1030,7 @@ function cardProjeto(p){
       ${p.familia?`<span class="badge b-laranja">${esc(p.familia)}</span>`:""}
       ${nomesComponentes(p).map(l=>`<span class="badge b-azul">${l}</span>`).join("")}
       ${p.prioridade==="Alta"?'<span class="badge b-vermelho">Urgente</span>':""}
+      ${isM && concluido(p) ? '<span class="badge b-verde text-[9px] !px-1.5 leading-none" title="Usinagem concluída"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="inline mr-0.5 mb-0.5"><path d="M20 6L9 17l-5-5"/></svg>Usinado</span>' : ""}
     </div>
     <div class="flex items-center justify-between text-[11px]" style="color:var(--texto-2)">
       ${resp
@@ -1226,6 +1243,11 @@ function renderKanban(){
   if(isM) ps = ps.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x));
   
   ps.sort((a,b) => {
+    if (isM) {
+      const concA = concluido(a) ? 1 : 0;
+      const concB = concluido(b) ? 1 : 0;
+      if (concA !== concB) return concB - concA; // Usinagem concluída vem primeiro
+    }
     const dPa = a.dataPrevista || "9999-99-99";
     const dPb = b.dataPrevista || "9999-99-99";
     if (dPa !== dPb) return dPa.localeCompare(dPb);
@@ -3473,6 +3495,20 @@ function renderMovimentacoes(){
         evts.push({ data: c.data, tipo: "comentario", usr: c.usuario, txt: `comentou no desenvolvimento <b>${p.codigo}</b>: <span style="color:var(--texto-2)">"${c.texto}"</span>`, pid: p.id });
       }
     });
+    if(p.montagem) {
+      (p.montagem.historico || []).forEach(h => {
+        evts.push({ data: h.data, tipo: "etapa", usr: h.usuario, txt: `chegou na etapa "${h.etapa}" da montagem <b>${p.codigo}</b>`, pid: p.id, etapa: h.etapa });
+      });
+      (p.montagem.comentarios||[]).forEach(c => {
+        if(c.texto.startsWith("Assumiu")) {
+          evts.push({ data: c.data, tipo: "assumiu", usr: c.usuario, txt: `assumiu a montagem <b>${p.codigo}</b>`, pid: p.id });
+        } else if(c.texto.startsWith("Reabriu")) {
+          evts.push({ data: c.data, tipo: "reabriu", usr: c.usuario, txt: `${c.texto} na montagem <b>${p.codigo}</b>`, pid: p.id });
+        } else {
+          evts.push({ data: c.data, tipo: "comentario", usr: c.usuario, txt: `comentou na montagem <b>${p.codigo}</b>: <span style="color:var(--texto-2)">"${c.texto}"</span>`, pid: p.id });
+        }
+      });
+    }
   });
   
   evts.sort((a,b) => (b.data||"").localeCompare(a.data||""));
@@ -3563,7 +3599,7 @@ window.toggleChip = function(f) {
 };
 
 function renderChips(){
-  document.getElementById("chips").innerHTML = FILTROS.map(f=>
+  document.getElementById("chips").innerHTML = getFiltros().map(f=>
     `<span class="chip ${estado.filtrosChip.includes(f)?'ativo':''}" onclick="toggleChip('${f}')">${f}</span>`).join("");
 }
 function renderTudo(){

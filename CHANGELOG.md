@@ -874,3 +874,24 @@ public/index.html
 Correções realizadas:
 - O painel executivo (Status Report) e o checklist interno do projeto agora exibem explicitamente a mensagem 'Aguardando PCP' com ícone de relógio quando um desenvolvimento atinge a etapa de Validação/FO050, substituindo o antigo cálculo de dias até o lançamento.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.4
+---------------------------------------
+
+Data:
+12/08/2026
+
+Objetivo:
+Pacote de melhorias visuais e funcionais para a aba de Montagem.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+- O painel global de 'Movimentações e Notificações' agora exibe também todo o histórico de avanço de etapas, comentários, reaberturas e atribuições feitos exclusivamente no fluxo de Montagem.
+- O Kanban da Montagem passou a priorizar (colocar no topo das colunas) os desenvolvimentos que já tiveram sua Usinagem 100% concluída, facilitando a identificação do que já está fisicamente pronto para montar.
+- Adicionada uma badge verde 'Usinado' nos cards da Montagem sempre que a peça já passou por todo o processo de usinagem.
+- Adicionados os filtros 'Somente Usinados' e 'Aguardando Usinagem' na barra superior quando o módulo de montagem está ativo.
+- A barra de pesquisa global passou a encontrar os nomes de ferramentas cadastradas no fluxo de montagem.
+---------------------------------------

@@ -152,7 +152,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -187,7 +187,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -1704,13 +1704,21 @@ function renderProjeto(){
   }
 
   const r = p.refs||{};
+  const renderBadgeEstoque = (cod) => {
+    if(!cod) return "";
+    const s = estado.estoque[cod];
+    if(s === undefined) return `<span class="badge ml-2 px-1" style="background:#F2F2F2;color:#666;border:1px solid #CCC">Não Encontrado</span>`;
+    if(s > 0) return `<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${s.toLocaleString('pt-BR')} pçs</span>`;
+    return `<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`;
+  };
+
   const info = isMontagem ? [
     ["Componentes",nomesComponentes(p).join(", ")||"—"],
     ["Ref. produto final",esc(p.codigo)],
-    ["Ref. Alojamento",`${esc(r.alojamento)||"—"} ${r.alojamento&&estado.estoque[r.alojamento]!==undefined?(estado.estoque[r.alojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.alojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
-    ["Ref. Forjado Alojamento",`${esc(r.forjadoAlojamento)||"—"} ${r.forjadoAlojamento&&estado.estoque[r.forjadoAlojamento]!==undefined?(estado.estoque[r.forjadoAlojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoAlojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
-    ["Ref. Pino",`${esc(r.pino)||"—"} ${r.pino&&estado.estoque[r.pino]!==undefined?(estado.estoque[r.pino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.pino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
-    ["Ref. Forjado Pino",`${esc(r.forjadoPino)||"—"} ${r.forjadoPino&&estado.estoque[r.forjadoPino]!==undefined?(estado.estoque[r.forjadoPino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoPino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Alojamento",`${esc(r.alojamento)||"—"} ${renderBadgeEstoque(r.alojamento)}`],
+    ["Ref. Forjado Alojamento",`${esc(r.forjadoAlojamento)||"—"} ${renderBadgeEstoque(r.forjadoAlojamento)}`],
+    ["Ref. Pino",`${esc(r.pino)||"—"} ${renderBadgeEstoque(r.pino)}`],
+    ["Ref. Forjado Pino",`${esc(r.forjadoPino)||"—"} ${renderBadgeEstoque(r.forjadoPino)}`],
     ["NP de Usinagem",esc(r.npUsinagem)||"—"],
     ["Cliente",esc(p.cliente)||"—"],["Família",esc(p.familia)||"—"],["Tipo",esc(p.tipo)],
     ["Responsável Montagem",obj.responsavel?esc(obj.responsavel):"—"],
@@ -1728,10 +1736,10 @@ function renderProjeto(){
   ] : [
     ["Componentes",nomesComponentes(p).join(", ")||"—"],
     ["Ref. produto final",esc(p.codigo)],
-    ["Ref. Alojamento",`${esc(r.alojamento)||"—"} ${r.alojamento&&estado.estoque[r.alojamento]!==undefined?(estado.estoque[r.alojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.alojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
-    ["Ref. Forjado Alojamento",`${esc(r.forjadoAlojamento)||"—"} ${r.forjadoAlojamento&&estado.estoque[r.forjadoAlojamento]!==undefined?(estado.estoque[r.forjadoAlojamento]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoAlojamento]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
-    ["Ref. Pino",`${esc(r.pino)||"—"} ${r.pino&&estado.estoque[r.pino]!==undefined?(estado.estoque[r.pino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.pino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
-    ["Ref. Forjado Pino",`${esc(r.forjadoPino)||"—"} ${r.forjadoPino&&estado.estoque[r.forjadoPino]!==undefined?(estado.estoque[r.forjadoPino]>0?`<span class="badge ml-2 px-1" style="background:#E6F4EC;color:#107C41;border:1px solid #107C41">🟢 ${estado.estoque[r.forjadoPino]} pçs</span>`:`<span class="badge ml-2 px-1" style="background:#FDE7E5;color:#C42B1C;border:1px solid #C42B1C">🔴 Sem Estoque</span>`):""}`],
+    ["Ref. Alojamento",`${esc(r.alojamento)||"—"} ${renderBadgeEstoque(r.alojamento)}`],
+    ["Ref. Forjado Alojamento",`${esc(r.forjadoAlojamento)||"—"} ${renderBadgeEstoque(r.forjadoAlojamento)}`],
+    ["Ref. Pino",`${esc(r.pino)||"—"} ${renderBadgeEstoque(r.pino)}`],
+    ["Ref. Forjado Pino",`${esc(r.forjadoPino)||"—"} ${renderBadgeEstoque(r.forjadoPino)}`],
     ["NP de Usinagem",esc(r.npUsinagem)||"—"],
     ["Cliente",esc(p.cliente)||"—"],["Família",esc(p.familia)||"—"],["Tipo",esc(p.tipo)],
     ["Responsável",p.responsavel?esc(p.responsavel):"—"],["Prioridade",esc(p.prioridade)],["Cadastro",fmtL(p.dataInicio)],["Previsão de lançamento",fmtL(p.dataPrevista)],

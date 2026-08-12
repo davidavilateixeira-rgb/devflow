@@ -822,3 +822,21 @@ Novidades e Alterações:
 - Front-end do DevFlow atualizado para assinar a coleção estoque em tempo real.
 - Na aba de Detalhes do Projeto, os componentes (Produto Final, Alojamento, Pino, Forjados) agora exibem um selo informando se há saldo no ERP ("Em Estoque" verde ou "Sem Estoque" vermelho).
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.1
+---------------------------------------
+
+Data:
+12/08/2026
+
+Objetivo:
+Melhorias visuais no selo de estoque.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+- Formatação dos números de estoque com separador de milhar (ex: 7.080 pçs).
+- Inserido status "Não Encontrado" (cinza) para referências cadastradas no sistema do projeto que não constam na planilha do ERP.
+---------------------------------------

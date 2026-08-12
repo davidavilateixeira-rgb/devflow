@@ -857,3 +857,20 @@ public/index.html
 Correções realizadas:
 - O sistema não exige mais que o técnico informe um prazo ao avançar para a etapa "Validação/FO050". Em vez disso, ele avança a etapa de forma automática e silenciosa, gerando a anotação padrão "Aguardando data do PCP" no histórico, visto que o cronograma dessa fase é regido externamente.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.3
+---------------------------------------
+
+Data:
+12/08/2026
+
+Objetivo:
+Visualização do prazo 'Aguardando PCP' no Status Report.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+- O painel executivo (Status Report) e o checklist interno do projeto agora exibem explicitamente a mensagem 'Aguardando PCP' com ícone de relógio quando um desenvolvimento atinge a etapa de Validação/FO050, substituindo o antigo cálculo de dias até o lançamento.
+---------------------------------------

@@ -152,7 +152,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.2</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.3</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -187,7 +187,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.2</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.3</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -1473,6 +1473,8 @@ function renderStatusReport() {
               let badgePrazoHtml = "";
               if (d.isConcluido) {
                 badgePrazoHtml = '<span class="badge b-verde text-[11px]">Concluído</span>';
+              } else if (d.etapaAtualStr === "Validação/FO050") {
+                badgePrazoHtml = '<span class="badge b-cinza font-medium !text-[11px]" style="color:#666">⏳ Aguardando PCP</span>';
               } else if (!d.prazoEtapa) {
                 badgePrazoHtml = `<span class="text-[11px]" style="color:var(--texto-2)">${p.dataPrevista ? `Lançamento: ${fmt(p.dataPrevista)}` : "Não definido"}</span>`;
               } else if (d.statusPrazo === "atrasado") {
@@ -1836,7 +1838,7 @@ function renderProjeto(){
               </div>
               ${!feita?`<div class="text-[10px] leading-snug" style="color:#9A9AA3">${DESC_ETAPAS[et]||""}</div>`:""}
               ${h?`<div class="text-[10.5px]" style="color:var(--texto-2)">✓ ${new Date(h.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})} · ${esc(h.usuario)}${temDuracao?` · ${(()=>{const ant=p.historico[i];return ant?Math.max(0,dias(new Date(ant.data),new Date(h.data)))+"d na etapa":""})()}`:""}</div>`:""}
-              ${prazoEtapa?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium ${atual?'bg-orange-100 text-orange-800':'bg-[#E8F1FB] text-[#0F5FA8]'}">🎯 Prazo da etapa: ${fmtL(prazoEtapa)}</div>`:""}
+              ${et==="Validação/FO050" && atual ? `<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium" style="background:#F2F2F2;color:#666">⏳ Prazo da etapa: Aguardando data do PCP</div>` : (prazoEtapa?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium ${atual?'bg-orange-100 text-orange-800':'bg-[#E8F1FB] text-[#0F5FA8]'}">🎯 Prazo da etapa: ${fmtL(prazoEtapa)}</div>`:"")}
               ${p.obsEtapas&&p.obsEtapas[et]?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug" style="background:var(--laranja-claro);color:var(--texto-2)">📝 ${esc(p.obsEtapas[et])}</div>`:""}
             </div>
           </div>`;
@@ -1866,7 +1868,7 @@ function renderProjeto(){
               </div>
               ${!feita?`<div class="text-[10px] leading-snug" style="color:#9A9AA3">${desc}</div>`:""}
               ${h?`<div class="text-[10.5px]" style="color:var(--texto-2)">✓ ${new Date(h.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})} · ${esc(h.usuario)}${temDuracao?` · ${(()=>{const ant=obj.historico[i];return ant?Math.max(0,dias(new Date(ant.data),new Date(h.data)))+"d na etapa":""})()}`:""}</div>`:""}
-              ${prazoEtapa?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium ${atual?'bg-orange-100 text-orange-800':'bg-[#E8F1FB] text-[#0F5FA8]'}">🎯 Prazo da etapa: ${fmtL(prazoEtapa)}</div>`:""}
+              ${et==="Validação/FO050" && atual ? `<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium" style="background:#F2F2F2;color:#666">⏳ Prazo da etapa: Aguardando data do PCP</div>` : (prazoEtapa?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug font-medium ${atual?'bg-orange-100 text-orange-800':'bg-[#E8F1FB] text-[#0F5FA8]'}">🎯 Prazo da etapa: ${fmtL(prazoEtapa)}</div>`:"")}
               ${obj.obsEtapas&&obj.obsEtapas[et]?`<div class="text-[10.5px] mt-1 rounded-md p-1.5 leading-snug" style="background:var(--laranja-claro);color:var(--texto-2)">📝 ${esc(obj.obsEtapas[et])}</div>`:""}
             </div>
           </div>`;

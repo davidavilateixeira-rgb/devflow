@@ -933,3 +933,22 @@ public/index.html
 Correções realizadas:
 - Ajuste de espaçamento (gap) entre o ícone (ponto de cor) e os textos 'No Prazo' e 'Movimentados' nos cartões de filtro do Status Report.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.7
+---------------------------------------
+
+Data:
+13/08/2026
+
+Objetivo:
+Implementação do sistema de alerta automático de novas versões.
+
+Arquivos alterados:
+public/index.html
+public/version.json
+
+Correções realizadas:
+- O sistema agora verifica automaticamente (em plano de fundo e a cada vez que a janela é focada) se existe uma versão mais atualizada disponível no servidor.
+- Caso uma nova versão seja detectada, um banner não-intrusivo é exibido no topo da tela sugerindo o recarregamento rápido.
+---------------------------------------

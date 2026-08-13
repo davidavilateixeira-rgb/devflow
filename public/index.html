@@ -157,7 +157,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.7</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.8</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -192,7 +192,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.7</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.8</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -299,7 +299,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.4.7";
+const VERSAO_ATUAL = "2.4.8";
 
 async function verificarNovaVersao() {
   try {
@@ -1138,82 +1138,111 @@ function renderDashboard(){
   const isM = estado.moduloAtual === "montagem";
   const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x)) : psRaw;
   const cFunc = isM ? concluidoMontagem : concluido;
-  const ltFunc = isM ? leadTimeMontagem : leadTime;
   const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
-  const statusFunc = isM ? statusDeMontagem : statusDe;
   const etapaFunc = isM ? etapaNomeMontagem : etapaNome;
-  const semaforoFunc = p => semaforo(p, isM);
-
+  
   const ativos = ps.filter(p=>!cFunc(p));
-  const respNulo = isM ? (p=>!p.montagem.responsavel) : (p=>!p.responsavel);
+  
+  // Paralisados: Projetos que estão na mesma etapa há mais de 15 dias
+  const paralisados = ativos.filter(p => {
+    const hist = isM ? p.montagem.historico : p.historico;
+    if(!hist || hist.length === 0) return false;
+    const ut = hist[hist.length-1];
+    return dias(new Date(ut.data), HOJE) > 15;
+  });
 
   const kpis = [
-    ["Total de desenvolvimentos", ps.length, "b-laranja"],
     ["Desenvolvimentos ativos", ativos.length, "b-laranja"],
-    ["Sem responsável", ps.filter(respNulo).length, "b-roxo"],
-    ["Concluídos", ps.filter(cFunc).length, "b-verde"],
-    ["Atrasados", ps.filter(p=>dAtrasoFunc(p)>0 && !cFunc(p)).length, "b-vermelho"],
+    ["Críticos & Atrasados", ativos.filter(p=>dAtrasoFunc(p)>0).length, "b-vermelho"],
+    ["Paralisados (>15d)", paralisados.length, "b-roxo"],
   ];
   
   if(!isM) {
-    kpis.push(
-      ["Aguardando Compras", ps.filter(p=>ETAPAS_COMPRAS.includes(etapaFunc(p))).length, "b-laranja"],
-      ["Aguardando Fornecedor", ps.filter(p=>etapaFunc(p)==="Fornecedor").length, "b-azul"],
-      ["Em Setup/FO050", ps.filter(p=>etapaFunc(p)==="Validação/FO050").length, "b-amarelo"]
-    );
+    kpis.push(["Aguardando Compras", ativos.filter(p=>ETAPAS_COMPRAS.includes(etapaFunc(p))).length, "b-amarelo"]);
   } else {
-    kpis.push(
-      ["Aguardando Análise", ps.filter(p=>etapaFunc(p)==="Análise").length, "b-laranja"],
-      ["Aguardando PCP", ps.filter(p=>["Criar Desenho de Conjunto no ERP", "PCP (Emissão de FO)", "Liberação PCP"].includes(etapaFunc(p))).length, "b-azul"],
-      ["Em FO050", ps.filter(p=>etapaFunc(p)==="Validação/FO050").length, "b-amarelo"]
-    );
+    kpis.push(["Aguardando PCP", ativos.filter(p=>["Criar Desenho de Conjunto no ERP", "PCP (Emissão de FO)", "Liberação PCP"].includes(etapaFunc(p))).length, "b-azul"]);
   }
 
-  kpis.push(
-    ["Lead Time médio", (ps.reduce((a,p)=>a+ltFunc(p),0)/(ps.length||1)).toFixed(0)+" dias", "b-cinza"],
-    ["Projetos críticos", ps.filter(p=>semaforoFunc(p)==="vermelho").length, "b-vermelho"]
-  );
+  // Tabela Top 10 Críticos
+  const topCriticos = ativos.filter(p=>dAtrasoFunc(p)>0)
+    .sort((a,b)=>dAtrasoFunc(b) - dAtrasoFunc(a)).slice(0,10);
+  
+  const topCriticosHtml = topCriticos.length > 0 ? `
+    <table class="w-full text-left text-[12px]">
+      <thead>
+        <tr style="color:var(--texto-2); border-bottom:1px solid #EFEFF3">
+          <th class="pb-2 font-semibold w-16">OP</th>
+          <th class="pb-2 font-semibold">CÓDIGO</th>
+          <th class="pb-2 font-semibold text-right">ATRASO</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${topCriticos.map(p=>`
+          <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors" onclick="irPara('projeto','${p.id}')">
+            <td class="py-2.5" style="color:var(--texto-2)">${esc((isM?p.montagem.op:p.op)||"—")}</td>
+            <td class="py-2.5 font-bold truncate max-w-[120px]" title="${esc(p.codigo)}">${esc(p.codigo)}</td>
+            <td class="py-2.5 text-right font-bold text-red-600">${dAtrasoFunc(p)}d</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  ` : `<div class="text-[12px] text-gray-400 italic text-center py-6">Nenhum projeto atrasado no momento. Excelente!</div>`;
 
+  // Dados para gráficos
   const etapasLista = isM ? MONT_ETAPAS : TODAS_ETAPAS;
-  const porEtapa = etapasLista.map(e=> ps.filter(p=>etapaFunc(p)===e).length);
-  const stCount = {};
-  ps.forEach(p=>{const s=statusFunc(p);stCount[s]=(stCount[s]||0)+1});
-  const porResp = {};
-  ps.forEach(p=>{const r=(isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável";porResp[r]=(porResp[r]||0)+1});
-  const meses={};
-  ps.forEach(p=>{if(p.dataInicio){const k=p.dataInicio.slice(0,7);meses[k]=(meses[k]||0)+1}});
-  const mesesOrd = Object.keys(meses).sort();
+  const porEtapa = etapasLista.map(e=> ativos.filter(p=>etapaFunc(p)===e).length); // Apenas ativos
+  
+  const respNomes = [...new Set(ativos.map(p=>(isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável"))].sort();
+  const respNoPrazo = respNomes.map(r => ativos.filter(p=>((isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável") === r && dAtrasoFunc(p) <= 0).length);
+  const respAtrasado = respNomes.map(r => ativos.filter(p=>((isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável") === r && dAtrasoFunc(p) > 0).length);
 
   document.getElementById("view-dashboard").innerHTML = `
-    <h1 class="text-xl font-bold mb-1 surgir">Dashboard ${isM?"(Montagem)":""}</h1>
-    <p class="text-[13px] mb-5 surgir" style="color:var(--texto-2)">Visão geral do desenvolvimento de novos produtos · ${fmtL(HOJE)}</p>
+    <h1 class="text-xl font-bold mb-1 surgir">Dashboard Operacional ${isM?"(Montagem)":""}</h1>
+    <p class="text-[13px] mb-5 surgir" style="color:var(--texto-2)">Foco em ação imediata e gestão visual da fila · ${fmtL(HOJE)}</p>
     ${estado.projetos.length===0?`<div class="card p-8 text-center surgir mb-5">
       <div class="text-3xl mb-2">📭</div>
       <div class="font-semibold mb-1">Nenhum desenvolvimento cadastrado ainda</div>
       <div class="text-[13px]" style="color:var(--texto-2)">${podeCadastrar()?'Clique em "Novo Desenvolvimento" no topo para cadastrar o primeiro.':'Aguarde o administrador cadastrar os desenvolvimentos.'}</div>
     </div>`:""}
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%5)+1}">
         <div class="text-[11px] font-semibold mb-1.5" style="color:var(--texto-2)">${k[0]}</div>
         <div class="text-2xl font-bold">${k[1]}</div>
       </div>`).join("")}
     </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="card p-5 surgir"><div class="font-semibold text-sm mb-3">Desenvolvimentos por etapa</div><canvas id="gEtapa" height="220"></canvas></div>
-      <div class="card p-5 surgir surgir-1"><div class="font-semibold text-sm mb-3">Distribuição por status</div><div class="max-w-[260px] mx-auto"><canvas id="gStatus"></canvas></div></div>
-      <div class="card p-5 surgir surgir-2"><div class="font-semibold text-sm mb-3">Linha do tempo — desenvolvimentos iniciados</div><canvas id="gTempo" height="200"></canvas></div>
-      <div class="card p-5 surgir surgir-3"><div class="font-semibold text-sm mb-3">Quantidade por responsável</div><canvas id="gResp" height="200"></canvas></div>
+    
+    <div class="grid lg:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5 surgir lg:col-span-2">
+        <div class="font-semibold text-sm mb-1">Carga de trabalho por Responsável</div>
+        <div class="text-[11px] text-gray-400 mb-4">Volume de projetos ativos (No Prazo vs Atrasados)</div>
+        <div style="height:220px; position:relative;"><canvas id="gRespStacked"></canvas></div>
+      </div>
+      <div class="card p-5 surgir surgir-1 flex flex-col">
+        <div class="font-semibold text-sm mb-1 text-red-600 flex items-center gap-1.5"><span class="dot dot-vermelho"></span>Top 10 Críticos</div>
+        <div class="text-[11px] text-gray-400 mb-4">Projetos com maior acúmulo de atraso</div>
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          ${topCriticosHtml}
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 surgir surgir-2">
+      <div class="font-semibold text-sm mb-1">Gargalos Ativos por Etapa</div>
+      <div class="text-[11px] text-gray-400 mb-4">Volume de projetos parados em cada etapa (somente ativos)</div>
+      <div style="height:200px; position:relative;"><canvas id="gEtapa"></canvas></div>
     </div>`;
 
-  const base = {plugins:{legend:{display:false}},responsive:true,
+  const base = {plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false,
     scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}};
-  grafico("gEtapa",{type:"bar",data:{labels:etapasLista,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:26}]},
+  
+  grafico("gEtapa",{type:"bar",data:{labels:etapasLista,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:30}]},
     options:{...base,scales:{...base.scales,x:{...base.scales.x,ticks:{font:{size:9},maxRotation:60,minRotation:45}}}}});
-  grafico("gStatus",{type:"doughnut",data:{labels:Object.keys(stCount),datasets:[{data:Object.values(stCount),backgroundColor:Object.keys(stCount).map(k=>COR_STATUS_HEX[k]||"#525260"),borderWidth:2,borderColor:"#fff"}]},
-    options:{cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});
-  grafico("gTempo",{type:"line",data:{labels:mesesOrd,datasets:[{data:mesesOrd.map(m=>meses[m]),borderColor:"#EA5B0C",backgroundColor:"rgba(234,91,12,.08)",fill:true,tension:.35,pointRadius:4,pointBackgroundColor:"#EA5B0C"}]},options:base});
-  grafico("gResp",{type:"bar",data:{labels:Object.keys(porResp),datasets:[{data:Object.values(porResp),backgroundColor:CORES,borderRadius:5,maxBarThickness:34}]},
-    options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  
+  grafico("gRespStacked",{type:"bar",data:{labels:respNomes,datasets:[
+    {label:"No Prazo",data:respNoPrazo,backgroundColor:"#107C41",borderRadius:4,maxBarThickness:45},
+    {label:"Atrasado",data:respAtrasado,backgroundColor:"#D83A52",borderRadius:4,maxBarThickness:45}
+  ]},options:{...base,plugins:{legend:{display:true,position:"top",labels:{font:{size:10},usePointStyle:true,boxWidth:8}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,grid:{color:"#EFEFF3"}}}}});
 }
 
 /* ============================================================
@@ -2117,29 +2146,50 @@ function renderGerencial(){
   
   const cFunc = isM ? concluidoMontagem : concluido;
   const ltFunc = isM ? leadTimeMontagem : leadTime;
-  const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
+  
+  // KPI: Evolução do Lead Time (Meses de conclusão vs Lead Time Médio)
+  const concluidos = ps.filter(cFunc);
+  const mesesLT = {};
+  concluidos.forEach(p=>{
+    const hist = isM ? p.montagem.historico : p.historico;
+    if(!hist || hist.length === 0) return;
+    const dFim = new Date(hist[hist.length-1].data);
+    const k = dFim.toISOString().slice(0,7); // YYYY-MM
+    if(!mesesLT[k]) mesesLT[k] = {soma:0, count:0};
+    mesesLT[k].soma += ltFunc(p);
+    mesesLT[k].count++;
+  });
+  const mesesLTOrd = Object.keys(mesesLT).sort();
+  const ltEvolucaoData = mesesLTOrd.map(m => (mesesLT[m].soma / mesesLT[m].count).toFixed(1));
+
+  // LT 30d
+  const lt30d = concluidos.filter(p => {
+    const hist = isM ? p.montagem.historico : p.historico;
+    if(!hist || hist.length === 0) return false;
+    return dias(new Date(hist[hist.length-1].data), HOJE) <= 30;
+  });
+  const valLT30d = lt30d.length ? (lt30d.reduce((a,p)=>a+ltFunc(p),0)/lt30d.length).toFixed(0)+" dias" : "—";
+
+  // Retrabalhos / Retrocessos
+  const retrabalhosCount = ps.reduce((a,p)=>a+((isM?p.montagem.comentarios:p.comentarios)||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0);
   
   const kpis = [
     ["Tempo médio de desenvolvimento",ps.length?(ps.reduce((a,p)=>a+ltFunc(p),0)/ps.length).toFixed(0)+" dias":"—"],
-    ["Lead Time (concluídos)",(()=>{const c=ps.filter(x=>cFunc(x));return c.length?(c.reduce((a,p)=>a+ltFunc(p),0)/c.length).toFixed(0)+" dias":"—"})()],
-    ["Projetos atrasados",ps.filter(p=>dAtrasoFunc(p)>0&&!cFunc(p)).length],
-    ["Projetos finalizados",ps.filter(cFunc).length],
-    ["Em andamento",ps.filter(p=>!cFunc(p)).length],
+    ["Lead Time (Entregas 30d)", valLT30d],
+    ["Projetos finalizados", concluidos.length],
   ];
 
   if(!isM) {
-    kpis.splice(4, 0,
+    kpis.push(
       ["Tempo médio em Compras",mediaDe(ETAPAS_COMPRAS)+" dias"],
-      ["Tempo médio no Fornecedor",mediaDe(["Fornecedor"])+" dias"],
       ["Tempo médio Programas CNC",mediaDe(["Desenvolver Programas CNC", "Programa CNC"])+" dias"],
-      ["Retrabalho (Retrocessos)",ps.reduce((a,p)=>a+(p.comentarios||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0)]
+      ["Retrabalho (Retrocessos)",retrabalhosCount]
     );
   } else {
-    kpis.splice(4, 0,
+    kpis.push(
       ["Tempo médio em Analise",mediaDe(["Análise"])+" dias"],
       ["Tempo médio em PCP",mediaDe(["PCP (Emissão de FO)", "Liberação PCP"])+" dias"],
-      ["Tempo médio Projetos/Fab",mediaDe(["Projeto de Ferramentas", "Fabricação"])+" dias"],
-      ["Retrabalho (Retrocessos)",ps.reduce((a,p)=>a+(p.montagem.comentarios||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0)]
+      ["Retrabalho (Retrocessos)",retrabalhosCount]
     );
   }
 
@@ -2175,40 +2225,72 @@ function renderGerencial(){
   
   const gruposLbl = (isM ? ["Técnico","PCP"] : ["Técnico","Analista","PCP"]).filter(g=>contG[g]);
   const medG = gruposLbl.map(g=>+(somaG[g]/contG[g]).toFixed(1));
+
+  // Ordenar responsáveis por quantidade descrescente
+  const respOrd = Object.keys(porResp).sort((a,b)=>porResp[b]-porResp[a]);
+  const respData = respOrd.map(r=>porResp[r]);
+
   document.getElementById("view-gerencial").innerHTML = `
     <h1 class="text-xl font-bold mb-1 surgir">Dashboard Gerencial ${isM?"(Montagem)":""}</h1>
-    <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos do processo de desenvolvimento</p>
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-6">
-      ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%5)+1}">
+    <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos, tendências e ofensores de prazo</p>
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+      ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%6)+1}">
         <div class="text-[11px] font-semibold mb-1.5 leading-tight min-h-[28px]" style="color:var(--texto-2)">${k[0]}</div>
         <div class="text-xl font-bold truncate">${k[1]}</div></div>`).join("")}
     </div>
-    <div class="grid md:grid-cols-2 gap-4">
+    
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="card p-5 surgir md:col-span-2">
         <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-          <div class="font-semibold text-sm">Lead time por etapa (dias)</div>
+          <div class="font-semibold text-sm">Lead time por etapa (Gargalos macro)</div>
           <div class="flex gap-3 text-[11px]" style="color:var(--texto-2)">
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#EA5B0C"></span>Técnico</span>
             ${!isM ? '<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#0F5FA8"></span>Analista</span>' : ''}
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#107C41"></span>PCP</span>
           </div>
         </div>
-        <canvas id="gMedEtapa" height="120"></canvas>
+        <div style="height:140px; position:relative;"><canvas id="gMedEtapa"></canvas></div>
       </div>
-      <div class="card p-5 surgir"><div class="font-semibold text-sm mb-3">Lead time por responsabilidade (dias)</div><canvas id="gGrupo" height="200"></canvas></div>
-      <div class="card p-5 surgir surgir-1"><div class="font-semibold text-sm mb-3">Projetos por cliente</div><canvas id="gCliente" height="200"></canvas></div>
-      <div class="card p-5 surgir surgir-2 md:col-span-2 lg:col-span-1"><div class="font-semibold text-sm mb-3">Projetos por responsável</div><div class="max-w-[240px] mx-auto"><canvas id="gRespG"></canvas></div></div>
+      
+      <div class="card p-5 surgir">
+        <div class="font-semibold text-sm mb-1">Evolução do Lead Time Histórico</div>
+        <div class="text-[11px] text-gray-400 mb-4">Média de dias de conclusão (mês a mês)</div>
+        <div style="height:200px; position:relative;"><canvas id="gEvolucaoLT"></canvas></div>
+      </div>
+      
+      <div class="card p-5 surgir surgir-1">
+        <div class="font-semibold text-sm mb-3">Lead time por área de responsabilidade (dias)</div>
+        <div style="height:200px; position:relative;"><canvas id="gGrupo"></canvas></div>
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="card p-5 surgir surgir-2">
+        <div class="font-semibold text-sm mb-3">Projetos por Responsável (Demanda Total)</div>
+        <div style="height:240px; position:relative;"><canvas id="gRespG"></canvas></div>
+      </div>
+      <div class="card p-5 surgir surgir-3">
+        <div class="font-semibold text-sm mb-3">Projetos por Cliente</div>
+        <div style="height:240px; position:relative;"><canvas id="gCliente"></canvas></div>
+      </div>
     </div>`;
 
-  const base = {plugins:{legend:{display:false}},responsive:true,
+  const base = {plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false,
     scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:60,minRotation:45}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}}}};
+  
   grafico("gMedEtapa",{type:"bar",data:{labels:etapasLbl,datasets:[{data:etapasLbl.map(e=>+med[e].toFixed(1)),backgroundColor:etapasLbl.map(e=>COR_GRUPO[GRUPO_ETAPA[e]]||"#525260"),borderRadius:5,maxBarThickness:30}]},options:base});
+  
   grafico("gGrupo",{type:"bar",data:{labels:gruposLbl,datasets:[{data:medG,backgroundColor:gruposLbl.map(g=>COR_GRUPO[g]),borderRadius:5,maxBarThickness:60}]},
     options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
-  grafico("gCliente",{type:"bar",data:{labels:Object.keys(porCliente),datasets:[{data:Object.values(porCliente),backgroundColor:"#0F5FA8",borderRadius:5,maxBarThickness:34}]},
+  
+  grafico("gCliente",{type:"bar",data:{labels:Object.keys(porCliente),datasets:[{data:Object.values(porCliente),backgroundColor:"#0F5FA8",borderRadius:5,maxBarThickness:30}]},
     options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
-  grafico("gRespG",{type:"doughnut",data:{labels:Object.keys(porResp),datasets:[{data:Object.values(porResp),backgroundColor:CORES,borderWidth:2,borderColor:"#fff"}]},
-    options:{cutout:"60%",plugins:{legend:{position:"bottom",labels:{font:{size:10},boxWidth:10}}}}});
+    
+  grafico("gRespG",{type:"bar",data:{labels:respOrd,datasets:[{data:respData,backgroundColor:"#EA5B0C",borderRadius:4,maxBarThickness:28}]},
+    options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+    
+  grafico("gEvolucaoLT",{type:"line",data:{labels:mesesLTOrd,datasets:[{data:ltEvolucaoData,borderColor:"#107C41",backgroundColor:"rgba(16,124,65,.1)",fill:true,tension:.35,pointRadius:4,pointBackgroundColor:"#107C41"}]},
+    options:{...base,scales:{...base.scales,x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}}}}});
 }
 
 /* ============================================================

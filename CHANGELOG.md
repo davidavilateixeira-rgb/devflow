@@ -952,3 +952,26 @@ Correções realizadas:
 - O sistema agora verifica automaticamente (em plano de fundo e a cada vez que a janela é focada) se existe uma versão mais atualizada disponível no servidor.
 - Caso uma nova versão seja detectada, um banner não-intrusivo é exibido no topo da tela sugerindo o recarregamento rápido.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.8
+---------------------------------------
+
+Data:
+13/08/2026
+
+Objetivo:
+Reestruturação total da arquitetura de inteligência e usabilidade dos Dashboards (Operacional e Gerencial).
+
+Arquivos alterados:
+public/index.html
+public/version.json
+
+Correções realizadas:
+- Dashboard Operacional: Foco total em fila e ação imediata.
+- Dashboard Operacional: Adicionado Tabela Acionável "Top 10 Projetos Críticos" (ordenada por atraso com botão rápido para ir até o projeto).
+- Dashboard Operacional: Gráfico de Roscas substituído por Barra Empilhada mostrando o volume da fila por responsável (cruzamento com o que está no prazo vs atrasado).
+- Dashboard Gerencial: Limpeza de métricas redundantes que já existiam no operacional (Foco transferido para análise histórica).
+- Dashboard Gerencial: Adicionado gráfico temporal "Evolução do Lead Time Histórico" (Evolução média de performance mês a mês).
+- Dashboard Gerencial: Gráfico de Responsáveis convertido para Gráfico de Barras Horizontais para melhor visualização e comparação quantitativa.
+---------------------------------------

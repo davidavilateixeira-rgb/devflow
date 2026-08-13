@@ -895,3 +895,24 @@ Correções realizadas:
 - Adicionados os filtros 'Somente Usinados' e 'Aguardando Usinagem' na barra superior quando o módulo de montagem está ativo.
 - A barra de pesquisa global passou a encontrar os nomes de ferramentas cadastradas no fluxo de montagem.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.5
+---------------------------------------
+
+Data:
+13/08/2026
+
+Objetivo:
+Segundo pacote de melhorias visuais e funcionais para o fluxo de Montagem.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+- O quadro Kanban (Usinagem e Montagem) ganhou uma nova coluna 'Concluído', impedindo que itens finalizados desapareçam da visão.
+- O Status Report da Montagem recebeu um novo filtro rápido 'Movimentados', agrupando os itens que já saíram do zero.
+- A tabela do Status Report da Montagem agora prioriza automaticamente no topo todos os itens com histórico de movimentação.
+- Adicionado botão 'Editar Dados da Montagem' na view do projeto, permitindo alterar responsável, desenho de conjunto e OP facilmente.
+- Modal da etapa FO050 da Montagem simplificado: remoção da exigência de máquina e unificação dos campos Data de Execução e OP (informados apenas uma vez por FO).
+---------------------------------------

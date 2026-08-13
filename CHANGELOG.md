@@ -916,3 +916,20 @@ Correções realizadas:
 - Adicionado botão 'Editar Dados da Montagem' na view do projeto, permitindo alterar responsável, desenho de conjunto e OP facilmente.
 - Modal da etapa FO050 da Montagem simplificado: remoção da exigência de máquina e unificação dos campos Data de Execução e OP (informados apenas uma vez por FO).
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.6
+---------------------------------------
+
+Data:
+13/08/2026
+
+Objetivo:
+Correção de alinhamento visual no Status Report.
+
+Arquivos alterados:
+public/index.html
+
+Correções realizadas:
+- Ajuste de espaçamento (gap) entre o ícone (ponto de cor) e os textos 'No Prazo' e 'Movimentados' nos cartões de filtro do Status Report.
+---------------------------------------

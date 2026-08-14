@@ -157,7 +157,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.8</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.9</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -192,7 +192,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.8</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.9</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -299,7 +299,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.4.8";
+const VERSAO_ATUAL = "2.4.9";
 
 async function verificarNovaVersao() {
   try {
@@ -490,6 +490,12 @@ const parseData = (dt)=> (typeof dt==="string" && /^\d{4}-\d{2}-\d{2}$/.test(dt)
 const fmt = (dt)=> dt ? parseData(dt).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) : "—";
 const fmtL = (dt)=> dt ? parseData(dt).toLocaleDateString("pt-BR") : "—";
 const dias = (a,b)=> Math.round((b-a)/864e5);
+const calcularMediana = (arr) => {
+  if (!arr || arr.length === 0) return 0;
+  const sorted = [...arr].sort((a,b)=>a-b);
+  const mid = Math.floor(sorted.length/2);
+  return sorted.length%2!==0 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2;
+};
 
 // Diferença em dias corridos entre hoje e a data informada (yyyy-mm-dd)
 // < 0: atrasado em X dias (ex: -1 = ontem)
@@ -1140,61 +1146,74 @@ function renderDashboard(){
   const cFunc = isM ? concluidoMontagem : concluido;
   const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
   const etapaFunc = isM ? etapaNomeMontagem : etapaNome;
+  const dNaEtapaFunc = isM ? diasNaEtapaMontagem : diasNaEtapa;
   
   const ativos = ps.filter(p=>!cFunc(p));
   
-  // Paralisados: Projetos que estão na mesma etapa há mais de 15 dias
-  const paralisados = ativos.filter(p => {
-    const hist = isM ? p.montagem.historico : p.historico;
-    if(!hist || hist.length === 0) return false;
-    const ut = hist[hist.length-1];
-    return dias(new Date(ut.data), HOJE) > 15;
-  });
+  // Aging Mediano
+  const agingArr = ativos.map(p => dNaEtapaFunc(p));
+  const agingMediano = calcularMediana(agingArr);
+
+  // Sem Responsável
+  const respNulo = isM ? (p=>!p.montagem.responsavel) : (p=>!p.responsavel);
+  const numSemResp = ativos.filter(respNulo).length;
+  const pctSemResp = ativos.length ? Math.round((numSemResp/ativos.length)*100) : 0;
 
   const kpis = [
     ["Desenvolvimentos ativos", ativos.length, "b-laranja"],
     ["Críticos & Atrasados", ativos.filter(p=>dAtrasoFunc(p)>0).length, "b-vermelho"],
-    ["Paralisados (>15d)", paralisados.length, "b-roxo"],
+    ["⚠️ Sem Responsável", `${numSemResp} (${pctSemResp}%)`, pctSemResp > 10 ? "b-vermelho" : "b-laranja"],
+    ["Aging Mediano (permanência)", `${agingMediano} dias`, "b-roxo"]
   ];
-  
-  if(!isM) {
-    kpis.push(["Aguardando Compras", ativos.filter(p=>ETAPAS_COMPRAS.includes(etapaFunc(p))).length, "b-amarelo"]);
-  } else {
-    kpis.push(["Aguardando PCP", ativos.filter(p=>["Criar Desenho de Conjunto no ERP", "PCP (Emissão de FO)", "Liberação PCP"].includes(etapaFunc(p))).length, "b-azul"]);
-  }
 
   // Tabela Top 10 Críticos
   const topCriticos = ativos.filter(p=>dAtrasoFunc(p)>0)
     .sort((a,b)=>dAtrasoFunc(b) - dAtrasoFunc(a)).slice(0,10);
   
   const topCriticosHtml = topCriticos.length > 0 ? `
-    <table class="w-full text-left text-[12px]">
+    <table class="w-full text-left text-[11px]">
       <thead>
         <tr style="color:var(--texto-2); border-bottom:1px solid #EFEFF3">
-          <th class="pb-2 font-semibold w-16">OP</th>
-          <th class="pb-2 font-semibold">CÓDIGO</th>
+          <th class="pb-2 font-semibold">CÓDIGO/CLIENTE</th>
+          <th class="pb-2 font-semibold">ETAPA/RESPONSÁVEL</th>
+          <th class="pb-2 font-semibold text-center">AGING</th>
           <th class="pb-2 font-semibold text-right">ATRASO</th>
         </tr>
       </thead>
       <tbody>
-        ${topCriticos.map(p=>`
+        ${topCriticos.map(p=>{
+          const r = (isM?p.montagem.responsavel:p.responsavel)||"Nenhum";
+          return `
           <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors" onclick="irPara('projeto','${p.id}')">
-            <td class="py-2.5" style="color:var(--texto-2)">${esc((isM?p.montagem.op:p.op)||"—")}</td>
-            <td class="py-2.5 font-bold truncate max-w-[120px]" title="${esc(p.codigo)}">${esc(p.codigo)}</td>
+            <td class="py-2.5 max-w-[130px] pr-2">
+              <div class="font-bold truncate" title="${esc(p.codigo)}">${esc(p.codigo)}</div>
+              <div class="text-[9px] text-gray-500 truncate mt-0.5" title="${esc(p.cliente||'—')}">${esc(p.cliente||"—")}</div>
+            </td>
+            <td class="py-2.5 max-w-[140px] pr-2">
+              <div class="truncate text-gray-800 font-medium" title="${esc(etapaFunc(p))}">${esc(etapaFunc(p))}</div>
+              <div class="text-[9px] mt-0.5 truncate ${r==='Nenhum'?'text-red-500 font-bold':'text-blue-600'}">${esc(r)}</div>
+            </td>
+            <td class="py-2.5 text-center text-gray-600 font-semibold">${dNaEtapaFunc(p)}d</td>
             <td class="py-2.5 text-right font-bold text-red-600">${dAtrasoFunc(p)}d</td>
           </tr>
-        `).join("")}
+        `}).join("")}
       </tbody>
     </table>
   ` : `<div class="text-[12px] text-gray-400 italic text-center py-6">Nenhum projeto atrasado no momento. Excelente!</div>`;
 
-  // Dados para gráficos
+  // Dados gráficos
   const etapasLista = isM ? MONT_ETAPAS : TODAS_ETAPAS;
-  const porEtapa = etapasLista.map(e=> ativos.filter(p=>etapaFunc(p)===e).length); // Apenas ativos
+  const porEtapa = etapasLista.map(e=> ativos.filter(p=>etapaFunc(p)===e).length);
   
   const respNomes = [...new Set(ativos.map(p=>(isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável"))].sort();
   const respNoPrazo = respNomes.map(r => ativos.filter(p=>((isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável") === r && dAtrasoFunc(p) <= 0).length);
   const respAtrasado = respNomes.map(r => ativos.filter(p=>((isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável") === r && dAtrasoFunc(p) > 0).length);
+
+  // Aging distribution
+  let a1=0, a2=0, a3=0, a4=0;
+  agingArr.forEach(d => {
+    if(d<=3) a1++; else if(d<=7) a2++; else if(d<=15) a3++; else a4++;
+  });
 
   document.getElementById("view-dashboard").innerHTML = `
     <h1 class="text-xl font-bold mb-1 surgir">Dashboard Operacional ${isM?"(Montagem)":""}</h1>
@@ -1202,36 +1221,44 @@ function renderDashboard(){
     ${estado.projetos.length===0?`<div class="card p-8 text-center surgir mb-5">
       <div class="text-3xl mb-2">📭</div>
       <div class="font-semibold mb-1">Nenhum desenvolvimento cadastrado ainda</div>
-      <div class="text-[13px]" style="color:var(--texto-2)">${podeCadastrar()?'Clique em "Novo Desenvolvimento" no topo para cadastrar o primeiro.':'Aguarde o administrador cadastrar os desenvolvimentos.'}</div>
     </div>`:""}
     
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%5)+1}">
         <div class="text-[11px] font-semibold mb-1.5" style="color:var(--texto-2)">${k[0]}</div>
-        <div class="text-2xl font-bold">${k[1]}</div>
+        <div class="text-2xl font-bold ${k[2]==='b-vermelho'?'text-red-600':''}">${k[1]}</div>
       </div>`).join("")}
     </div>
     
+    <div class="grid md:grid-cols-2 gap-4 mb-6">
+      <div class="card p-5 surgir">
+        <div class="font-semibold text-sm mb-1">WIP por Etapa (Carteira Ativa)</div>
+        <div class="text-[11px] text-gray-400 mb-4">Volume de projetos parados em cada etapa hoje</div>
+        <div style="height:200px; position:relative;">${ativos.length?`<canvas id="gEtapa"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
+      </div>
+      <div class="card p-5 surgir surgir-1">
+        <div class="font-semibold text-sm mb-1">Aging da Carteira</div>
+        <div class="text-[11px] text-gray-400 mb-4">Distribuição de dias acumulados na etapa atual</div>
+        <div style="height:200px; position:relative;">${ativos.length?`<canvas id="gAging"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
+      </div>
+    </div>
+
     <div class="grid lg:grid-cols-3 gap-4 mb-6">
       <div class="card p-5 surgir lg:col-span-2">
-        <div class="font-semibold text-sm mb-1">Carga de trabalho por Responsável</div>
-        <div class="text-[11px] text-gray-400 mb-4">Volume de projetos ativos (No Prazo vs Atrasados)</div>
-        <div style="height:220px; position:relative;"><canvas id="gRespStacked"></canvas></div>
+        <div class="font-semibold text-sm mb-1">Carga de Trabalho por Responsável</div>
+        <div class="text-[11px] text-gray-400 mb-4">Volume da carteira (No Prazo vs Atrasados)</div>
+        <div style="height:220px; position:relative;">${ativos.length?`<canvas id="gRespStacked"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
       </div>
-      <div class="card p-5 surgir surgir-1 flex flex-col">
+      <div class="card p-5 surgir flex flex-col">
         <div class="font-semibold text-sm mb-1 text-red-600 flex items-center gap-1.5"><span class="dot dot-vermelho"></span>Top 10 Críticos</div>
-        <div class="text-[11px] text-gray-400 mb-4">Projetos com maior acúmulo de atraso</div>
+        <div class="text-[11px] text-gray-400 mb-4">Projetos com maior acúmulo de atraso global</div>
         <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           ${topCriticosHtml}
         </div>
       </div>
-    </div>
-
-    <div class="card p-5 surgir surgir-2">
-      <div class="font-semibold text-sm mb-1">Gargalos Ativos por Etapa</div>
-      <div class="text-[11px] text-gray-400 mb-4">Volume de projetos parados em cada etapa (somente ativos)</div>
-      <div style="height:200px; position:relative;"><canvas id="gEtapa"></canvas></div>
     </div>`;
+
+  if(!ativos.length) return;
 
   const base = {plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false,
     scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}};
@@ -1239,6 +1266,9 @@ function renderDashboard(){
   grafico("gEtapa",{type:"bar",data:{labels:etapasLista,datasets:[{data:porEtapa,backgroundColor:"#EA5B0C",borderRadius:5,maxBarThickness:30}]},
     options:{...base,scales:{...base.scales,x:{...base.scales.x,ticks:{font:{size:9},maxRotation:60,minRotation:45}}}}});
   
+  grafico("gAging",{type:"bar",data:{labels:["0-3 dias","4-7 dias","8-15 dias","> 15 dias"],datasets:[{data:[a1,a2,a3,a4],backgroundColor:["#107C41","#0F5FA8","#EA5B0C","#D83A52"],borderRadius:5,maxBarThickness:40}]},
+    options:base});
+
   grafico("gRespStacked",{type:"bar",data:{labels:respNomes,datasets:[
     {label:"No Prazo",data:respNoPrazo,backgroundColor:"#107C41",borderRadius:4,maxBarThickness:45},
     {label:"Atrasado",data:respAtrasado,backgroundColor:"#D83A52",borderRadius:4,maxBarThickness:45}
@@ -2131,166 +2161,144 @@ function renderGerencial(){
   let psRaw = filtroMes(projetosVisiveis());
   const isM = estado.moduloAtual === "montagem";
   const ps = isM ? psRaw.filter(x=>x.montagem && !x.montagem.excluido && !isPistao(x)) : psRaw;
-  
-  const med = isM ? temposPorEtapaMontagem(ps) : temposPorEtapa(ps);
-  const mediaDe = etapas => {
-    const vals = etapas.filter(e=>med[e]!=null).map(e=>med[e]);
-    return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1) : "—";
-  };
-  const porCliente = {}, porResp = {};
-  ps.forEach(p=>{
-    if(p.cliente) porCliente[p.cliente]=(porCliente[p.cliente]||0)+1;
-    const resp = isM ? (p.montagem.responsavel||"Sem responsável") : (p.responsavel||"Sem responsável");
-    porResp[resp]=(porResp[resp]||0)+1;
-  });
-  
   const cFunc = isM ? concluidoMontagem : concluido;
   const ltFunc = isM ? leadTimeMontagem : leadTime;
+  const dAtrasoFunc = isM ? diasAtrasoMontagem : diasAtraso;
   
-  // KPI: Evolução do Lead Time (Meses de conclusão vs Lead Time Médio)
   const concluidos = ps.filter(cFunc);
+
+  // LT Mediano (Geral)
+  const ltConcluidos = concluidos.map(p => ltFunc(p));
+  const ltMediano = calcularMediana(ltConcluidos);
+
+  // LT 30d Mediano
+  const concluidos30d = concluidos.filter(p => {
+    const hist = isM ? p.montagem.historico : p.historico;
+    if(!hist || hist.length === 0) return false;
+    return dias(new Date(hist[hist.length-1].data), HOJE) <= 30;
+  });
+  const lt30dMediano = calcularMediana(concluidos30d.map(p => ltFunc(p)));
+
+  // % Entregas no Prazo (Histórico Geral)
+  const noPrazoCount = concluidos.filter(p => dAtrasoFunc(p) <= 0).length;
+  const pctNoPrazo = concluidos.length ? Math.round((noPrazoCount/concluidos.length)*100) : 0;
+
+  // Evolução do Lead Time e Throughput
   const mesesLT = {};
   concluidos.forEach(p=>{
     const hist = isM ? p.montagem.historico : p.historico;
     if(!hist || hist.length === 0) return;
     const dFim = new Date(hist[hist.length-1].data);
     const k = dFim.toISOString().slice(0,7); // YYYY-MM
-    if(!mesesLT[k]) mesesLT[k] = {soma:0, count:0};
-    mesesLT[k].soma += ltFunc(p);
+    if(!mesesLT[k]) mesesLT[k] = {lts:[], count:0};
+    mesesLT[k].lts.push(ltFunc(p));
     mesesLT[k].count++;
   });
   const mesesLTOrd = Object.keys(mesesLT).sort();
-  const ltEvolucaoData = mesesLTOrd.map(m => (mesesLT[m].soma / mesesLT[m].count).toFixed(1));
+  const ltEvolucaoData = mesesLTOrd.map(m => calcularMediana(mesesLT[m].lts));
+  const tpEvolucaoData = mesesLTOrd.map(m => mesesLT[m].count);
 
-  // LT 30d
-  const lt30d = concluidos.filter(p => {
-    const hist = isM ? p.montagem.historico : p.historico;
-    if(!hist || hist.length === 0) return false;
-    return dias(new Date(hist[hist.length-1].data), HOJE) <= 30;
-  });
-  const valLT30d = lt30d.length ? (lt30d.reduce((a,p)=>a+ltFunc(p),0)/lt30d.length).toFixed(0)+" dias" : "—";
+  // Throughput do Mês atual
+  const mesAtualKey = HOJE.toISOString().slice(0,7);
+  let dAntes = new Date(HOJE);
+  dAntes.setMonth(dAntes.getMonth()-1);
+  const mesAntKey = dAntes.toISOString().slice(0,7);
+  const tpAtual = mesesLT[mesAtualKey] ? mesesLT[mesAtualKey].count : 0;
+  const tpAnt = mesesLT[mesAntKey] ? mesesLT[mesAntKey].count : 0;
+  let tpSinal = "";
+  if(tpAtual > tpAnt) tpSinal = `<span class="text-green-600 font-bold ml-1 text-[10px]">(+${tpAtual - tpAnt} vs ant)</span>`;
+  else if(tpAtual < tpAnt) tpSinal = `<span class="text-red-600 font-bold ml-1 text-[10px]">(${tpAtual - tpAnt} vs ant)</span>`;
+  else tpSinal = `<span class="text-gray-400 font-bold ml-1 text-[10px]">(=)</span>`;
 
   // Retrabalhos / Retrocessos
   const retrabalhosCount = ps.reduce((a,p)=>a+((isM?p.montagem.comentarios:p.comentarios)||[]).filter(c=>c.texto&&c.texto.startsWith("Retrocedeu")).length,0);
   
   const kpis = [
-    ["Tempo médio de desenvolvimento",ps.length?(ps.reduce((a,p)=>a+ltFunc(p),0)/ps.length).toFixed(0)+" dias":"—"],
-    ["Lead Time (Entregas 30d)", valLT30d],
-    ["Projetos finalizados", concluidos.length],
+    ["Lead Time Mediano (Geral)", `${ltMediano} dias`],
+    ["Lead Time Mediano (Últimos 30d)", `${lt30dMediano} dias`],
+    ["Throughput (Entregas neste mês)", `${tpAtual} ${tpSinal}`],
+    ["% Entregas no Prazo (Geral)", `${pctNoPrazo}%`],
+    ["Retrabalhos (Retrocessos)", retrabalhosCount]
   ];
 
-  if(!isM) {
-    kpis.push(
-      ["Tempo médio em Compras",mediaDe(ETAPAS_COMPRAS)+" dias"],
-      ["Tempo médio Programas CNC",mediaDe(["Desenvolver Programas CNC", "Programa CNC"])+" dias"],
-      ["Retrabalho (Retrocessos)",retrabalhosCount]
-    );
-  } else {
-    kpis.push(
-      ["Tempo médio em Analise",mediaDe(["Análise"])+" dias"],
-      ["Tempo médio em PCP",mediaDe(["PCP (Emissão de FO)", "Liberação PCP"])+" dias"],
-      ["Retrabalho (Retrocessos)",retrabalhosCount]
-    );
-  }
-
+  // Tempo Médio por Etapa
+  const med = isM ? temposPorEtapaMontagem(ps) : temposPorEtapa(ps);
   const etapasLbl = (isM ? MONT_ETAPAS : TODAS_ETAPAS).filter(e=>med[e]!=null);
-  
-  const somaG = {}, contG = {};
-  if(!isM) {
-    ps.forEach(p=>{
-      const porGrupo = {};
-      for(let i=0;i<p.historico.length;i++){
-        const fim = p.historico[i+1] ? new Date(p.historico[i+1].data) : (cFunc(p) ? null : HOJE);
-        if(!fim) continue;
-        const g = GRUPO_ETAPA[p.historico[i].etapa];
-        if(!g) continue;
-        porGrupo[g] = (porGrupo[g]||0) + Math.max(0, dias(new Date(p.historico[i].data), fim));
-      }
-      for(const g in porGrupo){ somaG[g]=(somaG[g]||0)+porGrupo[g]; contG[g]=(contG[g]||0)+1; }
-    });
-  } else {
-    ps.forEach(p=>{
-      const porGrupo = {};
-      for(let i=0;i<p.montagem.historico.length;i++){
-        const fim = p.montagem.historico[i+1] ? new Date(p.montagem.historico[i+1].data) : (cFunc(p) ? null : HOJE);
-        if(!fim) continue;
-        const et = p.montagem.historico[i].etapa;
-        let g = "Técnico";
-        if(["Criar Desenho de Conjunto no ERP", "PCP (Emissão de FO)", "Liberação PCP"].includes(et)) g = "PCP";
-        porGrupo[g] = (porGrupo[g]||0) + Math.max(0, dias(new Date(p.montagem.historico[i].data), fim));
-      }
-      for(const g in porGrupo){ somaG[g]=(somaG[g]||0)+porGrupo[g]; contG[g]=(contG[g]||0)+1; }
-    });
-  }
-  
-  const gruposLbl = (isM ? ["Técnico","PCP"] : ["Técnico","Analista","PCP"]).filter(g=>contG[g]);
-  const medG = gruposLbl.map(g=>+(somaG[g]/contG[g]).toFixed(1));
+  const etapasSorted = etapasLbl.map(e => ({nome: e, valor: med[e]})).sort((a,b)=> b.valor - a.valor);
+  const medEtapaNomes = etapasSorted.map(e => e.nome);
+  const medEtapaValores = etapasSorted.map(e => +e.valor.toFixed(1));
+  const medEtapaCores = medEtapaNomes.map(e=>COR_GRUPO[GRUPO_ETAPA[e]]||"#525260");
 
-  // Ordenar responsáveis por quantidade descrescente
-  const respOrd = Object.keys(porResp).sort((a,b)=>porResp[b]-porResp[a]);
-  const respData = respOrd.map(r=>porResp[r]);
+  // Projetos por Cliente
+  const porCliente = {};
+  ps.forEach(p=>{
+    if(p.cliente) porCliente[p.cliente]=(porCliente[p.cliente]||0)+1;
+  });
+  const cliOrd = Object.keys(porCliente).sort((a,b)=>porCliente[b]-porCliente[a]);
+  const cliData = cliOrd.map(c=>porCliente[c]);
 
   document.getElementById("view-gerencial").innerHTML = `
     <h1 class="text-xl font-bold mb-1 surgir">Dashboard Gerencial ${isM?"(Montagem)":""}</h1>
-    <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos, tendências e ofensores de prazo</p>
-    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
-      ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%6)+1}">
+    <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos, desempenho, gargalos e distribuição</p>
+    
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      ${kpis.map((k,i)=>`<div class="card p-4 surgir surgir-${(i%5)+1}">
         <div class="text-[11px] font-semibold mb-1.5 leading-tight min-h-[28px]" style="color:var(--texto-2)">${k[0]}</div>
-        <div class="text-xl font-bold truncate">${k[1]}</div></div>`).join("")}
+        <div class="text-xl font-bold truncate flex items-center">${k[1]}</div></div>`).join("")}
     </div>
     
     <div class="grid md:grid-cols-2 gap-4 mb-4">
-      <div class="card p-5 surgir md:col-span-2">
+      <div class="card p-5 surgir md:col-span-1">
+        <div class="font-semibold text-sm mb-1">Evolução do Lead Time Histórico</div>
+        <div class="text-[11px] text-gray-400 mb-4">Mediana de dias de conclusão (mês a mês)</div>
+        <div style="height:200px; position:relative;">${mesesLTOrd.length?`<canvas id="gEvolucaoLT"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
+      </div>
+      <div class="card p-5 surgir surgir-1 md:col-span-1">
+        <div class="font-semibold text-sm mb-1">Evolução do Throughput (Entregas/Mês)</div>
+        <div class="text-[11px] text-gray-400 mb-4">Volume de projetos finalizados mensalmente</div>
+        <div style="height:200px; position:relative;">${mesesLTOrd.length?`<canvas id="gEvolucaoTP"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="card p-5 surgir md:col-span-1">
         <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-          <div class="font-semibold text-sm">Lead time por etapa (Gargalos macro)</div>
+          <div class="font-semibold text-sm">Tempo Médio de Permanência por Etapa</div>
           <div class="flex gap-3 text-[11px]" style="color:var(--texto-2)">
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#EA5B0C"></span>Técnico</span>
             ${!isM ? '<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#0F5FA8"></span>Analista</span>' : ''}
             <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:#107C41"></span>PCP</span>
           </div>
         </div>
-        <div style="height:140px; position:relative;"><canvas id="gMedEtapa"></canvas></div>
+        <div style="height:260px; position:relative;">${medEtapaNomes.length?`<canvas id="gMedEtapa"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
       </div>
-      
-      <div class="card p-5 surgir">
-        <div class="font-semibold text-sm mb-1">Evolução do Lead Time Histórico</div>
-        <div class="text-[11px] text-gray-400 mb-4">Média de dias de conclusão (mês a mês)</div>
-        <div style="height:200px; position:relative;"><canvas id="gEvolucaoLT"></canvas></div>
-      </div>
-      
-      <div class="card p-5 surgir surgir-1">
-        <div class="font-semibold text-sm mb-3">Lead time por área de responsabilidade (dias)</div>
-        <div style="height:200px; position:relative;"><canvas id="gGrupo"></canvas></div>
-      </div>
-    </div>
-    
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="card p-5 surgir surgir-2">
-        <div class="font-semibold text-sm mb-3">Projetos por Responsável (Demanda Total)</div>
-        <div style="height:240px; position:relative;"><canvas id="gRespG"></canvas></div>
-      </div>
-      <div class="card p-5 surgir surgir-3">
-        <div class="font-semibold text-sm mb-3">Projetos por Cliente</div>
-        <div style="height:240px; position:relative;"><canvas id="gCliente"></canvas></div>
+      <div class="card p-5 surgir surgir-1 md:col-span-1">
+        <div class="font-semibold text-sm mb-3">Projetos por Cliente (Demanda Ativa e Histórica)</div>
+        <div style="height:260px; position:relative;">${cliOrd.length?`<canvas id="gCliente"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
       </div>
     </div>`;
 
   const base = {plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false,
     scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:60,minRotation:45}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}}}};
-  
-  grafico("gMedEtapa",{type:"bar",data:{labels:etapasLbl,datasets:[{data:etapasLbl.map(e=>+med[e].toFixed(1)),backgroundColor:etapasLbl.map(e=>COR_GRUPO[GRUPO_ETAPA[e]]||"#525260"),borderRadius:5,maxBarThickness:30}]},options:base});
-  
-  grafico("gGrupo",{type:"bar",data:{labels:gruposLbl,datasets:[{data:medG,backgroundColor:gruposLbl.map(g=>COR_GRUPO[g]),borderRadius:5,maxBarThickness:60}]},
-    options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
-  
-  grafico("gCliente",{type:"bar",data:{labels:Object.keys(porCliente),datasets:[{data:Object.values(porCliente),backgroundColor:"#0F5FA8",borderRadius:5,maxBarThickness:30}]},
-    options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
-    
-  grafico("gRespG",{type:"bar",data:{labels:respOrd,datasets:[{data:respData,backgroundColor:"#EA5B0C",borderRadius:4,maxBarThickness:28}]},
-    options:{...base,indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
-    
-  grafico("gEvolucaoLT",{type:"line",data:{labels:mesesLTOrd,datasets:[{data:ltEvolucaoData,borderColor:"#107C41",backgroundColor:"rgba(16,124,65,.1)",fill:true,tension:.35,pointRadius:4,pointBackgroundColor:"#107C41"}]},
-    options:{...base,scales:{...base.scales,x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}}}}});
+  const baseHoriz = {...base, indexAxis:"y", scales:{x:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:10}}}}};
+
+  if(mesesLTOrd.length) {
+    grafico("gEvolucaoLT",{type:"line",data:{labels:mesesLTOrd,datasets:[{data:ltEvolucaoData,borderColor:"#107C41",backgroundColor:"rgba(16,124,65,.1)",fill:true,tension:.35,pointRadius:4,pointBackgroundColor:"#107C41"}]},
+      options:{...base,scales:{...base.scales,x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}}}}});
+      
+    grafico("gEvolucaoTP",{type:"bar",data:{labels:mesesLTOrd,datasets:[{data:tpEvolucaoData,backgroundColor:"#0F5FA8",borderRadius:4,maxBarThickness:35}]},
+      options:{...base,scales:{...base.scales,x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}}});
+  }
+
+  if(medEtapaNomes.length) {
+    grafico("gMedEtapa",{type:"bar",data:{labels:medEtapaNomes,datasets:[{data:medEtapaValores,backgroundColor:medEtapaCores,borderRadius:4,maxBarThickness:24}]},
+      options:baseHoriz});
+  }
+
+  if(cliOrd.length) {
+    grafico("gCliente",{type:"bar",data:{labels:cliOrd,datasets:[{data:cliData,backgroundColor:"#5A5A68",borderRadius:4,maxBarThickness:24}]},
+      options:{...baseHoriz,scales:{...baseHoriz.scales,x:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}}});
+  }
 }
 
 /* ============================================================

@@ -975,3 +975,29 @@ Correções realizadas:
 - Dashboard Gerencial: Adicionado gráfico temporal "Evolução do Lead Time Histórico" (Evolução média de performance mês a mês).
 - Dashboard Gerencial: Gráfico de Responsáveis convertido para Gráfico de Barras Horizontais para melhor visualização e comparação quantitativa.
 ---------------------------------------
+
+---------------------------------------
+VERSÃO 2.4.9
+---------------------------------------
+
+Data:
+14/08/2026
+
+Objetivo:
+Implementação do Plano Analítico (Fase 2) nos Dashboards Operacional e Gerencial para maior qualidade de diagnóstico.
+
+Arquivos alterados:
+public/index.html
+public/version.json
+
+Correções realizadas:
+- Função Mediana: Substituição de médias puras por cálculo de Mediana de Lead Time para desconsiderar distorções e refletir o comportamento típico.
+- Proteção contra dados vazios (zero vs null): Gráficos e indicadores agora demonstram claramente 'Dados insuficientes' no lugar de desenhar informações não-existentes.
+- Dashboard Operacional: Adicionado WIP (Carteira Ativa) por etapa (ao invés de gargalo histórico).
+- Dashboard Operacional: Adicionado Gráfico de Distribuição de 'Aging' para visualizar tempo de paralisia na etapa atual (0-3d, 4-7d, etc).
+- Dashboard Operacional: KPI de alerta para percentual da carteira com a flag 'Sem Responsável'.
+- Dashboard Operacional: Tabela de Top 10 expandida para incluir Código/Cliente e Etapa/Responsável juntos para melhor uso do espaço.
+- Dashboard Gerencial: Gráfico de 'Tempo Médio por Etapa' transformado em barras horizontais ordenadas da etapa mais crítica para a mais rápida.
+- Dashboard Gerencial: Adição do indicador de Throughput (entregas realizadas no mês vs mês anterior).
+- Dashboard Gerencial: Gráfico de 'Projetos por Cliente' convertido para exibir ranking ordenado com base no volume da carteira.
+---------------------------------------

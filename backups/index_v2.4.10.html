@@ -157,7 +157,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.5.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.4.10</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -192,7 +192,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.5.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.4.10</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -299,7 +299,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.5.0";
+const VERSAO_ATUAL = "2.4.10";
 
 async function verificarNovaVersao() {
   try {
@@ -352,15 +352,12 @@ const ehEmailAdmin = (email)=> ADMIN_EMAILS.includes((email||"").toLowerCase());
 // é tarefa paralela do Técnico Fase 1 (ver p.programaCnc), concluível a qualquer momento após a Análise.
 const ETAPAS = ["Recebido","Análise","Projeto da Fixação","Orçamento","Solicitação de Compra",
   "Aprovação SC","Ordem de Compra","Aprovação OC","Fornecedor",
-  "Recebimento","Validação/FO050","Revisar/Atualizar cadastro no ERP",
-  "Aprovar cadastro no sistema ERP","Liberação"];
+  "Recebimento","Validação/FO050","Liberação"];
 // Fluxo simples (sem compras nem recebimento, CNC sequencial)
-const ETAPAS_SIMPLES = ["Recebido","Análise","Programa CNC","Validação/FO050",
-  "Revisar/Atualizar cadastro no ERP","Aprovar cadastro no sistema ERP","Liberação"];
+const ETAPAS_SIMPLES = ["Recebido","Análise","Programa CNC","Validação/FO050","Liberação"];
 const TODAS_ETAPAS = ["Recebido","Análise","Programa CNC","Projeto da Fixação","Orçamento","Solicitação de Compra",
   "Aprovação SC","Ordem de Compra","Aprovação OC","Fornecedor",
-  "Recebimento","Validação/FO050","Revisar/Atualizar cadastro no ERP",
-  "Aprovar cadastro no sistema ERP","Liberação"];
+  "Recebimento","Validação/FO050","Liberação"];
 // Etapas que caracterizam "Aguardando Compras"
 const ETAPAS_COMPRAS = ["Orçamento","Solicitação de Compra","Aprovação SC","Ordem de Compra","Aprovação OC"];
 const ETAPA_CNC = "Desenvolver Programas CNC";   // tarefa paralela (apenas no fluxo com fixação)
@@ -368,8 +365,8 @@ const ETAPA_CNC = "Desenvolver Programas CNC";   // tarefa paralela (apenas no f
 const LISTA_PROCESSOS = ["USI CAIXA", "USI PINO", "FR EQUIPTOP", "FR TORNO", "USI ESFERA", "USI ESFERA + CANAL", "USI CANAL", "USI COPO AXIAL", "USI COPO PIVÔ", "USI PRÉ-FORMA", "USI COPO PIVÔ 1LD", "USI COPO PIVÔ 2LD"];
 
 // Fluxos de Montagem
-const MONT_ETAPAS = ["Recebido","Análise","Projeto de Ferramentas","Criar Desenho de Conjunto no ERP","Solicitação de Fabricação","Fabricação","Validação/FO050","Revisar/Atualizar cadastro no ERP","Aprovar cadastro no sistema ERP","Liberação"];
-const MONT_ETAPAS_SIMPLES = ["Recebido","Análise","Criar Desenho de Conjunto no ERP","Validação/FO050","Revisar/Atualizar cadastro no ERP","Aprovar cadastro no sistema ERP","Liberação"];
+const MONT_ETAPAS = ["Recebido","Análise","Projeto de Ferramentas","Criar Desenho de Conjunto no ERP","Solicitação de Fabricação","Fabricação","Validação/FO050","Liberação"];
+const MONT_ETAPAS_SIMPLES = ["Recebido","Análise","Criar Desenho de Conjunto no ERP","Validação/FO050","Liberação"];
 const MONT_DESC_ETAPAS = {
   "Recebido": "Novo item disponibilizado para montagem.",
   "Análise": "Análise do processo de montagem. Ao concluir, defina se o fluxo é complexo ou simplificado.",
@@ -378,8 +375,6 @@ const MONT_DESC_ETAPAS = {
   "Solicitação de Fabricação": "Abrir solicitação de fabricação das ferramentas. Informe o código da solicitação.",
   "Fabricação": "Fabricação das ferramentas. Informe a data prevista de entrega.",
   "Validação/FO050": "Validar tempos e processo na FO050 (Linha de Montagem, Montagem, Embalagem).",
-  "Revisar/Atualizar cadastro no ERP": "Revisar e atualizar o cadastro do produto no sistema ERP.",
-  "Aprovar cadastro no sistema ERP": "Conferir e aprovar o cadastro atualizado no sistema ERP.",
   "Liberação": "Produto montado liberado para produção em série."
 };
 
@@ -398,8 +393,6 @@ const DESC_ETAPAS = {
   "Programa CNC":"Deixar os programas CNC dos componentes concluídos.",
   "Recebimento":"Conferir se a ferramenta entregue está OK.",
   "Validação/FO050":"Iniciar o processo produtivo (FO050).",
-  "Revisar/Atualizar cadastro no ERP":"Revisar e atualizar o cadastro do produto no sistema ERP.",
-  "Aprovar cadastro no sistema ERP":"Conferir e aprovar o cadastro atualizado no sistema ERP.",
   "Liberação":"Documentos preenchidos e desenvolvimento concluído."
 };
 
@@ -413,7 +406,7 @@ const GRUPO_ETAPA = {
   "Recebido":"Técnico","Análise":"Técnico","Projeto da Fixação":"Técnico","Orçamento":"Técnico","Solicitação de Compra":"Técnico",
   "Aprovação SC":"Analista","Ordem de Compra":"Analista","Aprovação OC":"Analista","Fornecedor":"Analista",
   "Desenvolver Programas CNC":"Técnico","Programa CNC":"Técnico","Recebimento":"Técnico",
-  "Validação/FO050":"PCP","Revisar/Atualizar cadastro no ERP":"PCP","Aprovar cadastro no sistema ERP":"PCP",
+  "Validação/FO050":"PCP","Liberação":"PCP"
 };
 const COR_GRUPO = {"Técnico":"#EA5B0C","Analista":"#0F5FA8","PCP":"#107C41"};
 
@@ -422,33 +415,6 @@ const analiseConcluida = p => p.etapaAtual > 1;
 
 // Migração de dados antigos: renomeia etapas extintas e realinha o índice da etapa atual
 const RENOMES_ETAPAS = {"Liberado":"Liberação","Validação":"Validação/FO050","Teste":"Recebimento"};
-
-const ETAPAS_CADASTRO_ERP = ["Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP"];
-const USUARIO_MIGRACAO_ETAPAS_ERP = "Sistema · Migração v2.5.0";
-
-// Insere as novas etapas antes da Liberação sem reabrir projetos já concluídos.
-// Projetos antigos parados em Liberação retornam para a primeira etapa nova.
-function migrarEtapasCadastroERP(historico, dataReal){
-  if(!Array.isArray(historico) || !historico.length) return historico || [];
-  const indiceLiberacao = historico.findIndex(h=>h.etapa === "Liberação");
-  if(indiceLiberacao < 0) return historico;
-  const faltantes = ETAPAS_CADASTRO_ERP.filter(et=>!historico.some(h=>h.etapa === et));
-  if(dataReal){
-    if(faltantes.length){
-      const base = historico[indiceLiberacao];
-      historico.splice(indiceLiberacao, 0, ...faltantes.map(et=>({
-        etapa: et,
-        data: base.data,
-        usuario: base.usuario || USUARIO_MIGRACAO_ETAPAS_ERP
-      })));
-    }
-    return historico;
-  }
-  const semLiberacao = historico.filter(h=>h.etapa !== "Liberação" && !ETAPAS_CADASTRO_ERP.includes(h.etapa));
-  semLiberacao.push({etapa:ETAPAS_CADASTRO_ERP[0], data:new Date().toISOString(), usuario:USUARIO_MIGRACAO_ETAPAS_ERP});
-  return semLiberacao;
-}
-
 function normalizarProjeto(p){
   if(!p.historico) p.historico = [];
   if(!p.fo050) p.fo050 = { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" };
@@ -481,7 +447,6 @@ function normalizarProjeto(p){
   const flx = p.necessita && p.necessita.fixacao ? ETAPAS : ETAPAS_SIMPLES;
   p.historico = p.historico.filter(h=>flx.includes(h.etapa));           // descarta etapas que não existem no fluxo do projeto
   p.historico = p.historico.filter((h,i,arr)=> i===0 || h.etapa!==arr[i-1].etapa);
-  p.historico = migrarEtapasCadastroERP(p.historico, p.dataReal);
   const ult = p.historico[p.historico.length-1];
   if(ult){ const idx = flx.indexOf(ult.etapa); if(idx>=0) p.etapaAtual = idx; }
   if(p.etapaAtual > flx.length-1) p.etapaAtual = flx.length-1;
@@ -489,7 +454,6 @@ function normalizarProjeto(p){
   const flxMont = p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES;
   p.montagem.historico = p.montagem.historico.filter(h=>flxMont.includes(h.etapa));
   p.montagem.historico = p.montagem.historico.filter((h,i,arr)=> i===0 || h.etapa!==arr[i-1].etapa);
-  p.montagem.historico = migrarEtapasCadastroERP(p.montagem.historico, p.montagem.dataReal);
   const ultMont = p.montagem.historico[p.montagem.historico.length-1];
   if(ultMont){ const idx = flxMont.indexOf(ultMont.etapa); if(idx>=0) p.montagem.etapaAtual = idx; }
   if(p.montagem.etapaAtual > flxMont.length-1) p.montagem.etapaAtual = flxMont.length-1;

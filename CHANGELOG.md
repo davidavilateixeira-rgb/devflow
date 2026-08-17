@@ -1,4 +1,26 @@
 # Histórico de Versões (Changelog)
+---------------------------------------
+VERSÃO 2.5.0
+---------------------------------------
+
+Data:
+17/08/2026
+
+Objetivo:
+Inclusão de duas etapas obrigatórias de cadastro no ERP antes da Liberação.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+
+Funcionalidades adicionadas / Correções:
+- Adicionadas as etapas "Revisar/Atualizar cadastro no ERP" e "Aprovar cadastro no sistema ERP" nos fluxos completo e simplificado de Usinagem e Montagem.
+- As etapas pertencem ao grupo PCP, mas podem ser concluídas pelos técnicos responsáveis.
+- Projetos já concluídos permanecem com todas as etapas marcadas como concluídas.
+- Projetos antigos ainda não concluídos e que estavam em Liberação retornam para a primeira nova etapa.
+- Incluída proteção contra o envio acidental de script_estoque/firebase-key.json ao Git.
+
 
 ---------------------------------------
 VERSÃO 2.3.7

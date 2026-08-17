@@ -1001,3 +1001,24 @@ Correções realizadas:
 - Dashboard Gerencial: Adição do indicador de Throughput (entregas realizadas no mês vs mês anterior).
 - Dashboard Gerencial: Gráfico de 'Projetos por Cliente' convertido para exibir ranking ordenado com base no volume da carteira.
 ---------------------------------------
+VERSÃO 2.4.10
+---------------------------------------
+
+Data:
+17/08/2026
+
+Objetivo:
+Otimizações de scripts backend e controle de versionamento.
+
+Arquivos alterados:
+- .agents/AGENTS.md
+- script_estoque/sincronizar_estoque.py
+- script_estoque/Atualizar_Estoque_DevFlow.bat
+- .gitignore
+
+Funcionalidades adicionadas / Correções:
+- Correção do cálculo de total de itens atualizados no script de sincronização de estoque (total_atualizados separado).
+- Inclusão do arquivo firebase-key.json no .gitignore.
+- Formalização das regras de deploy no arquivo de agentes.
+---------------------------------------
+

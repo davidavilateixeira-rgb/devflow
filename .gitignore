@@ -2,3 +2,5 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+script_estoque/firebase-key.json

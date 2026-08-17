@@ -58,8 +58,19 @@ def ler_e_enviar_para_firebase():
     batch = db.batch()
     estoque_ref = db.collection('estoque')
     
+    print("Baixando saldos atuais do Firebase para poupar limite diário de gravação...")
+    # Isso gasta leituras (limite 50.000) mas poupa gravações (limite 20.000)
+    estoque_atual = {}
+    try:
+        for doc in estoque_ref.stream():
+            estoque_atual[doc.id] = doc.to_dict().get('saldo', 0)
+    except Exception as e:
+        print(f"Aviso ao ler estoque atual: {e}")
+
+    total_atualizados = 0
     contador = 0
     lotes_enviados = 0
+    itens_ignorados = 0
     
     # Um Batch no Firebase aceita até 500 operações por vez. 
     # Vamos processar linha a linha da planilha e extrair o saldo dos 4 tipos de componentes.
@@ -75,34 +86,51 @@ def ler_e_enviar_para_firebase():
             if pd.isna(codigo_peca) or str(codigo_peca).strip() == '' or str(codigo_peca) == '0':
                 continue
                 
+            codigo_peca_str = str(codigo_peca).strip().upper()
+
             try:
                 # Converte o saldo para número inteiro, removendo .0 se houver
                 saldo_limpo = int(float(str(saldo).replace(',', '.')))
             except:
                 saldo_limpo = 0
                 
-            doc_ref = estoque_ref.document(str(codigo_peca).strip().upper())
+            # OTIMIZAÇÃO DE COTA: Só grava se o saldo for diferente do que já está lá
+            if estoque_atual.get(codigo_peca_str) == saldo_limpo:
+                itens_ignorados += 1
+                continue
+
+            doc_ref = estoque_ref.document(codigo_peca_str)
             batch.set(doc_ref, {
                 'saldo': saldo_limpo,
                 'ultima_atualizacao': firestore.SERVER_TIMESTAMP
             })
             contador += 1
+            total_atualizados += 1
             
             # Se chegou em 400 registros, envia o lote e cria um novo
             if contador >= 400:
-                batch.commit()
+                print(f"Enviando lote {lotes_enviados + 1} ({contador} itens no lote)...")
+                try:
+                    batch.commit()
+                except Exception as e:
+                    print(f"Erro ao enviar lote (Cota pode estar excedida): {e}")
+                    return
                 lotes_enviados += 1
-                print(f"Lote {lotes_enviados} enviado ({contador} itens)...")
                 batch = db.batch()
                 contador = 0
 
     # Envia os que sobraram no último lote
     if contador > 0:
-        batch.commit()
+        print(f"Enviando lote final {lotes_enviados + 1} ({contador} itens no lote)...")
+        try:
+            batch.commit()
+        except Exception as e:
+            print(f"Erro ao enviar lote final (Cota pode estar excedida): {e}")
+            return
         lotes_enviados += 1
-        print(f"Lote final {lotes_enviados} enviado ({contador} itens).")
 
-    print("Sincronização concluída com sucesso!")
+    print(f"Sincronização concluída! {total_atualizados} itens atualizados.")
+    print(f"{itens_ignorados} itens não precisaram ser atualizados (já estavam com o saldo correto).")
 
 if __name__ == "__main__":
     if not os.path.exists(ARQUIVO_CREDENCIAIS_FIREBASE):

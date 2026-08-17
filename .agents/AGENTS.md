@@ -33,3 +33,9 @@ Ao final da execu√ß√£o, o Agente DEVE apresentar:
 3. Changelog completo da vers√£o.
 4. Lista de arquivos alterados (com links).
 5. Orienta√ß√£o resumida ou passos para rollback se necess√°rio.
+
+## Regras de Deploy e Controle de Vers„o (Nova Melhoria):
+A partir da vers„o 2.4.6, o sistema possui um alerta autom·tico de atualizaÁ„o para os usu·rios em tempo real. Sempre que houver uma evoluÁ„o de vers„o, o agente **DEVE**:
+1. Atualizar a constante VERSAO_ATUAL no topo do bloco de script no arquivo public/index.html.
+2. Atualizar o valor no arquivo public/version.json para refletir exatamente a mesma vers„o.
+3. Isso garante que a notificaÁ„o autom·tica na interface seja engatilhada corretamente para todos os clientes logados no momento do deploy.

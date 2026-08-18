@@ -1,5 +1,26 @@
 # Histórico de Versões (Changelog)
 ---------------------------------------
+VERSÃO 2.6.0
+---------------------------------------
+
+Data:
+18/08/2026
+
+Objetivo:
+Permitir ocultar e reabrir a barra lateral conforme a prefer?ncia do usuário.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+
+Funcionalidades adicionadas / Correções:
+- Adicionado botão para ocultar o menu lateral e ampliar a área principal.
+- Adicionado botão flutuante para reabrir o menu sem sobrepor os controles da tela.
+- A preferência de exibição é salva no navegador e restaurada no próximo acesso.
+- Ajustes responsivos de espaçamento e alinhamento para evitar sobreposições.
+
+---------------------------------------
 VERSÃO 2.5.0
 ---------------------------------------
 

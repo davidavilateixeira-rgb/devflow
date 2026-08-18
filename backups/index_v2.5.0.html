@@ -56,21 +56,6 @@ body{background:var(--cinza-bg);color:var(--texto)}
 .nav-item.ativo{background:var(--laranja-claro);color:var(--laranja);font-weight:600}
 .nav-item.ativo::before{content:"";position:absolute;left:0;top:20%;height:60%;width:3px;
   background:var(--laranja);border-radius:3px}
-/* Barra lateral recolhível */
-#sidebar{width:14rem;flex-basis:14rem;transition:width .2s ease,flex-basis .2s ease,border-color .2s ease;overflow:visible;position:relative;z-index:45}
-#sidebar > *{min-width:14rem;transition:opacity .12s ease}
-.sidebar-toggle{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--cinza-borda);border-radius:6px;background:#fff;color:var(--texto-2);cursor:pointer;transition:all .15s ease}
-.sidebar-toggle:hover{border-color:var(--laranja);color:var(--laranja);background:var(--laranja-claro)}
-.sidebar-toggle svg{transition:transform .2s ease}
-#btnReabrirSidebar{display:none;position:fixed;left:12px;top:12px;z-index:45;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-#app.sidebar-oculta #sidebar{width:0;flex-basis:0;border-right-color:transparent!important;overflow:hidden}
-#app.sidebar-oculta #sidebar > *{opacity:0;pointer-events:none}
-#app.sidebar-oculta #btnReabrirSidebar{display:inline-flex}
-#app.sidebar-oculta #topbar{padding-left:3.5rem}
-@media(max-width:640px){
-  #btnReabrirSidebar{left:10px;top:10px}
-  #app.sidebar-oculta #topbar{padding-left:3.25rem}
-}
 
 /* Semáforos */
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
@@ -172,7 +157,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.6.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.5.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -203,14 +188,11 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div class="flex min-h-screen">
 
 <!-- SIDEBAR -->
-<aside id="sidebar" class="w-56 bg-white border-r flex-none flex flex-col" style="border-color:var(--cinza-borda)">
-  <div class="px-5 py-5 flex items-center gap-2.5 relative pr-12">
-    <button id="btnOcultarSidebar" class="sidebar-toggle no-print absolute right-3 top-4" onclick="toggleSidebar()" title="Ocultar menu lateral" aria-label="Ocultar menu lateral" aria-expanded="true">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/><path d="M3 6h3M3 12h3M3 18h3"/></svg>
-    </button>
+<aside class="w-56 bg-white border-r flex-none flex flex-col" style="border-color:var(--cinza-borda)">
+  <div class="px-5 py-5 flex items-center gap-2.5">
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.6.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.5.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -260,9 +242,6 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </div>
   </div>
 </aside>
-<button id="btnReabrirSidebar" class="sidebar-toggle no-print" onclick="toggleSidebar()" title="Mostrar menu lateral" aria-label="Mostrar menu lateral" aria-expanded="false">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/><path d="M21 6h-3M21 12h-3M21 18h-3"/></svg>
-</button>
 
 <!-- ÁREA PRINCIPAL -->
 <div class="flex-1 flex flex-col min-w-0">
@@ -320,29 +299,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.6.0";
-const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
-function atualizarEstadoSidebar(oculta){
-  const app = document.getElementById("app");
-  if(!app) return;
-  app.classList.toggle("sidebar-oculta", oculta);
-  const btnOcultar = document.getElementById("btnOcultarSidebar");
-  const btnReabrir = document.getElementById("btnReabrirSidebar");
-  if(btnOcultar) btnOcultar.setAttribute("aria-expanded", String(!oculta));
-  if(btnReabrir) btnReabrir.setAttribute("aria-expanded", String(!oculta));
-}
-function carregarPreferenciaSidebar(){
-  let oculta = false;
-  try { oculta = localStorage.getItem(CHAVE_SIDEBAR_OCULTA) === "1"; } catch(e) {}
-  atualizarEstadoSidebar(oculta);
-}
-function toggleSidebar(){
-  const app = document.getElementById("app");
-  if(!app) return;
-  const oculta = !app.classList.contains("sidebar-oculta");
-  atualizarEstadoSidebar(oculta);
-  try { localStorage.setItem(CHAVE_SIDEBAR_OCULTA, oculta ? "1" : "0"); } catch(e) {}
-}
+const VERSAO_ATUAL = "2.5.0";
 
 async function verificarNovaVersao() {
   try {
@@ -746,7 +703,6 @@ auth.onAuthStateChanged(async (u)=>{
 function iniciarApp(){
   document.getElementById("telaLogin").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  carregarPreferenciaSidebar();
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("ativo"));
   const nav = document.querySelector(`.nav-item[data-view="${viewAtual}"]`);
   if(nav) nav.classList.add("ativo");

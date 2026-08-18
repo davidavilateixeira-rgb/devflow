@@ -172,7 +172,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.9.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.8.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -210,7 +210,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.9.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.8.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -320,7 +320,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.9.0";
+const VERSAO_ATUAL = "2.8.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -1260,11 +1260,6 @@ function assumirTarefa(id){
 /* ============================================================
    10. VIEW — DASHBOARD
    ============================================================ */
-function alternarProducaoMensal(modo){
-  estado.producaoMensalModo = modo === "concluidos" ? "concluidos" : "movimentados";
-  renderDashboard();
-}
-
 function renderDashboard(){
   let psRaw = filtroMes(projetosVisiveis());
   const isM = estado.moduloAtual === "montagem";
@@ -1335,36 +1330,6 @@ function renderDashboard(){
   const respNoPrazo = respNomes.map(r => ativos.filter(p=>((isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável") === r && dAtrasoFunc(p) <= 0).length);
   const respAtrasado = respNomes.map(r => ativos.filter(p=>((isM ? p.montagem.responsavel : p.responsavel)||"Sem responsável") === r && dAtrasoFunc(p) > 0).length);
 
-  if(!estado.producaoMensalModo) estado.producaoMensalModo = "movimentados";
-  const producaoUnica = {concluidos:new Map(), movimentados:new Map()};
-  const registrarProducao = (modo, mes, usuario, pid) => {
-    const chave = mes + "|" + usuario + "|" + pid;
-    producaoUnica[modo].set(chave, {mes, usuario});
-  };
-  ps.forEach(p=>{
-    const hist = isM ? ((p.montagem && p.montagem.historico) || []) : (p.historico || []);
-    hist.forEach((h, i)=>{
-      if(!h || !h.data || !h.usuario || h.origem === "migracao" || String(h.usuario).toLowerCase().startsWith("sistema")) return;
-      const mes = new Date(h.data).toISOString().slice(0,7);
-      if(i > 0) registrarProducao("movimentados", mes, h.usuario, p.id);
-      if(h.etapa === "Concluído") registrarProducao("concluidos", mes, h.usuario, p.id);
-    });
-  });
-  const producaoPorModo = {concluidos:{}, movimentados:{}};
-  Object.keys(producaoUnica).forEach(modo=>{
-    producaoUnica[modo].forEach(item=>{
-      if(!producaoPorModo[modo][item.mes]) producaoPorModo[modo][item.mes] = {};
-      producaoPorModo[modo][item.mes][item.usuario] = (producaoPorModo[modo][item.mes][item.usuario] || 0) + 1;
-    });
-  });
-  const producaoMensalModo = estado.producaoMensalModo;
-  const producaoMeses = [...new Set(Object.keys(producaoPorModo.concluidos).concat(Object.keys(producaoPorModo.movimentados)))].sort();
-  const producaoTecnicos = [...new Set(producaoMeses.flatMap(m=>Object.keys(producaoPorModo[producaoMensalModo][m] || {})))].sort();
-  const rotuloMesProducao = k => {
-    const d = new Date(k + "-02T08:00:00");
-    const t = d.toLocaleDateString("pt-BR", {month:"short", year:"2-digit"});
-    return t.charAt(0).toUpperCase() + t.slice(1);
-  };
   // Aging distribution
   let a1=0, a2=0, a3=0, a4=0;
   agingArr.forEach(d => {
@@ -1412,23 +1377,9 @@ function renderDashboard(){
           ${topCriticosHtml}
         </div>
       </div>
-    </div>
-    <div class="card p-5 mb-6 surgir">
-      <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-        <div>
-          <div class="font-semibold text-sm">Desenvolvimentos por Mês e Técnico</div>
-          <div class="text-[11px] text-gray-400">Histórico mensal de atividades no módulo de ${isM ? "Montagem" : "Usinagem"}</div>
-        </div>
-        <div class="flex gap-1">
-          <button class="btn !py-1 !px-2 text-[11px] ${producaoMensalModo === "concluidos" ? "btn-primario" : "btn-suave"}" onclick="alternarProducaoMensal('concluidos')">Concluídos</button>
-          <button class="btn !py-1 !px-2 text-[11px] ${producaoMensalModo === "movimentados" ? "btn-primario" : "btn-suave"}" onclick="alternarProducaoMensal('movimentados')">Movimentados</button>
-        </div>
-      </div>
-      <div class="text-[11px] text-gray-400 mb-3">Cada desenvolvimento conta uma única vez por técnico em cada mês.</div>
-      <div style="height:280px; position:relative;">${producaoMeses.length && producaoTecnicos.length ? `<canvas id="gProducaoMensal"></canvas>` : `<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
     </div>`;
 
-  // Os gráficos históricos permanecem disponíveis mesmo sem carteira ativa.
+  if(!ativos.length) return;
 
   const base = {plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false,
     scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}};
@@ -1443,17 +1394,6 @@ function renderDashboard(){
     {label:"No Prazo",data:respNoPrazo,backgroundColor:"#107C41",borderRadius:4,maxBarThickness:45},
     {label:"Atrasado",data:respAtrasado,backgroundColor:"#D83A52",borderRadius:4,maxBarThickness:45}
   ]},options:{...base,plugins:{legend:{display:true,position:"top",labels:{font:{size:10},usePointStyle:true,boxWidth:8}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,grid:{color:"#EFEFF3"}}}}});
-  if(producaoMeses.length && producaoTecnicos.length) {
-    const coresProd = {};
-    producaoTecnicos.forEach((tec,i)=>coresProd[tec] = CORES[i % CORES.length]);
-    grafico("gProducaoMensal",{type:"bar",data:{labels:producaoMeses.map(rotuloMesProducao),datasets:producaoTecnicos.map(tec=>({
-      label:tec,
-      data:producaoMeses.map(m=>(producaoPorModo[producaoMensalModo][m] || {})[tec] || 0),
-      backgroundColor:coresProd[tec],
-      borderRadius:3,
-      maxBarThickness:32
-    }))},options:{...base,plugins:{legend:{display:true,position:"top",labels:{font:{size:10},usePointStyle:true,boxWidth:8}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw}`}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}}});
-  }
 }
 
 /* ============================================================

@@ -1,3 +1,26 @@
+VERSÃO 2.9.0
+---------------------------------------
+
+Data:
+18/08/2026
+
+Objetivo:
+Adicionar indicador mensal de produtividade por técnico no Dashboard Operacional.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+- backups/index_v2.8.0.html
+
+Funcionalidades adicionadas / Correções:
+- Adicionado gráfico mensal de desenvolvimentos concluídos ou movimentados por técnico.
+- Incluído seletor entre os modos Concluídos e Movimentados.
+- A contagem evita duplicidade do mesmo desenvolvimento para o mesmo técnico no mesmo mês.
+- Eventos automáticos do sistema e da migração são excluídos do indicador.
+- O indicador acompanha o módulo ativo de Usinagem ou Montagem e os filtros aplicados.
+
+---------------------------------------
 VERSÃO 2.8.0
 ---------------------------------------
 

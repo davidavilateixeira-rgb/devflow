@@ -172,7 +172,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.8.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.7.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -210,7 +210,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.8.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.7.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -320,7 +320,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.8.0";
+const VERSAO_ATUAL = "2.7.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -1571,7 +1571,7 @@ function renderStatusReport() {
     else if (statusPrazo === "no_prazo") sem = "verde";
     else sem = semaforo(p, isM);
 
-    const coms = comentariosDoModulo(p, isM, isM ? m : p);
+    const coms = (isM ? (m && m.comentarios) : p.comentarios) || [];
     const ultCom = coms.length > 0 ? coms[coms.length - 1] : null;
 
     return {
@@ -1897,27 +1897,6 @@ const etapaNomeMontagem = (p) => {
   return (p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES)[p.montagem.etapaAtual];
 };
 
-// Identifica registros legados de Montagem que foram gravados na lista de Usinagem.
-// O histórico não é apagado: apenas deixa de aparecer no módulo incorreto.
-function comentarioEhMontagem(c){
-  if(!c) return false;
-  if(c.modulo === "montagem") return true;
-  if(c.modulo === "usinagem") return false;
-  const texto = String(c.texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  return /\bmontagem\b/.test(texto);
-}
-function comentariosDoModulo(p, isMontagem, obj){
-  const proprios = (obj && Array.isArray(obj.comentarios)) ? obj.comentarios : [];
-  const extrasLegados = isMontagem && Array.isArray(p.comentarios)
-    ? p.comentarios.filter(c => !proprios.includes(c) && comentarioEhMontagem(c))
-    : [];
-  const candidatos = isMontagem
-    ? proprios.concat(extrasLegados)
-    : proprios.filter(c => !comentarioEhMontagem(c));
-  const unicos = [];
-  candidatos.forEach(c => { if(!unicos.includes(c)) unicos.push(c); });
-  return unicos.sort((a,b) => (a.data || "").localeCompare(b.data || ""));
-}
 function renderProjeto(){
   const p = estado.projetos.find(x=>x.id===projetoAberto);
   if(!p){irPara("dashboard");return}
@@ -2153,9 +2132,9 @@ function renderProjeto(){
 
     <div class="grid md:grid-cols-3 gap-4 mt-4">
       <div class="card p-5 surgir">
-        <div class="font-semibold text-sm mb-3">Comentários · ${isMontagem ? "Montagem" : "Usinagem"}</div>
+        <div class="font-semibold text-sm mb-3">Comentários</div>
         <div class="space-y-3 mb-3 max-h-72 overflow-y-auto">
-          ${comentariosDoModulo(p, isMontagem, obj).slice().reverse().map(c=>`<div class="rounded-lg p-3" style="background:var(--cinza-bg)">
+          ${(obj.comentarios||[]).slice().reverse().map(c=>`<div class="rounded-lg p-3" style="background:var(--cinza-bg)">
             <div class="flex justify-between text-[11px] mb-1"><b>${esc(c.usuario)}</b><span style="color:var(--texto-2)">${new Date(c.data).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span></div>
             <div class="text-[12.5px]">${esc(c.texto)}</div>
           </div>`).join("") || '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum comentário.</div>'}
@@ -3156,7 +3135,7 @@ function addComentario(id){
   const isM = (estado.moduloAtual === "montagem");
   const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(!obj.comentarios) obj.comentarios = [];
-  obj.comentarios.push({data:new Date().toISOString(),usuario:estado.usuario.nome,texto:el.value.trim(),modulo:isM?"montagem":"usinagem"});
+  obj.comentarios.push({data:new Date().toISOString(),usuario:estado.usuario.nome,texto:el.value.trim()});
   salvarProjeto(p);
 }
 function addAnexo(id){
@@ -3832,7 +3811,7 @@ function renderMovimentacoes(){
     (p.historico || []).filter(h => h.origem !== "migracao").forEach(h => {
       evts.push({ data: h.data, tipo: "etapa", usr: h.usuario, txt: `chegou na etapa "${h.etapa}" no desenvolvimento <b>${p.codigo}</b>`, pid: p.id, etapa: h.etapa });
     });
-    comentariosDoModulo(p, false, p).forEach(c => {
+    (p.comentarios||[]).forEach(c => {
       if(c.texto.startsWith("Assumiu")) {
         evts.push({ data: c.data, tipo: "assumiu", usr: c.usuario, txt: `assumiu o desenvolvimento <b>${p.codigo}</b>`, pid: p.id });
       } else if(c.texto.startsWith("Reabriu")) {
@@ -3845,7 +3824,7 @@ function renderMovimentacoes(){
       (p.montagem.historico || []).filter(h => h.origem !== "migracao").forEach(h => {
         evts.push({ data: h.data, tipo: "etapa", usr: h.usuario, txt: `chegou na etapa "${h.etapa}" da montagem <b>${p.codigo}</b>`, pid: p.id, etapa: h.etapa });
       });
-      comentariosDoModulo(p, true, p.montagem).forEach(c => {
+      (p.montagem.comentarios||[]).forEach(c => {
         if(c.texto.startsWith("Assumiu")) {
           evts.push({ data: c.data, tipo: "assumiu", usr: c.usuario, txt: `assumiu a montagem <b>${p.codigo}</b>`, pid: p.id });
         } else if(c.texto.startsWith("Reabriu")) {

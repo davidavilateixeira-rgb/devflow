@@ -1,3 +1,26 @@
+VERSÃO 2.8.0
+---------------------------------------
+
+Data:
+18/08/2026
+
+Objetivo:
+Separar comentários e atividades de Usinagem e Montagem na tela do projeto.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+- backups/index_v2.7.0.html
+
+Funcionalidades adicionadas / Correções:
+- A aba de comentários agora exibe somente os registros do módulo ativo.
+- Novos comentários manuais passam a registrar explicitamente sua origem como Usinagem ou Montagem.
+- Registros antigos de Montagem que ficaram na lista legada de Usinagem são filtrados e reaproveitados na visão correta, sem apagar o histórico.
+- A aba Movimentações continua consolidada, mas evita duplicidade causada por registros legados misturados.
+- O Status Report passa a considerar o comentário mais recente do módulo ativo.
+
+---------------------------------------
 # Histórico de Versões (Changelog)
 ---------------------------------------
 VERSÃO 2.7.0

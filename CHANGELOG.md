@@ -1,3 +1,33 @@
+
+VERSÃO 2.10.0
+---------------------------------------
+
+Data:
+18/08/2026
+
+Objetivo:
+Criar uma central de follow-up de compras para acompanhar SC, OC, fornecedores e pendências sem abrir cada desenvolvimento individualmente, mantendo a base preparada para futura integração com o ERP.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+- backups/index_v2.9.0.html
+
+Funcionalidades adicionadas / Correções:
+- Adicionada a nova aba "Follow-up Compras", visível somente para administradores e técnicos de Usinagem ou Montagem.
+- Criada visão global independente do módulo ativo, reunindo todos os desenvolvimentos que passaram pelo fluxo de compras.
+- Adicionados indicadores de SC abertas, OC abertas, follow-ups necessários e fornecedores com entrega atrasada.
+- Incluídos filtros por situação, responsável e fornecedor, além de pesquisa por desenvolvimento, SC e OC.
+- Adicionada tabela consolidada com etapa atual, dias parados, status de SC/OC, fornecedor, prazo, próxima ação, responsável e origem dos dados.
+- Criado formulário para registrar e atualizar números, status e datas de SC/OC, fornecedor, prazo de entrega, responsável, próxima ação, data do próximo follow-up e observações.
+- Implementados alertas para follow-up não programado, vencido, item parado além do limite configurado e prazo de fornecedor ultrapassado.
+- Mantida compatibilidade com os campos já existentes de SC, OC e prazo do fornecedor, com sincronização entre a estrutura antiga e a nova.
+- Adicionado histórico próprio de follow-up e registro da atualização nos comentários do módulo de Usinagem.
+- Preparada estrutura de integração com fonte, identificador ERP, status sincronizados e data da última sincronização, permanecendo em modo manual nesta versão.
+- A OC permanece aberta durante a etapa "Recebimento" e só é inferida como recebida após o avanço dessa etapa.
+
+---------------------------------------
 VERSÃO 2.9.0
 ---------------------------------------
 

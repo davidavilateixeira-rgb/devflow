@@ -1,5 +1,27 @@
 # Histórico de Versões (Changelog)
 ---------------------------------------
+VERSÃO 2.7.0
+---------------------------------------
+
+Data:
+18/08/2026
+
+Objetivo:
+Corrigir a migração das etapas ERP para ocorrer uma única vez e não gerar movimentações repetidas.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+
+Funcionalidades adicionadas / Correções:
+- A migração agora grava o marcador cadastroERP25 no projeto e se torna idempotente.
+- Os projetos afetados são atualizados uma única vez no Firestore.
+- Eventos criados automaticamente pela migração recebem origem de migração e deixam de aparecer em Movimentações.
+- Projetos concluídos continuam concluídos e projetos pendentes permanecem na primeira etapa ERP.
+- Eventos automáticos antigos sem marcador também são identificados e corrigidos.
+
+---------------------------------------
 VERSÃO 2.6.0
 ---------------------------------------
 

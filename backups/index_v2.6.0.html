@@ -172,7 +172,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.7.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.6.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -210,7 +210,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.7.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.6.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -320,7 +320,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.7.0";
+const VERSAO_ATUAL = "2.6.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -467,42 +467,31 @@ const analiseConcluida = p => p.etapaAtual > 1;
 const RENOMES_ETAPAS = {"Liberado":"Liberação","Validação":"Validação/FO050","Teste":"Recebimento"};
 
 const ETAPAS_CADASTRO_ERP = ["Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP"];
-const ETAPA_LIBERACAO = "Libera\u00e7\u00e3o";
-const USUARIO_MIGRACAO_ETAPAS_ERP = "Sistema \u00b7 Migra\u00e7\u00e3o v2.5.0";
-const MARCADOR_MIGRACAO_CADASTRO_ERP = "cadastroERP25";
+const USUARIO_MIGRACAO_ETAPAS_ERP = "Sistema · Migração v2.5.0";
 
-// A migração é idempotente: aplicada uma vez e persistida no documento do projeto.
-function marcarEventosMigracaoERP(historico){
-  if(!Array.isArray(historico)) return false;
-  let alterado = false;
-  historico.forEach(h=>{
-    if(h && h.usuario === USUARIO_MIGRACAO_ETAPAS_ERP && h.origem !== "migracao"){
-      h.origem = "migracao";
-      alterado = true;
-    }
-  });
-  return alterado;
-}
-function migrarEtapasCadastroERP(historico, dataReal, migracaoAplicada){
-  if(!Array.isArray(historico) || !historico.length || migracaoAplicada) return {historico:historico || [], alterado:false};
-  const indiceLiberacao = historico.findIndex(h=>h.etapa === ETAPA_LIBERACAO);
-  if(indiceLiberacao < 0) return {historico, alterado:false};
+// Insere as novas etapas antes da Liberação sem reabrir projetos já concluídos.
+// Projetos antigos parados em Liberação retornam para a primeira etapa nova.
+function migrarEtapasCadastroERP(historico, dataReal){
+  if(!Array.isArray(historico) || !historico.length) return historico || [];
+  const indiceLiberacao = historico.findIndex(h=>h.etapa === "Liberação");
+  if(indiceLiberacao < 0) return historico;
   const faltantes = ETAPAS_CADASTRO_ERP.filter(et=>!historico.some(h=>h.etapa === et));
   if(dataReal){
-    if(!faltantes.length) return {historico, alterado:false};
-    const base = historico[indiceLiberacao];
-    historico.splice(indiceLiberacao, 0, ...faltantes.map(et=>({
-      etapa: et,
-      data: base.data,
-      usuario: base.usuario || USUARIO_MIGRACAO_ETAPAS_ERP,
-      origem: "migracao"
-    })));
-    return {historico, alterado:true};
+    if(faltantes.length){
+      const base = historico[indiceLiberacao];
+      historico.splice(indiceLiberacao, 0, ...faltantes.map(et=>({
+        etapa: et,
+        data: base.data,
+        usuario: base.usuario || USUARIO_MIGRACAO_ETAPAS_ERP
+      })));
+    }
+    return historico;
   }
-  const semLiberacao = historico.filter(h=>h.etapa !== ETAPA_LIBERACAO && !ETAPAS_CADASTRO_ERP.includes(h.etapa));
-  semLiberacao.push({etapa:ETAPAS_CADASTRO_ERP[0], data:new Date().toISOString(), usuario:USUARIO_MIGRACAO_ETAPAS_ERP, origem:"migracao"});
-  return {historico:semLiberacao, alterado:true};
+  const semLiberacao = historico.filter(h=>h.etapa !== "Liberação" && !ETAPAS_CADASTRO_ERP.includes(h.etapa));
+  semLiberacao.push({etapa:ETAPAS_CADASTRO_ERP[0], data:new Date().toISOString(), usuario:USUARIO_MIGRACAO_ETAPAS_ERP});
+  return semLiberacao;
 }
+
 function normalizarProjeto(p){
   if(!p.historico) p.historico = [];
   if(!p.fo050) p.fo050 = { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" };
@@ -532,33 +521,22 @@ function normalizarProjeto(p){
       p.historico.splice(idxAnalise+1, 0, {etapa:"Programa CNC", data:p.programaCnc.data||new Date().toISOString(), usuario:p.programaCnc.usuario||"Sistema"});
     }
   }
-  const migracaoERPJaAplicada = !!(p.migracoes && p.migracoes[MARCADOR_MIGRACAO_CADASTRO_ERP]);
-  let migracaoERPPendente = marcarEventosMigracaoERP(p.historico);
   const flx = p.necessita && p.necessita.fixacao ? ETAPAS : ETAPAS_SIMPLES;
   p.historico = p.historico.filter(h=>flx.includes(h.etapa));           // descarta etapas que não existem no fluxo do projeto
   p.historico = p.historico.filter((h,i,arr)=> i===0 || h.etapa!==arr[i-1].etapa);
-  const migracaoUsinagem = migrarEtapasCadastroERP(p.historico, p.dataReal, migracaoERPJaAplicada);
-  p.historico = migracaoUsinagem.historico;
-  migracaoERPPendente = migracaoERPPendente || migracaoUsinagem.alterado;
+  p.historico = migrarEtapasCadastroERP(p.historico, p.dataReal);
   const ult = p.historico[p.historico.length-1];
   if(ult){ const idx = flx.indexOf(ult.etapa); if(idx>=0) p.etapaAtual = idx; }
   if(p.etapaAtual > flx.length-1) p.etapaAtual = flx.length-1;
 
   const flxMont = p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES;
-  migracaoERPPendente = marcarEventosMigracaoERP(p.montagem.historico) || migracaoERPPendente;
   p.montagem.historico = p.montagem.historico.filter(h=>flxMont.includes(h.etapa));
   p.montagem.historico = p.montagem.historico.filter((h,i,arr)=> i===0 || h.etapa!==arr[i-1].etapa);
-  const migracaoMontagem = migrarEtapasCadastroERP(p.montagem.historico, p.montagem.dataReal, migracaoERPJaAplicada);
-  p.montagem.historico = migracaoMontagem.historico;
-  migracaoERPPendente = migracaoERPPendente || migracaoMontagem.alterado;
+  p.montagem.historico = migrarEtapasCadastroERP(p.montagem.historico, p.montagem.dataReal);
   const ultMont = p.montagem.historico[p.montagem.historico.length-1];
   if(ultMont){ const idx = flxMont.indexOf(ultMont.etapa); if(idx>=0) p.montagem.etapaAtual = idx; }
   if(p.montagem.etapaAtual > flxMont.length-1) p.montagem.etapaAtual = flxMont.length-1;
 
-  if(migracaoERPPendente){
-    p.migracoes = Object.assign({}, p.migracoes, {[MARCADOR_MIGRACAO_CADASTRO_ERP]:true});
-    p.__migracaoCadastroERP = true;
-  }
   return p;
 }
 
@@ -638,7 +616,6 @@ function novoProjeto(o){
 let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[], statusSel:[], estoque: {},
   movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"", moduloAtual: "usinagem" };
 let unsubProjetos = null, unsubUsuarios = null, unsubEstoque = null, avisoDesativado = false;
-const migracoesERPEmAndamento = new Set();
 
 const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
 const isProduto = ()=> estado.usuario && estado.usuario.papel === "produto";   // visualiza + cadastra, não edita
@@ -783,7 +760,6 @@ function iniciarApp(){
   if(!unsubProjetos){
     unsubProjetos = db.collection("projetos").onSnapshot(s=>{
       estado.projetos = s.docs.map(x=>normalizarProjeto(Object.assign({id:x.id}, x.data())));
-      estado.projetos.forEach(p=>persistirMigracaoCadastroERP(p));
       estado.projetos.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
       
       // SCRIPT DE MIGRAÇÃO ÚNICO: Gerar DEV-XXX para projetos existentes
@@ -821,25 +797,8 @@ function iniciarApp(){
 /* ============================================================
    4. PERSISTÊNCIA
    ============================================================ */
-function persistirMigracaoCadastroERP(p){
-  if(!p || !p.id || !p.__migracaoCadastroERP || migracoesERPEmAndamento.has(p.id)) return;
-  migracoesERPEmAndamento.add(p.id);
-  db.collection("projetos").doc(p.id).update({
-    historico: p.historico,
-    etapaAtual: p.etapaAtual,
-    montagem: p.montagem,
-    migracoes: p.migracoes
-  }).then(()=>{
-    delete p.__migracaoCadastroERP;
-    migracoesERPEmAndamento.delete(p.id);
-  }).catch(e=>{
-    migracoesERPEmAndamento.delete(p.id);
-    console.error("Erro ao persistir migração de cadastro ERP:", e);
-  });
-}
-
 function salvarProjeto(p){
-  const dados = Object.assign({}, p); delete dados.id; delete dados.__migracaoCadastroERP;
+  const dados = Object.assign({}, p); delete dados.id;
   return db.collection("projetos").doc(p.id).set(dados).catch(e=>alert("Erro ao salvar: "+e.message));
 }
 
@@ -3808,7 +3767,7 @@ function renderMovimentacoes(){
   });
   
   estado.projetos.forEach(p => {
-    (p.historico || []).filter(h => h.origem !== "migracao").forEach(h => {
+    (p.historico || []).forEach(h => {
       evts.push({ data: h.data, tipo: "etapa", usr: h.usuario, txt: `chegou na etapa "${h.etapa}" no desenvolvimento <b>${p.codigo}</b>`, pid: p.id, etapa: h.etapa });
     });
     (p.comentarios||[]).forEach(c => {
@@ -3821,7 +3780,7 @@ function renderMovimentacoes(){
       }
     });
     if(p.montagem) {
-      (p.montagem.historico || []).filter(h => h.origem !== "migracao").forEach(h => {
+      (p.montagem.historico || []).forEach(h => {
         evts.push({ data: h.data, tipo: "etapa", usr: h.usuario, txt: `chegou na etapa "${h.etapa}" da montagem <b>${p.codigo}</b>`, pid: p.id, etapa: h.etapa });
       });
       (p.montagem.comentarios||[]).forEach(c => {

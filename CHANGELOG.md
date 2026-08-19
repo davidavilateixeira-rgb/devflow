@@ -1,4 +1,32 @@
 
+VERSÃO 2.10.2
+---------------------------------------
+
+Data:
+19/08/2026
+
+Objetivo:
+Exibir os códigos das ferramentas no Follow-up de Compras e impedir que compras já recebidas permaneçam no indicador de follow-up necessário por atraso em etapas posteriores.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+- backups/index_v2.10.1.html
+
+Funcionalidades adicionadas / Correções:
+- Adicionada coluna "Ferramentas" na tabela principal do Follow-up de Compras.
+- Os códigos de ferramentas são exibidos em etiquetas, com limite visual e contador para itens adicionais.
+- Adicionado bloco "Ferramentas relacionadas" no modal, exibindo todos os códigos cadastrados na etapa Projeto da Fixação.
+- Incluída pesquisa por código de ferramenta na busca da central de compras.
+- Os códigos permanecem somente para leitura no Follow-up e continuam sendo mantidos no desenvolvimento, evitando dados duplicados.
+- Corrigida a regra de "Follow-up necessário" para considerar tempo parado somente enquanto SC ou OC estiver aberta.
+- Compras com SC convertida e OC recebida passam a exibir o alerta verde "Compra concluída".
+- Compras encerradas deixam de aparecer no filtro e no indicador de follow-up necessário, permanecendo disponíveis em "Todos, inclusive encerrados".
+- Alertas de etapa parada, follow-up vencido e fornecedor atrasado continuam ativos para compras em aberto.
+
+---------------------------------------
+
 VERSÃO 2.10.1
 ---------------------------------------
 

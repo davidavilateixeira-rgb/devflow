@@ -172,7 +172,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.10.2</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.10.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -210,7 +210,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.10.2</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.10.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -325,7 +325,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.10.2";
+const VERSAO_ATUAL = "2.10.1";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -3994,33 +3994,22 @@ function resumoCompras(p){
   const scAberta=!STATUS_SC_ENCERRADOS.includes(st.sc), ocAberta=ocIniciada&&!STATUS_OC_ENCERRADOS.includes(st.oc);
   const diasEtapa=diasNaEtapa(p), el=document.getElementById("cfgDiasAlerta"), limite=el?(+el.value||5):5;
   const diasFollow=diffDiasData(c.followUp.dataProximoFollowUp), diasEntrega=diffDiasData(c.oc.prazoEntrega||p.prazoFornecedor);
-  const comprasAbertas=scAberta||ocAberta;
-  const followSemData=comprasAbertas&&!c.followUp.dataProximoFollowUp;
-  const followVencido=comprasAbertas&&diasFollow!==null&&diasFollow<=0;
+  const followSemData=(scAberta||ocAberta)&&!c.followUp.dataProximoFollowUp;
+  const followVencido=(scAberta||ocAberta)&&diasFollow!==null&&diasFollow<=0;
   const fornecedorAtrasado=ocAberta&&diasEntrega!==null&&diasEntrega<0;
-  const etapaParada=comprasAbertas&&diasEtapa>limite;
-  const followNecessario=followSemData||followVencido||fornecedorAtrasado||etapaParada;
-  let nivel="verde",alerta=comprasAbertas?"Acompanhado":"Compra concluída";
+  const followNecessario=followSemData||followVencido||fornecedorAtrasado||diasEtapa>limite;
+  let nivel="verde",alerta="Acompanhado";
   if(fornecedorAtrasado){nivel="vermelho";alerta=`Entrega atrasada ${Math.abs(diasEntrega)} dia(s)`;}
   else if(followVencido){nivel="vermelho";alerta=diasFollow===0?"Follow-up para hoje":`Follow-up vencido ${Math.abs(diasFollow)} dia(s)`;}
-  else if(etapaParada){nivel="vermelho";alerta=`Parado há ${diasEtapa} dia(s)`;}
+  else if(diasEtapa>limite){nivel="vermelho";alerta=`Parado há ${diasEtapa} dia(s)`;}
   else if(followSemData){nivel="amarelo";alerta="Follow-up não programado";}
-  else if(comprasAbertas&&diasFollow!==null&&diasFollow<=3){nivel="amarelo";alerta=`Follow-up em ${diasFollow} dia(s)`;}
-  return {c,st,scAberta,ocAberta,ocIniciada,comprasAbertas,diasEtapa,diasFollow,diasEntrega,etapaParada,followNecessario,fornecedorAtrasado,nivel,alerta};
+  else if(diasFollow!==null&&diasFollow<=3){nivel="amarelo";alerta=`Follow-up em ${diasFollow} dia(s)`;}
+  return {c,st,scAberta,ocAberta,ocIniciada,diasEtapa,diasFollow,diasEntrega,followNecessario,fornecedorAtrasado,nivel,alerta};
 }
 function badgeCompra(status){
   const encerrado=STATUS_SC_ENCERRADOS.includes(status)||STATUS_OC_ENCERRADOS.includes(status);
   const aguardando=status.includes("Aguardando")||status==="A criar";
   return `<span class="badge ${encerrado?"b-verde":aguardando?"b-laranja":"b-azul"}">${esc(status)}</span>`;
-}
-function ferramentasCompras(p){
-  return [...new Set((p.ferramentas||[]).map(codigo=>String(codigo||"").trim()).filter(Boolean))];
-}
-function htmlFerramentasCompras(p,limite=3){
-  const lista=ferramentasCompras(p);
-  if(!lista.length) return '<span style="color:var(--texto-2)">Nenhuma ferramenta informada</span>';
-  const exibidas=limite>0?lista.slice(0,limite):lista;
-  return `<div class="flex flex-wrap gap-1" title="${esc(lista.join(", "))}">${exibidas.map(codigo=>`<span class="badge b-cinza">${esc(codigo)}</span>`).join("")}${limite>0&&lista.length>limite?`<span class="badge b-azul">+${lista.length-limite}</span>`:""}</div>`;
 }
 
 function atualizarBuscaCompras(valor){
@@ -4038,7 +4027,7 @@ function renderCompras(){
   const responsaveis=[...new Set(base.map(x=>x.r.c.followUp.responsavel||x.p.responsavel).filter(Boolean))].sort();
   const fornecedores=[...new Set(base.map(x=>x.p.fornecedor).filter(Boolean))].sort();
   let itens=base.slice();const q=estado.comprasBusca.trim().toLowerCase();
-  if(q)itens=itens.filter(({p,r})=>[p.codigo,p.devId,p.descricao,p.fornecedor,p.responsavel,r.c.followUp.responsavel,r.c.sc.numero,p.numSC,r.c.oc.numero,p.numOC,r.c.followUp.proximaAcao,r.st.sc,r.st.oc,ferramentasCompras(p).join(" ")].join(" ").toLowerCase().includes(q));
+  if(q)itens=itens.filter(({p,r})=>[p.codigo,p.devId,p.descricao,p.fornecedor,p.responsavel,r.c.followUp.responsavel,r.c.sc.numero,p.numSC,r.c.oc.numero,p.numOC,r.c.followUp.proximaAcao,r.st.sc,r.st.oc].join(" ").toLowerCase().includes(q));
   if(estado.comprasResponsavel)itens=itens.filter(({p,r})=>(r.c.followUp.responsavel||p.responsavel)===estado.comprasResponsavel);
   if(estado.comprasFornecedor)itens=itens.filter(({p})=>p.fornecedor===estado.comprasFornecedor);
   if(estado.comprasFiltro==="abertos")itens=itens.filter(x=>x.r.scAberta||x.r.ocAberta);
@@ -4050,18 +4039,17 @@ function renderCompras(){
   const card=(titulo,valor,cor,filtro,detalhe)=>`<button class="card p-4 text-left hover:shadow-md transition-shadow" onclick="estado.comprasFiltro='${filtro}';renderTudo()"><div class="text-[11px] uppercase font-semibold tracking-wide" style="color:var(--texto-2)">${titulo}</div><div class="text-2xl font-bold mt-1" style="color:${cor}">${valor}</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">${detalhe}</div></button>`;
   view.innerHTML=`
     <div class="flex items-start justify-between flex-wrap gap-3 mb-4"><div><h1 class="text-xl font-bold surgir">Follow-up de Compras</h1><p class="text-[12px] mt-1" style="color:var(--texto-2)">SC, OC, fornecedores e ações pendentes em uma única visão. Base manual preparada para integração com o ERP.</p></div><span class="badge b-cinza">Fonte atual: Manual</span></div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("SC abertas",totalSc,"var(--laranja)","sc","Solicitações ainda não convertidas em OC")}${card("OC abertas",totalOc,"#0F5FA8","oc","Ordens ainda não recebidas ou canceladas")}${card("Follow-up necessário",totalFollow,"#C42B1C","follow","Pendências somente enquanto SC ou OC estiver aberta")}${card("Fornecedor atrasado",totalAtrasados,"#7C2D12","atrasados","Prazo de entrega ultrapassado")}</div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("SC abertas",totalSc,"var(--laranja)","sc","Solicitações ainda não convertidas em OC")}${card("OC abertas",totalOc,"#0F5FA8","oc","Ordens ainda não recebidas ou canceladas")}${card("Follow-up necessário",totalFollow,"#C42B1C","follow","Sem data, vencido ou parado além do limite")}${card("Fornecedor atrasado",totalAtrasados,"#7C2D12","atrasados","Prazo de entrega ultrapassado")}</div>
     <div class="card p-4 mb-4 no-print"><div class="grid md:grid-cols-4 gap-2">
-      <div class="relative"><svg class="absolute left-2.5 top-2.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A93" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input id="comprasBusca" class="inp !pl-8" value="${esc(estado.comprasBusca)}" placeholder="Buscar desenvolvimento, ferramenta, SC, OC..." oninput="atualizarBuscaCompras(this.value)"></div>
+      <div class="relative"><svg class="absolute left-2.5 top-2.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A93" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input id="comprasBusca" class="inp !pl-8" value="${esc(estado.comprasBusca)}" placeholder="Buscar desenvolvimento, SC, OC..." oninput="atualizarBuscaCompras(this.value)"></div>
       <select class="inp" onchange="estado.comprasFiltro=this.value;renderTudo()">${[["abertos","Todos em aberto"],["follow","Follow-up necessário"],["sc","SC abertas"],["oc","OC abertas"],["atrasados","Fornecedor atrasado"],["todos","Todos, inclusive encerrados"]].map(([v,l])=>`<option value="${v}" ${estado.comprasFiltro===v?"selected":""}>${l}</option>`).join("")}</select>
       <select class="inp" onchange="estado.comprasResponsavel=this.value;renderTudo()"><option value="">Todos os responsáveis</option>${responsaveis.map(v=>`<option value="${esc(v)}" ${estado.comprasResponsavel===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
       <select class="inp" onchange="estado.comprasFornecedor=this.value;renderTudo()"><option value="">Todos os fornecedores</option>${fornecedores.map(v=>`<option value="${esc(v)}" ${estado.comprasFornecedor===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
     </div></div>
-    <div class="card overflow-hidden surgir"><div class="overflow-x-auto"><table class="w-full text-left text-[11.5px]" style="min-width:1320px"><thead style="background:#F7F7F8;color:var(--texto-2)"><tr><th class="p-3">Alerta</th><th class="p-3">Desenvolvimento</th><th class="p-3">Ferramentas</th><th class="p-3">Etapa</th><th class="p-3">SC</th><th class="p-3">OC</th><th class="p-3">Fornecedor / entrega</th><th class="p-3">Próximo follow-up</th><th class="p-3">Responsável</th><th class="p-3">Origem</th><th class="p-3"></th></tr></thead><tbody>
+    <div class="card overflow-hidden surgir"><div class="overflow-x-auto"><table class="w-full text-left text-[11.5px]" style="min-width:1180px"><thead style="background:#F7F7F8;color:var(--texto-2)"><tr><th class="p-3">Alerta</th><th class="p-3">Desenvolvimento</th><th class="p-3">Etapa</th><th class="p-3">SC</th><th class="p-3">OC</th><th class="p-3">Fornecedor / entrega</th><th class="p-3">Próximo follow-up</th><th class="p-3">Responsável</th><th class="p-3">Origem</th><th class="p-3"></th></tr></thead><tbody>
       ${itens.length?itens.map(({p,r})=>`<tr class="border-t hover:bg-gray-50 cursor-pointer" style="border-color:var(--cinza-borda)" onclick="irPara('projeto','${p.id}')">
         <td class="p-3"><div class="flex items-center gap-2"><span class="dot dot-${r.nivel}"></span><span class="font-semibold">${esc(r.alerta)}</span></div><div class="mt-1" style="color:var(--texto-2)">${r.diasEtapa} dia(s) na etapa</div></td>
         <td class="p-3"><div class="font-bold text-[12.5px]">${esc(p.codigo)} ${p.devId?`<span class="badge b-cinza">${esc(p.devId)}</span>`:""}</div><div class="mt-1 max-w-[210px] truncate" title="${esc(p.descricao)}" style="color:var(--texto-2)">${esc(p.descricao)}</div></td>
-        <td class="p-3 max-w-[220px]">${htmlFerramentasCompras(p,3)}</td>
         <td class="p-3 font-semibold">${esc(etapaNome(p))}</td>
         <td class="p-3"><div>${esc(r.c.sc.numero||p.numSC||"—")}</div><div class="mt-1">${badgeCompra(r.st.sc)}</div></td>
         <td class="p-3"><div>${esc(r.c.oc.numero||p.numOC||"—")}</div><div class="mt-1">${badgeCompra(r.st.oc)}</div></td>
@@ -4069,7 +4057,7 @@ function renderCompras(){
         <td class="p-3"><div class="font-semibold">${r.c.followUp.dataProximoFollowUp?fmtL(r.c.followUp.dataProximoFollowUp):"Não programado"}</div><div class="mt-1 max-w-[180px] truncate" title="${esc(r.c.followUp.proximaAcao)}" style="color:var(--texto-2)">${esc(r.c.followUp.proximaAcao||"Sem próxima ação")}</div></td>
         <td class="p-3">${esc(r.c.followUp.responsavel||p.responsavel||"Sem responsável")}</td>
         <td class="p-3"><span class="badge b-cinza">${r.c.integracao.fonte==="erp"?"ERP":"Manual"}</span>${r.c.integracao.ultimaSincronizacao?`<div class="mt-1" style="color:var(--texto-2)">${fmtL(r.c.integracao.ultimaSincronizacao)}</div>`:""}</td>
-        <td class="p-3"><button class="btn btn-suave !py-1.5 !px-2.5" onclick="event.stopPropagation();abrirFollowUpCompras('${p.id}')">Atualizar</button></td></tr>`).join(""):`<tr><td colspan="11" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
+        <td class="p-3"><button class="btn btn-suave !py-1.5 !px-2.5" onclick="event.stopPropagation();abrirFollowUpCompras('${p.id}')">Atualizar</button></td></tr>`).join(""):`<tr><td colspan="10" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
     </tbody></table></div><div class="p-3 border-t text-[10.5px]" style="border-color:var(--cinza-borda);color:var(--texto-2)">${itens.length} de ${base.length} desenvolvimento(s) exibido(s).</div></div>`;
 }
 function opcoesStatusCompra(lista,atual){return lista.map(v=>`<option value="${v}" ${atual===v?"selected":""}>${v}</option>`).join("");}
@@ -4090,12 +4078,6 @@ function abrirFollowUpCompras(id){
         <div><label class="lbl">Data de emissão</label><input id="cp-oc-emissao" type="date" class="inp" value="${esc(c.oc.dataEmissao)}"></div><div><label class="lbl">Data de aprovação</label><input id="cp-oc-aprovacao" type="date" class="inp" value="${esc(c.oc.dataAprovacao)}"></div>
         <div><label class="lbl">Fornecedor</label><input id="cp-fornecedor" class="inp" value="${esc(p.fornecedor)}"></div><div><label class="lbl">Prazo de entrega</label><input id="cp-oc-prazo" type="date" class="inp" value="${esc(c.oc.prazoEntrega||p.prazoFornecedor)}"></div>
       </div></div>
-    </div>
-    <div class="card !shadow-none p-4 mt-4" style="background:#FFF9F5">
-      <div class="flex items-start justify-between gap-3">
-        <div><div class="font-bold text-[13px] mb-2">Ferramentas relacionadas</div>${htmlFerramentasCompras(p,0)}</div>
-        <div class="text-[10.5px] text-right max-w-[230px]" style="color:var(--texto-2)">Códigos da etapa Projeto da Fixação. Para alterar, edite as ferramentas no desenvolvimento.</div>
-      </div>
     </div>
     <div class="card !shadow-none p-4 mt-4"><div class="font-bold text-[13px] mb-3">Planejamento do follow-up</div><div class="grid md:grid-cols-3 gap-3">
       <div><label class="lbl">Responsável pelo follow-up</label><select id="cp-responsavel" class="inp"><option value="">Sem responsável</option>${atualResp&&!responsaveis.some(u=>u.nome===atualResp)?`<option selected value="${esc(atualResp)}">${esc(atualResp)}</option>`:""}${responsaveis.map(u=>`<option value="${esc(u.nome)}" ${u.nome===atualResp?"selected":""}>${esc(u.nome)}</option>`).join("")}</select></div>

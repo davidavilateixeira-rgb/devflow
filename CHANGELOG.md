@@ -1,4 +1,34 @@
 
+VERSÃO 2.10.1
+---------------------------------------
+
+Data:
+19/08/2026
+
+Objetivo:
+Corrigir a proporção do modal de Follow-up de Compras e garantir sincronização consistente dos dados entre Kanban, cadastro e a central de compras.
+
+Arquivos alterados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+- backups/index_v2.10.0.html
+
+Funcionalidades adicionadas / Correções:
+- Adicionado espaçamento interno ao modal de Follow-up de Compras para impedir que títulos, cards e botões fiquem encostados nas bordas.
+- Reduzida a largura máxima do modal e aplicadas margens mínimas proporcionais à janela.
+- Ajustada a altura máxima para preservar espaço superior e inferior, mantendo rolagem interna quando necessária.
+- Criada função central de sincronização para os dados de SC, OC e prazo do fornecedor.
+- O avanço pelo Kanban agora atualiza imediatamente números, status e datas correspondentes na central de compras.
+- As datas de abertura/aprovação da SC e emissão/aprovação da OC passam a ser registradas automaticamente conforme as etapas são concluídas.
+- Alterações feitas pelo cadastro agora substituem também os dados da central, inclusive quando um valor é apagado.
+- Alterações feitas pelo Follow-up continuam atualizando os campos utilizados pelo cadastro e pelo Kanban.
+- O retrocesso de etapas agora recalcula os status e remove números, prazos e datas que pertencem a etapas posteriores.
+- Um fornecedor isolado não mantém na central um desenvolvimento retrocedido para antes do fluxo de compras.
+- A atualização entre as telas continua sendo refletida em tempo real pelo listener do Firebase.
+
+---------------------------------------
+
 VERSÃO 2.10.0
 ---------------------------------------
 

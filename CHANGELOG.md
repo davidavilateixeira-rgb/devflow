@@ -1,3 +1,23 @@
+## [2.12.0] - 2026-08-20
+
+### Adicionado
+- Integra o acompanhamento de OC ao Tecnicon em modo somente leitura.
+- Exibe aprovador previsto/efetivo, comprador, fornecedor, envio, prazo, entrada de NF e percentual recebido.
+- Adiciona indicadores e filtros de aprovacao, envio, entrega, atraso e recebimento.
+- Mantem o cadastro manual separado do report oficial do ERP.
+
+### Corrigido
+- O monitor consulta somente documentos marcados como `solicitado` nos ciclos de 15 segundos, evitando releitura completa e consumo excessivo da cota do Firestore.
+- O recebimento automatico somente e concluido quando existe entrada de NF no ERP.
+
+### Validacao
+- 14 testes unitarios aprovados.
+- Consultas reais validadas para OC pendente de aprovacao, aguardando entrega, atrasada e recebida.
+- Interface e modal validados em navegador, sem sobreposicao no corpo e com rolagem interna.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.11.2.html`.
+- SHA-256: `29263E374878C91EEDF7B4CD34ECAC0A49EBA6A650B499EDE8F30962F8003440`.
 ## [2.11.2] - 2026-08-20
 
 ### Corrigido

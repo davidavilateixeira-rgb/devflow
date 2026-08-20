@@ -33,4 +33,20 @@ DEVFLOW_ERP_ENV_FILE
 DEVFLOW_FIREBASE_CREDENTIALS
 ```
 
+## Acompanhamento de OC
+
+O conector acompanha SC e OC em uma unica consulta somente leitura. Para a OC,
+o report inclui liberacao, aprovacao, aprovador previsto/efetivo, comprador,
+fornecedor, envio por e-mail, previsao de entrega e recebimento confirmado pela
+entrada da NF. O status manual permanece separado e nunca e sobrescrito.
+
+Teste uma SC e uma OC sem acessar o Firestore:
+
+```powershell
+python script_compras\sincronizar_compras_sc.py --dry-run --sc 666993 --oc 1285383
+```
+
+No modo de monitoramento, os pedidos dos botoes consultam somente documentos
+marcados como `solicitado`; a varredura completa permanece a cada 15 minutos.
+
 O modo monitor faz uma atualização completa a cada 15 minutos e verifica solicitações dos botões a cada 15 segundos.

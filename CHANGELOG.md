@@ -1,3 +1,41 @@
+VERSÃO 2.11.0
+---------------------------------------
+
+Data:
+20/08/2026
+
+Objetivo:
+Integrar o Follow-up de Compras ao Tecnicon para consultar, em modo somente leitura, o andamento da aprovação das Solicitações de Compra (SC).
+
+Arquivos alterados / adicionados:
+- public/index.html
+- public/version.json
+- CHANGELOG.md
+- backups/index_v2.10.2.html
+- script_compras/sincronizar_compras_sc.py
+- script_compras/test_sincronizar_compras_sc.py
+- script_compras/requirements.txt
+- script_compras/README.md
+- script_compras/Iniciar_Monitor_SC_DevFlow.bat
+- script_compras/Atualizar_Todas_SC_Agora.bat
+
+Funcionalidades adicionadas:
+- Criado conector Python entre Tecnicon Firebird e Firestore, com consultas exclusivamente SELECT e parâmetros ODBC.
+- A sincronização identifica SC não liberada, aguardando aprovação, aprovada, parcialmente convertida, convertida em OC, recusada, cancelada ou não encontrada.
+- O report exibe criação da SC, aprovador informado no ERP, data e hora da aprovação, quantidade de itens convertidos, OCs geradas e próxima ação sugerida.
+- Adicionado botão individual "Atualizar no ERP" e botão global "Atualizar SCs no ERP".
+- Adicionada atualização automática completa a cada 15 minutos e atendimento das solicitações dos botões a cada 15 segundos.
+- Incluídos indicadores e filtros específicos para aprovação de SC no ERP.
+- O relatório do ERP foi adicionado à tabela e ao modal de Follow-up de Compras, preservando alinhamento e rolagem horizontal.
+- Resultados e erros são gravados apenas na área de integração do desenvolvimento, sem sobrescrever responsável, observação, próxima ação ou demais campos manuais.
+- A integração não movimenta automaticamente etapas do Kanban e não executa nenhuma escrita no Tecnicon.
+- Criados testes unitários para extração de múltiplas SCs e regras de status.
+
+Validação:
+- Consulta somente leitura validada no Tecnicon com SCs reais, retornando aprovador, datas de aprovação e números de OC.
+- Backup da versão 2.10.2 validado por SHA-256 antes da implementação.
+
+---------------------------------------
 
 VERSÃO 2.10.2
 ---------------------------------------

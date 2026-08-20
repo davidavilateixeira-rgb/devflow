@@ -172,7 +172,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.11.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.10.2</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -210,7 +210,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.11.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.10.2</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -516,8 +516,7 @@ function normalizarProjeto(p){
   p.compras.sc = Object.assign({numero:"", status:"", dataAbertura:"", dataAprovacao:""}, p.compras.sc||{});
   p.compras.oc = Object.assign({numero:"", status:"", dataEmissao:"", dataAprovacao:"", prazoEntrega:""}, p.compras.oc||{});
   p.compras.followUp = Object.assign({responsavel:"", proximaAcao:"", dataProximoFollowUp:"", observacao:""}, p.compras.followUp||{});
-  p.compras.integracao = Object.assign({fonte:"manual", idERP:"", ultimaSincronizacao:"", statusSCERP:"", statusOCERP:"", scERP:[], solicitadoEm:"", solicitadoPor:"", processadoEm:"", statusSincronizacao:"", erro:""}, p.compras.integracao||{});
-  if(!Array.isArray(p.compras.integracao.scERP)) p.compras.integracao.scERP = [];
+  p.compras.integracao = Object.assign({fonte:"manual", idERP:"", ultimaSincronizacao:"", statusSCERP:"", statusOCERP:""}, p.compras.integracao||{});
   if(!Array.isArray(p.compras.historico)) p.compras.historico = [];
   if(p.numSC && !p.compras.sc.numero) p.compras.sc.numero = p.numSC;
   if(p.numOC && !p.compras.oc.numero) p.compras.oc.numero = p.numOC;
@@ -652,7 +651,7 @@ function novoProjeto(o){
       sc:{numero:"",status:"",dataAbertura:"",dataAprovacao:""},
       oc:{numero:"",status:"",dataEmissao:"",dataAprovacao:"",prazoEntrega:""},
       followUp:{responsavel:"",proximaAcao:"",dataProximoFollowUp:"",observacao:""},
-      integracao:{fonte:"manual",idERP:"",ultimaSincronizacao:"",statusSCERP:"",statusOCERP:"",scERP:[],solicitadoEm:"",solicitadoPor:"",processadoEm:"",statusSincronizacao:"",erro:""},
+      integracao:{fonte:"manual",idERP:"",ultimaSincronizacao:"",statusSCERP:"",statusOCERP:""},
       historico:[]
     },
     ferramentas:[], obsEtapas:{}, programaCnc:{feito:false, data:"", usuario:""},
@@ -4024,105 +4023,6 @@ function htmlFerramentasCompras(p,limite=3){
   return `<div class="flex flex-wrap gap-1" title="${esc(lista.join(", "))}">${exibidas.map(codigo=>`<span class="badge b-cinza">${esc(codigo)}</span>`).join("")}${limite>0&&lista.length>limite?`<span class="badge b-azul">+${lista.length-limite}</span>`:""}</div>`;
 }
 
-const STATUS_SC_ERP_PROBLEMA = ["NAO_ENCONTRADA","RECUSADA"];
-const STATUS_SC_ERP_PENDENTE = ["NAO_LIBERADA","AGUARDANDO_APROVACAO","EM_PREPARACAO"];
-const STATUS_SC_ERP_OK = ["APROVADA","PARCIALMENTE_CONVERTIDA","CONVERTIDA_EM_OC","CANCELADA"];
-
-function numerosSCERP(p){
-  const c=comprasDe(p),texto=[c.sc.numero,p.numSC].filter(Boolean).join(" ");
-  return [...new Set((texto.match(/\d+/g)||[]))];
-}
-function registrosSCERP(p){
-  const c=comprasDe(p);
-  return Array.isArray(c.integracao.scERP)?c.integracao.scERP:[];
-}
-function fmtDataHoraERP(valor){
-  if(!valor)return "—";
-  const dt=new Date(valor);
-  return Number.isNaN(dt.getTime())?fmtL(valor):dt.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
-}
-function classeStatusSCERP(codigo){
-  if(["APROVADA","CONVERTIDA_EM_OC","CANCELADA"].includes(codigo))return "b-verde";
-  if(codigo==="PARCIALMENTE_CONVERTIDA")return "b-azul";
-  if(STATUS_SC_ERP_PROBLEMA.includes(codigo))return "b-vermelho";
-  if(STATUS_SC_ERP_PENDENTE.includes(codigo))return "b-laranja";
-  return "b-cinza";
-}
-function sincronizacaoSCPendente(integracao){
-  return !!(integracao.solicitadoEm&&(!integracao.processadoEm||integracao.solicitadoEm>integracao.processadoEm));
-}
-function resumoSCERPProjeto(p){
-  const c=comprasDe(p),numeros=numerosSCERP(p),registros=registrosSCERP(p);
-  const codigos=registros.map(r=>r.statusCodigo).filter(Boolean);
-  const pendente=sincronizacaoSCPendente(c.integracao);
-  const problema=c.integracao.statusSincronizacao==="erro"||codigos.some(codigo=>STATUS_SC_ERP_PROBLEMA.includes(codigo));
-  const aguardando=codigos.some(codigo=>STATUS_SC_ERP_PENDENTE.includes(codigo));
-  const aprovado=codigos.length>0&&codigos.every(codigo=>STATUS_SC_ERP_OK.includes(codigo));
-  return {numeros,registros,codigos,pendente,problema,aguardando,aprovado,integracao:c.integracao};
-}
-function htmlSCERP(p,compacto=false){
-  const info=resumoSCERPProjeto(p),i=info.integracao;
-  if(!info.numeros.length)return '<div class="text-[11px]" style="color:var(--texto-2)">Informe o número da SC para consultar o ERP.</div>';
-  if(i.statusSincronizacao==="erro")return `<div class="rounded-md p-2 text-[11px]" style="background:#FDE7E5;color:var(--vermelho)"><b>Falha na consulta:</b> ${esc(i.erro||"Conector indisponível.")}</div>`;
-  if(info.pendente)return `<div class="flex items-center gap-2 text-[11px]" style="color:var(--laranja)"><span class="inline-block w-3 h-3 rounded-full border-2 border-orange-500 border-t-transparent animate-spin"></span>Atualização solicitada ao conector ERP.</div>`;
-  const porNumero=new Map(info.registros.map(r=>[String(r.numero),r]));
-  return `<div class="${compacto?"space-y-2 min-w-[250px]":"grid md:grid-cols-2 gap-3"}">${info.numeros.map(numero=>{
-    const r=porNumero.get(String(numero));
-    if(!r)return `<div class="rounded-md border p-2" style="border-color:var(--cinza-borda)"><div class="font-bold">SC ${esc(numero)}</div><div class="mt-1" style="color:var(--texto-2)">Aguardando primeira consulta ao ERP.</div></div>`;
-    const diasAguardando=r.statusCodigo==="AGUARDANDO_APROVACAO"&&r.dataCriacao?Math.max(0,dias(parseData(r.dataCriacao),new Date())):null;
-    return `<div class="rounded-md border p-2.5" style="border-color:var(--cinza-borda);background:#fff">
-      <div class="flex items-center justify-between gap-2"><b>SC ${esc(r.numero)}</b><span class="badge ${classeStatusSCERP(r.statusCodigo)}">${esc(r.status)}</span></div>
-      <div class="mt-1.5 grid ${compacto?"grid-cols-1":"grid-cols-2"} gap-x-3 gap-y-1 text-[10.5px]" style="color:var(--texto-2)">
-        <div>Criada: <b style="color:var(--texto)">${r.dataCriacao?fmtL(r.dataCriacao):"—"}</b></div>
-        <div>Aprovador ERP: <b style="color:var(--texto)">${esc(r.aprovador||"Não informado")}</b></div>
-        ${r.dataAprovacao?`<div>Aprovada em: <b style="color:var(--texto)">${fmtDataHoraERP(r.dataAprovacao)}</b></div>`:""}
-        ${diasAguardando!==null?`<div>Aguardando há: <b style="color:var(--vermelho)">${diasAguardando} dia(s)</b></div>`:""}
-        ${r.ocNumeros&&r.ocNumeros.length?`<div>OC(s): <b style="color:var(--texto)">${esc(r.ocNumeros.join(", "))}</b></div>`:""}
-      </div>
-      <div class="mt-2 text-[10.5px]"><b>Próxima ação:</b> ${esc(r.proximaAcao||"—")}</div>
-    </div>`;
-  }).join("")}</div>`;
-}
-async function solicitarAtualizacaoSCERP(id){
-  if(!podeAcessarCompras())return;
-  const p=estado.projetos.find(x=>x.id===id);if(!p)return;
-  const numeros=numerosSCERP(p);if(!numeros.length){alert("Informe o número da SC antes de consultar o ERP.");return;}
-  const agora=new Date().toISOString(),c=comprasDe(p);
-  Object.assign(c.integracao,{solicitadoEm:agora,solicitadoPor:estado.usuario.nome,statusSincronizacao:"solicitado",erro:""});
-  renderTudo();if(viewAtual==="projeto")renderProjeto();
-  try{
-    await db.collection("projetos").doc(id).update({
-      "compras.integracao.solicitadoEm":agora,
-      "compras.integracao.solicitadoPor":estado.usuario.nome,
-      "compras.integracao.statusSincronizacao":"solicitado",
-      "compras.integracao.erro":""
-    });
-  }catch(e){Object.assign(c.integracao,{statusSincronizacao:"erro",erro:e.message});renderTudo();alert("Erro ao solicitar atualização: "+e.message);}
-}
-async function solicitarAtualizacaoTodasSCERP(){
-  if(!podeAcessarCompras())return;
-  const projetos=estado.projetos.filter(p=>numerosSCERP(p).length);
-  if(!projetos.length){alert("Nenhum desenvolvimento possui número de SC informado.");return;}
-  if(!confirm(`Solicitar atualização no ERP para ${projetos.length} desenvolvimento(s)?`))return;
-  const agora=new Date().toISOString();
-  try{
-    for(let inicio=0;inicio<projetos.length;inicio+=400){
-      const lote=db.batch();
-      projetos.slice(inicio,inicio+400).forEach(p=>{
-        Object.assign(comprasDe(p).integracao,{solicitadoEm:agora,solicitadoPor:estado.usuario.nome,statusSincronizacao:"solicitado",erro:""});
-        lote.update(db.collection("projetos").doc(p.id),{
-          "compras.integracao.solicitadoEm":agora,
-          "compras.integracao.solicitadoPor":estado.usuario.nome,
-          "compras.integracao.statusSincronizacao":"solicitado",
-          "compras.integracao.erro":""
-        });
-      });
-      await lote.commit();
-    }
-    renderTudo();
-  }catch(e){alert("Erro ao solicitar atualização das SCs: "+e.message);}
-}
-
 function atualizarBuscaCompras(valor){
   estado.comprasBusca=valor;
   renderCompras();
@@ -4132,18 +4032,13 @@ function atualizarBuscaCompras(valor){
 function renderCompras(){
   const view=document.getElementById("view-compras");
   if(!podeAcessarCompras()){view.innerHTML='<div class="card p-6 text-[13px]">Seu perfil não possui acesso ao follow-up de compras.</div>';return;}
-  const base=estado.projetos.filter(projetoTemCompras).map(p=>({p,r:resumoCompras(p),erp:resumoSCERPProjeto(p)}));
+  const base=estado.projetos.filter(projetoTemCompras).map(p=>({p,r:resumoCompras(p)}));
   const totalSc=base.filter(x=>x.r.scAberta).length,totalOc=base.filter(x=>x.r.ocAberta).length;
   const totalFollow=base.filter(x=>x.r.followNecessario).length,totalAtrasados=base.filter(x=>x.r.fornecedorAtrasado).length;
-  const registrosERP=base.flatMap(x=>x.erp.registros);
-  const totalERPPendente=registrosERP.filter(r=>r.statusCodigo==="AGUARDANDO_APROVACAO").length;
-  const totalERPAprovada=registrosERP.filter(r=>["APROVADA","PARCIALMENTE_CONVERTIDA","CONVERTIDA_EM_OC"].includes(r.statusCodigo)).length;
-  const totalERPnaoLiberada=registrosERP.filter(r=>["NAO_LIBERADA","EM_PREPARACAO"].includes(r.statusCodigo)).length;
-  const totalERPProblema=registrosERP.filter(r=>STATUS_SC_ERP_PROBLEMA.includes(r.statusCodigo)).length+base.filter(x=>x.erp.integracao.statusSincronizacao==="erro").length;
   const responsaveis=[...new Set(base.map(x=>x.r.c.followUp.responsavel||x.p.responsavel).filter(Boolean))].sort();
   const fornecedores=[...new Set(base.map(x=>x.p.fornecedor).filter(Boolean))].sort();
   let itens=base.slice();const q=estado.comprasBusca.trim().toLowerCase();
-  if(q)itens=itens.filter(({p,r,erp})=>[p.codigo,p.devId,p.descricao,p.fornecedor,p.responsavel,r.c.followUp.responsavel,r.c.sc.numero,p.numSC,r.c.oc.numero,p.numOC,r.c.followUp.proximaAcao,r.st.sc,r.st.oc,ferramentasCompras(p).join(" "),erp.registros.map(v=>[v.numero,v.status,v.aprovador,v.proximaAcao].join(" ")).join(" ")].join(" ").toLowerCase().includes(q));
+  if(q)itens=itens.filter(({p,r})=>[p.codigo,p.devId,p.descricao,p.fornecedor,p.responsavel,r.c.followUp.responsavel,r.c.sc.numero,p.numSC,r.c.oc.numero,p.numOC,r.c.followUp.proximaAcao,r.st.sc,r.st.oc,ferramentasCompras(p).join(" ")].join(" ").toLowerCase().includes(q));
   if(estado.comprasResponsavel)itens=itens.filter(({p,r})=>(r.c.followUp.responsavel||p.responsavel)===estado.comprasResponsavel);
   if(estado.comprasFornecedor)itens=itens.filter(({p})=>p.fornecedor===estado.comprasFornecedor);
   if(estado.comprasFiltro==="abertos")itens=itens.filter(x=>x.r.scAberta||x.r.ocAberta);
@@ -4151,36 +4046,30 @@ function renderCompras(){
   if(estado.comprasFiltro==="sc")itens=itens.filter(x=>x.r.scAberta);
   if(estado.comprasFiltro==="oc")itens=itens.filter(x=>x.r.ocAberta);
   if(estado.comprasFiltro==="atrasados")itens=itens.filter(x=>x.r.fornecedorAtrasado);
-  if(estado.comprasFiltro==="erp-pendente")itens=itens.filter(x=>x.erp.codigos.includes("AGUARDANDO_APROVACAO"));
-  if(estado.comprasFiltro==="erp-aprovada")itens=itens.filter(x=>x.erp.codigos.some(c=>["APROVADA","PARCIALMENTE_CONVERTIDA","CONVERTIDA_EM_OC"].includes(c)));
-  if(estado.comprasFiltro==="erp-nao-liberada")itens=itens.filter(x=>x.erp.codigos.some(c=>["NAO_LIBERADA","EM_PREPARACAO"].includes(c)));
-  if(estado.comprasFiltro==="erp-problema")itens=itens.filter(x=>x.erp.problema);
-  itens.sort((a,b)=>{const peso=x=>x.erp.problema?0:x.erp.aguardando?1:x.r.nivel==="vermelho"?2:x.r.nivel==="amarelo"?3:4;return peso(a)-peso(b)||(a.r.c.followUp.dataProximoFollowUp||"9999").localeCompare(b.r.c.followUp.dataProximoFollowUp||"9999")||b.r.diasEtapa-a.r.diasEtapa;});
+  itens.sort((a,b)=>{const peso=x=>x.r.nivel==="vermelho"?0:x.r.nivel==="amarelo"?1:2;return peso(a)-peso(b)||(a.r.c.followUp.dataProximoFollowUp||"9999").localeCompare(b.r.c.followUp.dataProximoFollowUp||"9999")||b.r.diasEtapa-a.r.diasEtapa;});
   const card=(titulo,valor,cor,filtro,detalhe)=>`<button class="card p-4 text-left hover:shadow-md transition-shadow" onclick="estado.comprasFiltro='${filtro}';renderTudo()"><div class="text-[11px] uppercase font-semibold tracking-wide" style="color:var(--texto-2)">${titulo}</div><div class="text-2xl font-bold mt-1" style="color:${cor}">${valor}</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">${detalhe}</div></button>`;
   view.innerHTML=`
-    <div class="flex items-start justify-between flex-wrap gap-3 mb-4"><div><h1 class="text-xl font-bold surgir">Follow-up de Compras</h1><p class="text-[12px] mt-1" style="color:var(--texto-2)">Monitor de aprovação de SC no Tecnicon, OC, fornecedores e ações de follow-up em uma única visão.</p></div><div class="flex items-center gap-2 no-print"><span class="badge ${registrosERP.length?"b-verde":"b-cinza"}">${registrosERP.length?"ERP conectado":"Aguardando primeira sincronização"}</span><button class="btn btn-primario !py-2" onclick="solicitarAtualizacaoTodasSCERP()">↻ Atualizar SCs no ERP</button></div></div>
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-4"><div><h1 class="text-xl font-bold surgir">Follow-up de Compras</h1><p class="text-[12px] mt-1" style="color:var(--texto-2)">SC, OC, fornecedores e ações pendentes em uma única visão. Base manual preparada para integração com o ERP.</p></div><span class="badge b-cinza">Fonte atual: Manual</span></div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("SC abertas",totalSc,"var(--laranja)","sc","Solicitações ainda não convertidas em OC")}${card("OC abertas",totalOc,"#0F5FA8","oc","Ordens ainda não recebidas ou canceladas")}${card("Follow-up necessário",totalFollow,"#C42B1C","follow","Pendências somente enquanto SC ou OC estiver aberta")}${card("Fornecedor atrasado",totalAtrasados,"#7C2D12","atrasados","Prazo de entrega ultrapassado")}</div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("ERP · aguardando aprovação",totalERPPendente,"var(--laranja)","erp-pendente","SCs que precisam de contato com o aprovador")}${card("ERP · aprovadas / convertidas",totalERPAprovada,"var(--verde)","erp-aprovada","SCs liberadas para o próximo passo")}${card("ERP · não liberadas",totalERPnaoLiberada,"#8A5A00","erp-nao-liberada","SCs ainda fora do fluxo de aprovação")}${card("ERP · verificar",totalERPProblema,"var(--vermelho)","erp-problema","Não encontradas, recusadas ou falhas de consulta")}</div>
     <div class="card p-4 mb-4 no-print"><div class="grid md:grid-cols-4 gap-2">
       <div class="relative"><svg class="absolute left-2.5 top-2.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A93" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input id="comprasBusca" class="inp !pl-8" value="${esc(estado.comprasBusca)}" placeholder="Buscar desenvolvimento, ferramenta, SC, OC..." oninput="atualizarBuscaCompras(this.value)"></div>
-      <select class="inp" onchange="estado.comprasFiltro=this.value;renderTudo()">${[["abertos","Todos em aberto"],["erp-pendente","ERP: aguardando aprovação"],["erp-aprovada","ERP: aprovadas / convertidas"],["erp-nao-liberada","ERP: não liberadas"],["erp-problema","ERP: verificar"],["follow","Follow-up necessário"],["sc","SC abertas"],["oc","OC abertas"],["atrasados","Fornecedor atrasado"],["todos","Todos, inclusive encerrados"]].map(([v,l])=>`<option value="${v}" ${estado.comprasFiltro===v?"selected":""}>${l}</option>`).join("")}</select>
+      <select class="inp" onchange="estado.comprasFiltro=this.value;renderTudo()">${[["abertos","Todos em aberto"],["follow","Follow-up necessário"],["sc","SC abertas"],["oc","OC abertas"],["atrasados","Fornecedor atrasado"],["todos","Todos, inclusive encerrados"]].map(([v,l])=>`<option value="${v}" ${estado.comprasFiltro===v?"selected":""}>${l}</option>`).join("")}</select>
       <select class="inp" onchange="estado.comprasResponsavel=this.value;renderTudo()"><option value="">Todos os responsáveis</option>${responsaveis.map(v=>`<option value="${esc(v)}" ${estado.comprasResponsavel===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
       <select class="inp" onchange="estado.comprasFornecedor=this.value;renderTudo()"><option value="">Todos os fornecedores</option>${fornecedores.map(v=>`<option value="${esc(v)}" ${estado.comprasFornecedor===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
     </div></div>
-    <div class="card overflow-hidden surgir"><div class="overflow-x-auto"><table class="w-full text-left text-[11.5px]" style="min-width:1640px"><thead style="background:#F7F7F8;color:var(--texto-2)"><tr><th class="p-3">Alerta</th><th class="p-3">Desenvolvimento</th><th class="p-3">Ferramentas</th><th class="p-3">Etapa</th><th class="p-3">SC manual</th><th class="p-3">Report da SC no ERP</th><th class="p-3">OC</th><th class="p-3">Fornecedor / entrega</th><th class="p-3">Próximo follow-up</th><th class="p-3">Responsável</th><th class="p-3">Sincronização</th><th class="p-3"></th></tr></thead><tbody>
-      ${itens.length?itens.map(({p,r,erp})=>`<tr class="border-t hover:bg-gray-50 cursor-pointer" style="border-color:var(--cinza-borda)" onclick="irPara('projeto','${p.id}')">
+    <div class="card overflow-hidden surgir"><div class="overflow-x-auto"><table class="w-full text-left text-[11.5px]" style="min-width:1320px"><thead style="background:#F7F7F8;color:var(--texto-2)"><tr><th class="p-3">Alerta</th><th class="p-3">Desenvolvimento</th><th class="p-3">Ferramentas</th><th class="p-3">Etapa</th><th class="p-3">SC</th><th class="p-3">OC</th><th class="p-3">Fornecedor / entrega</th><th class="p-3">Próximo follow-up</th><th class="p-3">Responsável</th><th class="p-3">Origem</th><th class="p-3"></th></tr></thead><tbody>
+      ${itens.length?itens.map(({p,r})=>`<tr class="border-t hover:bg-gray-50 cursor-pointer" style="border-color:var(--cinza-borda)" onclick="irPara('projeto','${p.id}')">
         <td class="p-3"><div class="flex items-center gap-2"><span class="dot dot-${r.nivel}"></span><span class="font-semibold">${esc(r.alerta)}</span></div><div class="mt-1" style="color:var(--texto-2)">${r.diasEtapa} dia(s) na etapa</div></td>
         <td class="p-3"><div class="font-bold text-[12.5px]">${esc(p.codigo)} ${p.devId?`<span class="badge b-cinza">${esc(p.devId)}</span>`:""}</div><div class="mt-1 max-w-[210px] truncate" title="${esc(p.descricao)}" style="color:var(--texto-2)">${esc(p.descricao)}</div></td>
         <td class="p-3 max-w-[220px]">${htmlFerramentasCompras(p,3)}</td>
         <td class="p-3 font-semibold">${esc(etapaNome(p))}</td>
         <td class="p-3"><div>${esc(r.c.sc.numero||p.numSC||"—")}</div><div class="mt-1">${badgeCompra(r.st.sc)}</div></td>
-        <td class="p-3 align-top max-w-[300px]">${htmlSCERP(p,true)}</td>
         <td class="p-3"><div>${esc(r.c.oc.numero||p.numOC||"—")}</div><div class="mt-1">${badgeCompra(r.st.oc)}</div></td>
         <td class="p-3"><div class="font-semibold">${esc(p.fornecedor||"—")}</div><div class="mt-1" style="color:${r.fornecedorAtrasado?"var(--vermelho)":"var(--texto-2)"}">${r.c.oc.prazoEntrega||p.prazoFornecedor?fmtL(r.c.oc.prazoEntrega||p.prazoFornecedor):"Sem prazo"}</div></td>
         <td class="p-3"><div class="font-semibold">${r.c.followUp.dataProximoFollowUp?fmtL(r.c.followUp.dataProximoFollowUp):"Não programado"}</div><div class="mt-1 max-w-[180px] truncate" title="${esc(r.c.followUp.proximaAcao)}" style="color:var(--texto-2)">${esc(r.c.followUp.proximaAcao||"Sem próxima ação")}</div></td>
         <td class="p-3">${esc(r.c.followUp.responsavel||p.responsavel||"Sem responsável")}</td>
-        <td class="p-3"><span class="badge ${r.c.integracao.fonte==="erp"?"b-verde":"b-cinza"}">${r.c.integracao.fonte==="erp"?"ERP":"Manual"}</span>${r.c.integracao.ultimaSincronizacao?`<div class="mt-1" style="color:var(--texto-2)">${fmtDataHoraERP(r.c.integracao.ultimaSincronizacao)}</div>`:""}${erp.pendente?`<div class="mt-1" style="color:var(--laranja)">Solicitada</div>`:""}</td>
-        <td class="p-3"><div class="flex flex-col gap-1.5"><button class="btn btn-primario !py-1.5 !px-2.5" onclick="event.stopPropagation();solicitarAtualizacaoSCERP('${p.id}')">↻ ERP</button><button class="btn btn-suave !py-1.5 !px-2.5" onclick="event.stopPropagation();abrirFollowUpCompras('${p.id}')">Follow-up</button></div></td></tr>`).join(""):`<tr><td colspan="12" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
+        <td class="p-3"><span class="badge b-cinza">${r.c.integracao.fonte==="erp"?"ERP":"Manual"}</span>${r.c.integracao.ultimaSincronizacao?`<div class="mt-1" style="color:var(--texto-2)">${fmtL(r.c.integracao.ultimaSincronizacao)}</div>`:""}</td>
+        <td class="p-3"><button class="btn btn-suave !py-1.5 !px-2.5" onclick="event.stopPropagation();abrirFollowUpCompras('${p.id}')">Atualizar</button></td></tr>`).join(""):`<tr><td colspan="11" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
     </tbody></table></div><div class="p-3 border-t text-[10.5px]" style="border-color:var(--cinza-borda);color:var(--texto-2)">${itens.length} de ${base.length} desenvolvimento(s) exibido(s).</div></div>`;
 }
 function opcoesStatusCompra(lista,atual){return lista.map(v=>`<option value="${v}" ${atual===v?"selected":""}>${v}</option>`).join("");}
@@ -4190,12 +4079,7 @@ function abrirFollowUpCompras(id){
   const responsaveis=estado.usuarios.filter(u=>u.ativo!==false&&["admin","tecnico","tecnico_montagem"].includes(u.papel)).sort((a,b)=>(a.nome||"").localeCompare(b.nome||""));
   const atualResp=c.followUp.responsavel||p.responsavel||"",modal=document.getElementById("modalCadastro");modal.className="overlay";
   modal.innerHTML=`<div class="modal p-5" style="width:min(820px,calc(100vw - 48px));max-height:calc(100vh - 48px)" onclick="event.stopPropagation()">
-    <div class="flex items-start justify-between gap-3 mb-4"><div><h2 class="text-lg font-bold">Follow-up de Compras</h2><p class="text-[12px] mt-1" style="color:var(--texto-2)">${esc(p.codigo)} — ${esc(p.descricao)}</p></div><span class="badge ${c.integracao.fonte==="erp"?"b-verde":"b-cinza"}">Integração: ${c.integracao.fonte==="erp"?"ERP":"Manual"}</span></div>
-    <div class="card !shadow-none p-4 mb-4" style="background:#F8FAFC">
-      <div class="flex items-start justify-between gap-3 mb-3"><div><div class="font-bold text-[13px]">Report da SC no Tecnicon</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">Consulta somente leitura. O resultado não movimenta automaticamente o Kanban nem substitui o follow-up manual.</div></div><button class="btn btn-primario flex-none !py-2" onclick="solicitarAtualizacaoSCERP('${p.id}');fecharModal()">↻ Atualizar no ERP</button></div>
-      ${htmlSCERP(p,false)}
-      <div class="mt-3 text-[10px]" style="color:var(--texto-2)">Última sincronização: ${c.integracao.ultimaSincronizacao?fmtDataHoraERP(c.integracao.ultimaSincronizacao):"Ainda não sincronizada"}.</div>
-    </div>
+    <div class="flex items-start justify-between gap-3 mb-4"><div><h2 class="text-lg font-bold">Follow-up de Compras</h2><p class="text-[12px] mt-1" style="color:var(--texto-2)">${esc(p.codigo)} — ${esc(p.descricao)}</p></div><span class="badge b-cinza">Integração: ${c.integracao.fonte==="erp"?"ERP":"Manual"}</span></div>
     <div class="grid lg:grid-cols-2 gap-4">
       <div class="card !shadow-none p-4"><div class="font-bold text-[13px] mb-3">Solicitação de Compra (SC)</div><div class="grid grid-cols-2 gap-3">
         <div><label class="lbl">Número da SC</label><input id="cp-sc-numero" class="inp" value="${esc(c.sc.numero||p.numSC)}"></div><div><label class="lbl">Status da SC</label><select id="cp-sc-status" class="inp">${opcoesStatusCompra(STATUS_SC_COMPRAS,c.sc.status||st.sc)}</select></div>
@@ -4217,7 +4101,7 @@ function abrirFollowUpCompras(id){
       <div><label class="lbl">Responsável pelo follow-up</label><select id="cp-responsavel" class="inp"><option value="">Sem responsável</option>${atualResp&&!responsaveis.some(u=>u.nome===atualResp)?`<option selected value="${esc(atualResp)}">${esc(atualResp)}</option>`:""}${responsaveis.map(u=>`<option value="${esc(u.nome)}" ${u.nome===atualResp?"selected":""}>${esc(u.nome)}</option>`).join("")}</select></div>
       <div><label class="lbl">Data do próximo follow-up</label><input id="cp-follow-data" type="date" class="inp" value="${esc(c.followUp.dataProximoFollowUp)}"></div><div><label class="lbl">Próxima ação</label><input id="cp-follow-acao" class="inp" value="${esc(c.followUp.proximaAcao)}" placeholder="Ex.: cobrar aprovação da SC"></div>
     </div><div class="mt-3"><label class="lbl">Observação</label><textarea id="cp-follow-obs" class="inp" rows="3" placeholder="Retorno da área, fornecedor ou pendência atual...">${esc(c.followUp.observacao)}</textarea></div></div>
-    <div class="card !shadow-none p-4 mt-4" style="background:#F8FAFC"><div class="flex items-center justify-between gap-3"><div><div class="font-bold text-[12px]">Vínculo com o ERP</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">Nesta primeira fase o vínculo automático é feito pelos números de SC informados acima. O campo ao lado permanece reservado para futuras integrações.</div></div><div class="w-56 flex-none"><label class="lbl">Identificador adicional no ERP</label><input id="cp-erp-id" class="inp" value="${esc(c.integracao.idERP)}" placeholder="Opcional"></div></div></div>
+    <div class="card !shadow-none p-4 mt-4" style="background:#F8FAFC"><div class="flex items-center justify-between gap-3"><div><div class="font-bold text-[12px]">Preparação para integração ERP</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">O identificador já fica reservado. Status sincronizados e data da última sincronização serão preenchidos automaticamente quando o conector for ativado.</div></div><div class="w-56 flex-none"><label class="lbl">Identificador no ERP</label><input id="cp-erp-id" class="inp" value="${esc(c.integracao.idERP)}" placeholder="Opcional"></div></div></div>
     ${c.historico.length?`<details class="mt-4"><summary class="text-[12px] font-semibold cursor-pointer">Histórico do follow-up (${c.historico.length})</summary><div class="mt-2 max-h-32 overflow-y-auto space-y-1">${c.historico.slice().reverse().slice(0,10).map(h=>`<div class="text-[10.5px] p-2 rounded" style="background:#F7F7F8"><b>${esc(h.usuario)}</b> — ${fmtL(h.data)}: ${esc(h.resumo)}</div>`).join("")}</div></details>`:""}
     <div class="flex justify-end gap-2 mt-5"><button class="btn btn-suave" onclick="fecharModal()">Cancelar</button><button class="btn btn-primario" onclick="salvarFollowUpCompras('${p.id}')">Salvar follow-up</button></div>
   </div>`;modal.onclick=fecharModal;

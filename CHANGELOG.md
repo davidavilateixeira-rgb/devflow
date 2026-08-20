@@ -1,3 +1,15 @@
+## [2.11.2] - 2026-08-20
+
+### Corrigido
+- Adapta o hook `predeploy` para executar o validador por meio do caminho absoluto `$PROJECT_DIR`, compatível com o `cmd.exe` quando o repositório está em uma unidade UNC.
+- A versão `2.11.1` foi preservada no histórico, mas não chegou à produção porque o próprio predeploy interrompeu o deploy antes do upload.
+
+### Validação
+- O comando foi executado com sucesso pelo mesmo `cross-env-shell` usado pela Firebase CLI, partindo de uma pasta local e acessando o script pela UNC.
+
+### Backup
+- Backup exato anterior ao ajuste: `backups/index_v2.11.1.html`.
+- SHA-256: `7F3099F61FB97CC932A88818C1C7F654083A142DFCBB0F350E55D01A16B29AD1`.
 ## [2.11.1] - 2026-08-20
 
 ### Corrigido

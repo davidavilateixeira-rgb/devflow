@@ -1,14 +1,14 @@
 @echo off
-title Monitor de SC - DevFlow
+title Monitor SC e OC sob demanda - DevFlow
 cd /d "H:\DESENVOLVIMENTOS"
 echo =========================================
-echo MONITOR DE APROVACAO DE SC - DEVFLOW
+echo MONITOR SC E OC SOB DEMANDA - DEVFLOW
 echo =========================================
 echo.
-echo Atualizacao completa: a cada 15 minutos
-echo Botoes do sistema: verificados a cada 15 segundos
+echo Atualizacao completa automatica: desativada
+echo O conector reage somente aos botoes do sistema
 echo.
-python script_compras\sincronizar_compras_sc.py --watch --full-interval 900 --request-poll 15
+python script_compras\sincronizar_compras_sc.py --watch --request-poll 60
 echo.
 echo O monitor foi encerrado.
 pause

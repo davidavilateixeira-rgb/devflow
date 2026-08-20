@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import threading
 import time
 from collections import defaultdict
 from datetime import date, datetime, time as datetime_time, timezone
@@ -815,23 +816,37 @@ def run_once(db: Any, only_requested: bool = False) -> int:
         raise
 
 
-def run_watch(db: Any, full_interval: int, request_poll: int) -> None:
-    log("Monitor de SC e OC iniciado. Pressione Ctrl+C para encerrar.")
-    last_full_sync = 0.0
-    while True:
-        now = time.monotonic()
-        full_sync = now - last_full_sync >= full_interval
-        try:
-            count = run_once(db, only_requested=not full_sync)
-            if full_sync:
-                last_full_sync = now
-            if count:
-                log(f"Ciclo processado: {count} desenvolvimento(s).")
-        except Exception as exc:
-            if full_sync:
-                last_full_sync = now
-            log(f"Falha no ciclo de sincronizacao: {exc}")
-        time.sleep(request_poll)
+def run_watch(db: Any, request_poll: int) -> None:
+    """Aguarda pedidos dos botoes sem executar varreduras completas."""
+    try:
+        from google.cloud.firestore_v1.base_query import FieldFilter
+    except ImportError as exc:
+        raise RuntimeError("Versao do google-cloud-firestore sem suporte a FieldFilter") from exc
+
+    log("Monitor sob demanda de SC e OC iniciado. Nenhuma varredura automatica sera executada.")
+    query = db.collection("projetos").where(
+        filter=FieldFilter("compras.integracao.statusSincronizacao", "==", "solicitado")
+    )
+    sync_lock = threading.Lock()
+
+    def process_requested(snapshots: list[Any], _changes: list[Any], _read_time: Any) -> None:
+        if not snapshots:
+            return
+        with sync_lock:
+            try:
+                count = sync_projects(db, list(snapshots), only_requested=True)
+                if count:
+                    log(f"Pedido dos botoes processado: {count} desenvolvimento(s).")
+            except Exception as exc:
+                mark_sync_error(list(snapshots), str(exc), only_requested=True)
+                log(f"Falha ao processar pedido dos botoes: {exc}")
+
+    watch = query.on_snapshot(process_requested)
+    try:
+        while True:
+            time.sleep(max(30, request_poll))
+    finally:
+        watch.unsubscribe()
 
 
 def dry_run(sc_numbers: list[str], manual_oc_numbers: list[str]) -> int:
@@ -868,8 +883,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--watch", action="store_true", help="mantem o conector em execucao")
     parser.add_argument("--only-requested", action="store_true", help="processa somente solicitacoes dos botoes")
-    parser.add_argument("--full-interval", type=int, default=900, help="intervalo da atualizacao completa, em segundos")
-    parser.add_argument("--request-poll", type=int, default=15, help="intervalo para procurar solicitacoes, em segundos")
+    parser.add_argument("--full-interval", type=int, default=900, help="opcao legada, ignorada no modo sob demanda")
+    parser.add_argument("--request-poll", type=int, default=60, help="intervalo do heartbeat do monitor, em segundos")
     parser.add_argument("--dry-run", action="store_true", help="consulta SCs e OCs sem acessar o Firestore")
     parser.add_argument("--sc", action="append", default=[], help="numero de SC para o modo dry-run")
     parser.add_argument("--oc", action="append", default=[], help="numero de OC para o modo dry-run")
@@ -895,7 +910,7 @@ def main() -> int:
         return dry_run(numbers, oc_numbers)
     db = firebase_client()
     if args.watch:
-        run_watch(db, max(60, args.full_interval), max(5, args.request_poll))
+        run_watch(db, max(30, args.request_poll))
         return 0
     run_once(db, only_requested=args.only_requested)
     return 0

@@ -1,11 +1,13 @@
 import unittest
 from datetime import date
+from unittest.mock import patch
 
 from sincronizar_compras_sc import (
     aggregate_oc,
     aggregate_sc,
     oc_numbers_from_project,
     sc_numbers_from_text,
+    run_watch,
     summarize_oc_status,
     summarize_status,
 )
@@ -172,6 +174,40 @@ class OcAggregationTests(unittest.TestCase):
         self.assertEqual(rejected["statusCodigo"], "RECUSADA")
         self.assertEqual(missing["statusCodigo"], "NAO_ENCONTRADA")
         self.assertIn("OC recusada", summarize_oc_status([rejected, missing]))
+
+
+class DemandMonitorTests(unittest.TestCase):
+    def test_watch_uses_only_filtered_listener_without_full_stream(self):
+        events = {}
+
+        class Watch:
+            def unsubscribe(self):
+                events["unsubscribed"] = True
+
+        class Query:
+            def on_snapshot(self, callback):
+                events["callback"] = callback
+                return Watch()
+
+        class Collection:
+            def where(self, *, filter):
+                events["filter"] = filter
+                return Query()
+
+            def stream(self):
+                raise AssertionError("A colecao completa nao pode ser lida no modo watch")
+
+        class DB:
+            def collection(self, name):
+                self.assert_name = name
+                return Collection()
+
+        with patch("sincronizar_compras_sc.time.sleep", side_effect=KeyboardInterrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                run_watch(DB(), 30)
+
+        self.assertIn("callback", events)
+        self.assertTrue(events.get("unsubscribed"))
 
 
 if __name__ == "__main__":

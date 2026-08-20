@@ -1,3 +1,22 @@
+## [2.12.1] - 2026-08-20
+
+### Alterado
+- Remove todas as varreduras automaticas do conector SC/OC.
+- O monitor passa a reagir somente aos documentos solicitados pelos botoes ERP.
+- Mantem a atualizacao geral apenas como acao manual confirmada pelo usuario.
+
+### Protecao
+- Adiciona modo somente consulta quando o Firestore retorna cota esgotada ou indisponibilidade.
+- Exibe alerta global, bloqueia gravacoes e tenta reconectar a cada cinco minutos.
+- Adiciona confirmacao visual de sucesso nas gravacoes.
+
+### Corrigido
+- Atualiza comentarios, anexos e ferramentas imediatamente apos salvar, sem depender apenas do listener.
+- Torna o botao Gravar Alteracoes da Montagem independente do evento global do navegador.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.12.0.html`.
+- SHA-256: `21CCF6189917778A13B78CF3C8EB0B734E724FF485487E910B6E5FF3BE75A984`.
 ## [2.12.0] - 2026-08-20
 
 ### Adicionado

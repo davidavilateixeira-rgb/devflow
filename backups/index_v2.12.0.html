@@ -167,21 +167,12 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
   </div>
 
 <!-- ══════════════════ TELA DE LOGIN ══════════════════ -->
-<div id="firestoreStatusBanner" class="hidden fixed top-0 left-0 w-full z-[10000] px-4 py-2.5 shadow-lg" style="background:#7C2D12;color:#fff">
-  <div class="max-w-6xl mx-auto flex items-center justify-center gap-3 text-[12px]">
-    <span aria-hidden="true">&#9888;</span>
-    <span id="firestoreStatusTexto" class="font-medium">Banco temporariamente indisponivel. Modo somente consulta.</span>
-    <button class="rounded px-2.5 py-1 text-[11px] font-bold flex-none" style="background:#fff;color:#7C2D12" onclick="tentarReconectarFirestore(true)">Verificar agora</button>
-  </div>
-</div>
-<div id="toastSistema" class="hidden fixed right-5 bottom-5 z-[10001] rounded-lg px-4 py-3 text-[12px] font-semibold shadow-xl" role="status"></div>
-
 <div id="telaLogin" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:var(--cinza-bg)">
   <div class="card p-8 w-[400px] max-w-full">
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.12.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.12.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +210,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.12.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.12.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +325,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.12.1";
+const VERSAO_ATUAL = "2.12.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -676,7 +667,6 @@ let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuar
   comprasBusca:"", comprasFiltro:"abertos", comprasResponsavel:"", comprasFornecedor:"",
   moduloAtual: "usinagem" };
 let unsubProjetos = null, unsubUsuarios = null, unsubEstoque = null, avisoDesativado = false;
-let firestoreModoConsulta = false, firestoreRetryTimer = null, toastSistemaTimer = null;
 const migracoesERPEmAndamento = new Set();
 
 const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
@@ -685,11 +675,11 @@ const isVisitante = ()=> estado.usuario && estado.usuario.papel === "visitante";
 const isTecnicoMontagem = ()=> estado.usuario && estado.usuario.papel === "tecnico_montagem"; // apenas montagem
 const isTecnico = ()=> estado.usuario && ["tecnico","tecnico_montagem"].includes(estado.usuario.papel);
 const podeAcessarCompras = ()=> isAdmin() || isTecnico();
-const isSomenteLeitura = ()=> firestoreModoConsulta || isProduto() || isVisitante() || (estado.moduloAtual === "montagem" && estado.usuario?.papel === "tecnico") || (estado.moduloAtual === "usinagem" && estado.usuario?.papel === "tecnico_montagem");
-const podeCadastrar = ()=> !firestoreModoConsulta && (isAdmin() || isProduto()) && !isVisitante();
+const isSomenteLeitura = ()=> isProduto() || isVisitante() || (estado.moduloAtual === "montagem" && estado.usuario?.papel === "tecnico") || (estado.moduloAtual === "usinagem" && estado.usuario?.papel === "tecnico_montagem");
+const podeCadastrar = ()=> (isAdmin() || isProduto()) && !isVisitante();
 const rotuloPapel = pl => ({admin:"Administrador", produto:"Engenharia de Produto", tecnico:"Técnico Usinagem", tecnico_montagem:"Técnico Montagem", visitante:"Visitante"}[pl] || "Técnico");
-const podeGerenciarUsinagem = (p)=> !firestoreModoConsulta && (isAdmin() || (estado.usuario && estado.usuario.papel === "tecnico"));
-const podeGerenciarMontagem = (p)=> !firestoreModoConsulta && (isAdmin() || (estado.usuario && estado.usuario.papel === "tecnico_montagem"));
+const podeGerenciarUsinagem = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel === "tecnico");
+const podeGerenciarMontagem = (p)=> isAdmin() || (estado.usuario && estado.usuario.papel === "tecnico_montagem");
 const podeGerenciar = (p)=> estado.moduloAtual === "montagem" ? podeGerenciarMontagem(p) : podeGerenciarUsinagem(p);
 
 /* ============================================================
@@ -765,72 +755,13 @@ async function resetSenha(){
   try{ await auth.sendPasswordResetEmail(email); msgLogin("loginOk","E-mail de redefinição enviado. Verifique sua caixa de entrada."); }
   catch(e){ msgLogin("loginErro", erroAuthPt(e)); }
 }
-function erroEhIndisponibilidadeFirestore(e){
-  const codigo=String(e&&e.code||"").toLowerCase(),mensagem=String(e&&e.message||e||"").toLowerCase();
-  return codigo.includes("resource-exhausted")||codigo.includes("unavailable")||codigo.includes("deadline-exceeded")||mensagem.includes("quota")||mensagem.includes("resource_exhausted")||mensagem.includes("network");
-}
-function proximaLiberacaoFirestore(){
-  const agora=new Date(),alvo=new Date(agora);alvo.setHours(4,0,0,0);
-  if(agora>=alvo)alvo.setDate(alvo.getDate()+1);
-  return alvo.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-}
-function notificarSistema(mensagem,tipo="sucesso"){
-  const el=document.getElementById("toastSistema");if(!el)return;
-  if(toastSistemaTimer)clearTimeout(toastSistemaTimer);
-  el.textContent=mensagem;el.style.background=tipo==="erro"?"#C42B1C":"#107C41";el.style.color="#fff";el.classList.remove("hidden");
-  toastSistemaTimer=setTimeout(()=>el.classList.add("hidden"),2600);
-}
-function atualizarBannerFirestore(){
-  const banner=document.getElementById("firestoreStatusBanner"),texto=document.getElementById("firestoreStatusTexto");
-  if(!banner||!texto)return;
-  if(firestoreModoConsulta){
-    texto.textContent=`Firestore temporariamente indispon\u00edvel. Modo somente consulta: dados podem estar desatualizados e nenhuma altera\u00e7\u00e3o ser\u00e1 gravada. Previs\u00e3o de libera\u00e7\u00e3o: ${proximaLiberacaoFirestore()}.`;
-    banner.classList.remove("hidden");
-    const app=document.getElementById("app");if(app)requestAnimationFrame(()=>app.style.paddingTop=`${banner.offsetHeight}px`);
-  }else{
-    banner.classList.add("hidden");
-    const app=document.getElementById("app");if(app)app.style.paddingTop="";
-  }
-}
-function limparAssinaturasFirestore(){
-  [["unsubProjetos",unsubProjetos],["unsubUsuarios",unsubUsuarios],["unsubEstoque",unsubEstoque]].forEach(([,fn])=>{try{if(fn)fn();}catch(_e){}});
-  unsubProjetos=null;unsubUsuarios=null;unsubEstoque=null;
-}
-function agendarReconexaoFirestore(){
-  if(firestoreRetryTimer)clearTimeout(firestoreRetryTimer);
-  firestoreRetryTimer=setTimeout(()=>tentarReconectarFirestore(false),5*60*1000);
-}
-function ativarModoConsultaFirestore(e){
-  firestoreModoConsulta=true;atualizarBannerFirestore();agendarReconexaoFirestore();
-  if(estado.usuario)renderTudo();
-  console.error("Firestore em modo consulta:",e);
-}
-function desativarModoConsultaFirestore(){
-  const estavaAtivo=firestoreModoConsulta;firestoreModoConsulta=false;
-  if(firestoreRetryTimer){clearTimeout(firestoreRetryTimer);firestoreRetryTimer=null;}
-  atualizarBannerFirestore();
-  if(estavaAtivo)notificarSistema("Conex\u00e3o restabelecida. Grava\u00e7\u00f5es liberadas.");
-}
-function tratarErroFirestore(e,origem){
-  console.error(`Firestore ${origem}:`,e);
-  if(erroEhIndisponibilidadeFirestore(e))ativarModoConsultaFirestore(e);
-}
-function tentarReconectarFirestore(manual=false){
-  if(!estado.usuario)return;
-  if(manual)notificarSistema("Verificando conex\u00e3o com o Firestore...");
-  if(firestoreRetryTimer){clearTimeout(firestoreRetryTimer);firestoreRetryTimer=null;}
-  limparAssinaturasFirestore();iniciarApp();
-}
-function podeGravarFirestore(){
-  if(!firestoreModoConsulta)return true;
-  alert(`O DevFlow est\u00e1 temporariamente em modo somente consulta. Nenhuma altera\u00e7\u00e3o ser\u00e1 gravada. Tente novamente ap\u00f3s ${proximaLiberacaoFirestore()}.`);
-  return false;
-}
-function sair(){ limparAssinaturasFirestore(); auth.signOut(); }
+function sair(){ auth.signOut(); }
 
 auth.onAuthStateChanged(async (u)=>{
   if(!u){
-    limparAssinaturasFirestore();desativarModoConsultaFirestore();
+    if(unsubProjetos){unsubProjetos();unsubProjetos=null}
+    if(unsubUsuarios){unsubUsuarios();unsubUsuarios=null}
+    if(unsubEstoque){unsubEstoque();unsubEstoque=null}
     estado.usuario = null; estado.projetos = []; estado.usuarios = []; estado.estoque = {};
     document.getElementById("app").classList.add("hidden");
     document.getElementById("telaLogin").classList.remove("hidden");
@@ -859,7 +790,6 @@ auth.onAuthStateChanged(async (u)=>{
     ref.update({ultimoAcesso: new Date().toISOString()}).catch(e=>console.error("Erro no ultimoAcesso",e));
     iniciarApp();
   }catch(e){
-    if(erroEhIndisponibilidadeFirestore(e))ativarModoConsultaFirestore(e);
     console.error(e);
     document.getElementById("loginCarregando").classList.add("hidden");
     document.getElementById("loginForm").classList.remove("hidden");
@@ -884,7 +814,6 @@ function iniciarApp(){
 
   if(!unsubProjetos){
     unsubProjetos = db.collection("projetos").onSnapshot(s=>{
-      desativarModoConsultaFirestore();
       estado.projetos = s.docs.map(x=>normalizarProjeto(Object.assign({id:x.id}, x.data())));
       estado.projetos.forEach(p=>persistirMigracaoCadastroERP(p));
       estado.projetos.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
@@ -903,20 +832,20 @@ function iniciarApp(){
       }
 
       renderTudo();
-    }, e=>tratarErroFirestore(e,"projetos"));
+    }, e=>console.error("Firestore projetos:", e));
   }
   if(!unsubUsuarios){
     unsubUsuarios = db.collection("usuarios").onSnapshot(s=>{
       estado.usuarios = s.docs.map(x=>Object.assign({uid:x.id}, x.data()));
       if(viewAtual==="usuarios") renderTudo();
-    }, e=>tratarErroFirestore(e,"usuarios"));
+    }, e=>console.error("Firestore usuarios:", e));
   }
   if(!unsubEstoque){
     unsubEstoque = db.collection("estoque").onSnapshot(s=>{
       estado.estoque = {};
       s.docs.forEach(doc => { estado.estoque[doc.id] = doc.data().saldo; });
       if(viewAtual==="projeto") renderTudo();
-    }, e=>tratarErroFirestore(e,"estoque"));
+    }, e=>console.error("Firestore estoque:", e));
   }
   renderTudo();
 }
@@ -925,7 +854,6 @@ function iniciarApp(){
    4. PERSISTÊNCIA
    ============================================================ */
 function persistirMigracaoCadastroERP(p){
-  if(firestoreModoConsulta) return;
   if(!p || !p.id || !p.__migracaoCadastroERP || migracoesERPEmAndamento.has(p.id)) return;
   migracoesERPEmAndamento.add(p.id);
   db.collection("projetos").doc(p.id).update({
@@ -943,15 +871,8 @@ function persistirMigracaoCadastroERP(p){
 }
 
 function salvarProjeto(p){
-  if(!podeGravarFirestore()) return Promise.resolve(false);
   const dados = Object.assign({}, p); delete dados.id; delete dados.__migracaoCadastroERP;
-  return db.collection("projetos").doc(p.id).set(dados).then(()=>{
-    notificarSistema("Altera\u00e7\u00f5es salvas com sucesso.");return true;
-  }).catch(e=>{
-    if(erroEhIndisponibilidadeFirestore(e))ativarModoConsultaFirestore(e);
-    else alert("Erro ao salvar: "+e.message);
-    return false;
-  });
+  return db.collection("projetos").doc(p.id).set(dados).catch(e=>alert("Erro ao salvar: "+e.message));
 }
 
 /* ============================================================
@@ -2666,7 +2587,6 @@ function msgUsuario(ok, texto){
 }
 async function criarUsuario(){
   if(!isAdmin()) return;
-  if(!podeGravarFirestore()) return;
   const nome = document.getElementById("u-nome").value.trim();
   const email = document.getElementById("u-email").value.trim();
   const senha = document.getElementById("u-senha").value;
@@ -2715,7 +2635,6 @@ function editarUsuario(uid){
   modal.onclick = fecharModal;
 }
 async function salvarEdicaoUsuario(uid){
-  if(!podeGravarFirestore()) return;
   const nome = document.getElementById("eu-nome").value.trim();
   const papel = document.getElementById("eu-papel").value;
   if(!nome){ alert("Informe o nome."); return; }
@@ -2741,7 +2660,6 @@ async function resetSenhaUsuario(uid){
 }
 async function alternarAtivo(uid){
   if(!isAdmin()) return;
-  if(!podeGravarFirestore()) return;
   const u = estado.usuarios.find(x=>x.uid===uid);
   if(!u) return;
   if(uid===estado.usuario.uid){ alert("Você não pode desativar a si mesmo."); return; }
@@ -2789,7 +2707,6 @@ function duplicarProjeto(id){
 }
 function excluirProjeto(id){
   if(!isAdmin()) return;
-  if(!podeGravarFirestore()) return;
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
   if(!confirm("Excluir definitivamente o desenvolvimento "+p.codigo+"?\n\nEssa ação não pode ser desfeita: histórico, comentários e anexos serão apagados.")) return;
@@ -3336,7 +3253,7 @@ function addComentario(id){
   const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(!obj.comentarios) obj.comentarios = [];
   obj.comentarios.push({data:new Date().toISOString(),usuario:estado.usuario.nome,texto:el.value.trim(),modulo:isM?"montagem":"usinagem"});
-  salvarProjeto(p).then(ok=>{if(ok&&viewAtual==="projeto")renderProjeto();});
+  salvarProjeto(p);
 }
 function addAnexo(id){
   if(isSomenteLeitura()) return;
@@ -3347,7 +3264,7 @@ function addAnexo(id){
   const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(!obj.anexos) obj.anexos = [];
   obj.anexos.push(el.value.trim());
-  salvarProjeto(p).then(ok=>{if(ok&&viewAtual==="projeto")renderProjeto();});
+  salvarProjeto(p);
 }
 function removerAnexo(id,i){
   const p = estado.projetos.find(x=>x.id===id);
@@ -3355,7 +3272,7 @@ function removerAnexo(id,i){
   const isM = (estado.moduloAtual === "montagem");
   const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(obj.anexos) obj.anexos.splice(i,1);
-  salvarProjeto(p).then(ok=>{if(ok&&viewAtual==="projeto")renderProjeto();});
+  salvarProjeto(p);
 }
 function addFerramenta(id){
   if(isSomenteLeitura()) return;
@@ -3366,7 +3283,7 @@ function addFerramenta(id){
   const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(!obj.ferramentas) obj.ferramentas = [];
   obj.ferramentas.push(el.value.trim());
-  salvarProjeto(p).then(ok=>{if(ok&&viewAtual==="projeto")renderProjeto();});
+  salvarProjeto(p);
 }
 function removerFerramenta(id,i){
   const p = estado.projetos.find(x=>x.id===id);
@@ -3374,7 +3291,7 @@ function removerFerramenta(id,i){
   const isM = (estado.moduloAtual === "montagem");
   const obj = isM ? (p.montagem = p.montagem || {}) : p;
   if(obj.ferramentas) obj.ferramentas.splice(i,1);
-  salvarProjeto(p).then(ok=>{if(ok&&viewAtual==="projeto")renderProjeto();});
+  salvarProjeto(p);
 }
 
 /* ============================================================
@@ -3518,11 +3435,10 @@ function abrirEdicaoMontagem(id) {
   `;
 }
 
-async function salvarEdicaoMontagem(id,evt=window.event) {
+async function salvarEdicaoMontagem(id) {
   const p = estado.projetos.find(x => x.id === id);
   if(!p) return;
-  if(!podeGravarFirestore()) return;
-  const btn = evt&&evt.currentTarget?evt.currentTarget:document.querySelector('#modalCadastro .btn-primario');
+  const btn = event.target;
   const txt = btn.innerHTML;
   btn.innerHTML = "Salvando..."; btn.disabled = true;
 
@@ -3539,8 +3455,7 @@ async function salvarEdicaoMontagem(id,evt=window.event) {
       p.montagem.responsavelUid = null;
     }
 
-    const salvo=await salvarProjeto(p);
-    if(!salvo){btn.innerHTML=txt;btn.disabled=false;return;}
+    await salvarProjeto(p);
     fecharModal();
     renderTudo();
     if(viewAtual==="projeto") renderProjeto();
@@ -4233,7 +4148,6 @@ function htmlOCERP(p,compacto=false){
 
 async function solicitarAtualizacaoERP(id){
   if(!podeAcessarCompras())return;
-  if(!podeGravarFirestore())return;
   const p=estado.projetos.find(x=>x.id===id);if(!p)return;
   const numeros=numerosSCERP(p);if(!numeros.length){alert("Informe o número da SC antes de consultar o ERP.");return;}
   const agora=new Date().toISOString(),c=comprasDe(p);
@@ -4250,7 +4164,6 @@ async function solicitarAtualizacaoERP(id){
 }
 async function solicitarAtualizacaoTodasSCERP(){
   if(!podeAcessarCompras())return;
-  if(!podeGravarFirestore())return;
   const projetos=estado.projetos.filter(p=>numerosSCERP(p).length);
   if(!projetos.length){alert("Nenhum desenvolvimento possui número de SC informado.");return;}
   if(!confirm(`Solicitar atualização no ERP para ${projetos.length} desenvolvimento(s)?`))return;
@@ -4275,7 +4188,6 @@ async function solicitarAtualizacaoTodasSCERP(){
 
 async function solicitarAtualizacaoComprasERP(id){
   if(!podeAcessarCompras())return;
-  if(!podeGravarFirestore())return;
   const p=estado.projetos.find(x=>x.id===id);if(!p)return;
   if(!numerosSCERP(p).length&&!numerosOCERP(p).length){alert("Informe o n\u00famero da SC ou da OC antes de consultar o ERP.");return;}
   const agora=new Date().toISOString(),c=comprasDe(p);
@@ -4292,7 +4204,6 @@ async function solicitarAtualizacaoComprasERP(id){
 }
 async function solicitarAtualizacaoTodasComprasERP(){
   if(!podeAcessarCompras())return;
-  if(!podeGravarFirestore())return;
   const projetos=estado.projetos.filter(p=>numerosSCERP(p).length||numerosOCERP(p).length);
   if(!projetos.length){alert("Nenhum desenvolvimento possui n\u00famero de SC ou OC informado.");return;}
   if(!confirm(`Solicitar atualiza\u00e7\u00e3o SC + OC no ERP para ${projetos.length} desenvolvimento(s)?`))return;
@@ -4481,10 +4392,9 @@ function abrirFollowUpCompras(id){
     <div class="card !shadow-none p-4 mt-4" style="background:#F8FAFC"><div class="flex items-center justify-between gap-3"><div><div class="font-bold text-[12px]">Vínculo com o ERP</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">Nesta primeira fase o vínculo automático é feito pelos números de SC informados acima. O campo ao lado permanece reservado para futuras integrações.</div></div><div class="w-56 flex-none"><label class="lbl">Identificador adicional no ERP</label><input id="cp-erp-id" class="inp" value="${esc(c.integracao.idERP)}" placeholder="Opcional"></div></div></div>
     ${c.historico.length?`<details class="mt-4"><summary class="text-[12px] font-semibold cursor-pointer">Histórico do follow-up (${c.historico.length})</summary><div class="mt-2 max-h-32 overflow-y-auto space-y-1">${c.historico.slice().reverse().slice(0,10).map(h=>`<div class="text-[10.5px] p-2 rounded" style="background:#F7F7F8"><b>${esc(h.usuario)}</b> — ${fmtL(h.data)}: ${esc(h.resumo)}</div>`).join("")}</div></details>`:""}
     <div class="flex justify-end gap-2 mt-5"><button class="btn btn-suave" onclick="fecharModal()">Cancelar</button><button class="btn btn-primario" onclick="salvarFollowUpCompras('${p.id}')">Salvar follow-up</button></div>
-  </div>`;modal.onclick=fecharModal;aplicarBloqueioVisualFirestore();
+  </div>`;modal.onclick=fecharModal;
 }
 function salvarFollowUpCompras(id){
-  if(!podeGravarFirestore())return;
   if(!podeAcessarCompras())return;const p=estado.projetos.find(x=>x.id===id);if(!p)return;const c=comprasDe(p),v=i=>(document.getElementById(i)?.value||"").trim();
   const anterior=JSON.stringify({sc:c.sc,oc:c.oc,followUp:c.followUp,fornecedor:p.fornecedor,idERP:c.integracao.idERP});
   Object.assign(c.sc,{numero:v("cp-sc-numero"),status:v("cp-sc-status"),dataAbertura:v("cp-sc-abertura"),dataAprovacao:v("cp-sc-aprovacao")});
@@ -4630,35 +4540,6 @@ function renderChips(){
   document.getElementById("chips").innerHTML = getFiltros().map(f=>
     `<span class="chip ${estado.filtrosChip.includes(f)?'ativo':''}" onclick="toggleChip('${f}')">${f}</span>`).join("");
 }
-function aplicarBloqueioVisualFirestore(){
-  if(!firestoreModoConsulta)return;
-  const seletores=[
-    "#btnNovo",
-    "button[onclick*='assumirTarefa']",
-    "button[onclick*='concluirEtapa']",
-    "button[onclick*='reabrirEtapa']",
-    "button[onclick*='voltarEtapa']",
-    "button[onclick*='abrirEdicaoMontagem']",
-    "button[onclick*='abrirCadastro']",
-    "button[onclick*='editarObsEtapa']",
-    "button[onclick*='abrirModalFO050']",
-    "button[onclick*='addComentario']",
-    "button[onclick*='addAnexo']",
-    "button[onclick*='addFerramenta']",
-    "button[onclick*='removerAnexo']",
-    "button[onclick*='removerFerramenta']",
-    "button[onclick*='salvarFollowUpCompras']",
-    "button[onclick*='solicitarAtualizacao']",
-    "button[onclick*='criarUsuario']",
-    "button[onclick*='editarUsuario']",
-    "button[onclick*='alternarAtivo']",
-    "button[onclick*='excluirProjeto']"
-  ];
-  document.querySelectorAll(seletores.join(",")).forEach(el=>{
-    el.disabled=true;el.style.opacity=".45";el.style.cursor="not-allowed";el.title="Indisponivel no modo somente consulta";
-  });
-  document.querySelectorAll("#modalCadastro input,#modalCadastro select,#modalCadastro textarea").forEach(el=>el.disabled=true);
-}
 function renderTudo(){
   if(!estado.usuario) return;
   renderChips();
@@ -4672,7 +4553,6 @@ function renderTudo(){
   if(viewAtual==="movimentacoes") renderMovimentacoes();
   if(viewAtual==="usuarios")  renderUsuarios();
   if(viewAtual==="projeto")   renderProjeto();
-  aplicarBloqueioVisualFirestore();
 }
 
 document.addEventListener("keydown", (e) => {

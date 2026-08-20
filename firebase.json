@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "predeploy": ["python scripts/validar_versao.py"],
     "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   }

@@ -1,3 +1,16 @@
+## [2.11.1] - 2026-08-20
+
+### Corrigido
+- Corrige o aviso de nova versão que reaparecia a cada 5 minutos e ao retornar para a aba porque `VERSAO_ATUAL` permanecia em `2.10.2` após o deploy da `2.11.0`.
+- O banner agora também é ocultado explicitamente quando `version.json` e a versão carregada são iguais.
+
+### Segurança de release
+- Adiciona `scripts/validar_versao.py` para validar `version.json`, `VERSAO_ATUAL` e os badges exibidos.
+- O Firebase Hosting executa a validação automaticamente antes de cada deploy e interrompe a publicação se houver divergência.
+
+### Backup
+- Backup exato anterior ao hotfix: `backups/index_v2.11.0.html`.
+- SHA-256: `83E6DDEF980F9C4DDFC2B8B5486A2B7A0010F86B14275F8A32988ED23F9390AD`.
 VERSÃO 2.11.0
 ---------------------------------------
 

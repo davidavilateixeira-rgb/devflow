@@ -1,3 +1,30 @@
+## [2.13.0] - 2026-08-21
+
+### Alterado
+- Simplifica a tabela do Follow-up de Compras para item, ferramentas, SC, OC, etapa da compra, NF/data e previsao manual de chegada.
+- Move o report detalhado de SC/OC para o cadastro do desenvolvimento.
+- Mantem na lista somente o botao de atualizacao individual e o acesso ao cadastro pelo clique da linha.
+
+### Integracao ERP
+- Remove a previsao de entrega do ERP do retorno e da interface.
+- Torna a previsao informada pelo fornecedor a unica fonte para prazo e atraso.
+- Preserva a previsao manual em sincronizacoes e retrocessos de etapa.
+- Mantem NF, data de entrada e status de recebimento como dados automaticos do ERP.
+- Executa a tarefa recorrente com `pythonw.exe`, sem abrir janela para o usuario.
+
+### Corrigido
+- Reprocessa o P360225 e carrega a OC 1291023 como aguardando entrega.
+- Preserva a previsao manual de 03/09/2026 durante a correcao do item.
+
+### Validacao
+- 15 testes unitarios aprovados.
+- Versao, JavaScript e PowerShell validados sem erros.
+- Layout validado em navegador a 1600 px, sem transbordamento horizontal do corpo.
+- Cadastro validado com o report completo e a lista com somente os campos aprovados.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.12.3.html`.
+- SHA-256: `C3BB5116D5309E665943C4B2A43A8F26C5D1127DDEBB999CAD7F26DA7F6D9C38`.
 ## [2.12.3] - 2026-08-21
 
 ### Corrigido

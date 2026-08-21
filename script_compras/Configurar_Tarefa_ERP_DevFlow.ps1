@@ -9,9 +9,25 @@ $ErrorActionPreference = "Stop"
 if ($IntervalMinutes -lt 1) { throw "IntervalMinutes deve ser maior ou igual a 1." }
 if (-not (Test-Path -LiteralPath $EnvFile -PathType Leaf)) { throw "Arquivo .env nao encontrado: $EnvFile" }
 
-$repository = Split-Path -Parent $PSScriptRoot
-$connector = Join-Path $PSScriptRoot "sincronizar_compras_sc.py"
-$python = (Get-Command python -ErrorAction Stop).Source
+function Convert-ToStableTaskPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $resolved = (Resolve-Path -LiteralPath $Path).Path
+    if ($resolved -match '^([A-Za-z]):\\(.*)$') {
+        $driveName = $Matches[1]
+        $relativePath = $Matches[2]
+        $drive = Get-PSDrive -Name $driveName -ErrorAction SilentlyContinue
+        if ($drive -and $drive.DisplayRoot) {
+            return Join-Path $drive.DisplayRoot $relativePath
+        }
+    }
+    return $resolved
+}
+
+$repository = Convert-ToStableTaskPath (Split-Path -Parent $PSScriptRoot)
+$connector = Convert-ToStableTaskPath (Join-Path $PSScriptRoot "sincronizar_compras_sc.py")
+$pythonCommand = Get-Command pythonw -ErrorAction SilentlyContinue
+if (-not $pythonCommand) { $pythonCommand = Get-Command python -ErrorAction Stop }
+$python = $pythonCommand.Source
 $userId = "$env:USERDOMAIN\$env:USERNAME"
 
 $arguments = '"' + $connector + '" --only-requested --env-file "' + $EnvFile + '"'
@@ -35,4 +51,5 @@ if ($existing) {
 
 Start-ScheduledTask -TaskName $TaskName
 Write-Host "Tarefa '$TaskName' configurada a cada $IntervalMinutes minuto(s)."
+Write-Host "Execucao sem janela: $([IO.Path]::GetFileName($python) -ieq 'pythonw.exe')"
 Write-Host "Repositorio: $repository"

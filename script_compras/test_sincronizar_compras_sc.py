@@ -63,7 +63,6 @@ def oc_item(**overrides):
         "cproduto": "MAT-01",
         "descricao": "Material de teste",
         "qtde_oc": 10,
-        "prevdt": date(2026, 8, 25),
         "solcompra": 100,
         "nfeitem": None,
         "qtde_nf": None,
@@ -149,9 +148,11 @@ class OcAggregationTests(unittest.TestCase):
         self.assertEqual(result["statusCodigo"], "AGUARDANDO_ENVIO")
         self.assertIn("COMPRADOR TESTE", result["proximaAcao"])
 
-    def test_overdue_delivery(self):
-        result = self.aggregate(rows=[oc_item(prevdt=date(2026, 8, 19))])
-        self.assertEqual(result["statusCodigo"], "ATRASADA")
+    def test_waiting_delivery_does_not_expose_erp_forecast(self):
+        result = self.aggregate()
+        self.assertEqual(result["statusCodigo"], "AGUARDANDO_ENTREGA")
+        self.assertNotIn("previsaoEntrega", result)
+        self.assertNotIn("previsaoEntrega", result["itens"][0])
 
     def test_partial_receipt(self):
         result = self.aggregate(

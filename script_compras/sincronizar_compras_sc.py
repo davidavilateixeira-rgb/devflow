@@ -88,7 +88,6 @@ select
     oci.cproduto,
     oci.descricao,
     oci.qtde as qtde_oc,
-    oci.prevdt,
     sci.solcompra,
     nfi.nfeitem,
     nfi.qtde as qtde_nf,
@@ -489,7 +488,6 @@ def aggregate_oc(
             "aprovadorPrevisto": "",
             "dataAprovacao": "",
             "enviadaEm": "",
-            "previsaoEntrega": "",
             "recebidaEm": "",
             "percentualRecebido": 0.0,
             "itensTotal": 0,
@@ -520,7 +518,6 @@ def aggregate_oc(
                 "descricao": str(row.get("descricao") or "").strip(),
                 "quantidade": decimal_value(row.get("qtde_oc")),
                 "recebida": Decimal("0"),
-                "previsaoEntrega": iso_date(row.get("prevdt")),
                 "_nfeitems": set(),
             },
         )
@@ -545,8 +542,6 @@ def aggregate_oc(
     ordered_total = Decimal("0")
     received_total = Decimal("0")
     received_items = 0
-    open_due_dates: list[str] = []
-    all_due_dates: list[str] = []
     item_records: list[dict[str, Any]] = []
     for state in item_state.values():
         ordered = max(Decimal("0"), state["quantidade"])
@@ -555,11 +550,6 @@ def aggregate_oc(
         complete = ordered > 0 and received >= ordered
         if complete:
             received_items += 1
-        due = state["previsaoEntrega"]
-        if due:
-            all_due_dates.append(due)
-            if not complete:
-                open_due_dates.append(due)
         ordered_total += ordered
         received_total += considered_received
         item_records.append(
@@ -569,7 +559,6 @@ def aggregate_oc(
                 "descricao": state["descricao"],
                 "quantidade": json_number(ordered),
                 "quantidadeRecebida": json_number(received),
-                "previsaoEntrega": due,
                 "recebido": complete,
             }
         )
@@ -577,13 +566,6 @@ def aggregate_oc(
     items_total = len(item_records)
     fully_received = items_total > 0 and received_items == items_total
     partially_received = received_total > 0 and not fully_received
-    next_due = min(open_due_dates) if open_due_dates else (max(all_due_dates) if all_due_dates else "")
-    overdue = False
-    if open_due_dates:
-        try:
-            overdue = date.fromisoformat(min(open_due_dates)) < today
-        except ValueError:
-            overdue = False
 
     approved = normalize_flag(header.get("compraaprov"))
     released = normalize_flag(header.get("libaprov"))
@@ -601,8 +583,6 @@ def aggregate_oc(
         code = "AGUARDANDO_APROVACAO" if released == "S" else "NAO_LIBERADA"
     elif sent != "S":
         code = "AGUARDANDO_ENVIO"
-    elif overdue:
-        code = "ATRASADA"
     else:
         code = "AGUARDANDO_ENTREGA"
 
@@ -634,7 +614,6 @@ def aggregate_oc(
         "aprovadorPrevisto": predicted_approver,
         "dataAprovacao": iso_datetime(header.get("dtaprov"), header.get("horaaprovado")),
         "enviadaEm": iso_date(header.get("dataenvmail")) if sent == "S" else "",
-        "previsaoEntrega": next_due,
         "recebidaEm": received_at,
         "percentualRecebido": round(percent, 1),
         "itensTotal": items_total,

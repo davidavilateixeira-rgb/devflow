@@ -38,7 +38,8 @@ O fluxo normal e:
 1. O usuario clica em `ERP` para um desenvolvimento ou confirma a atualizacao geral.
 2. O DevFlow marca somente os documentos escolhidos como `solicitado`.
 3. A proxima execucao curta recebe esses documentos e consulta SC/OC no Tecnicon.
-4. O conector grava apenas o report ERP e remove o documento da consulta filtrada.
+4. A tarefa usa o Python sem console, sem abrir janela ou roubar o foco do usuario.
+5. O conector grava apenas o report ERP e remove o documento da consulta filtrada.
 
 Execucao manual do mesmo ciclo filtrado:
 
@@ -52,8 +53,8 @@ na tarefa agendada do Windows.
 ## Dados da OC
 
 O report inclui liberacao, aprovacao, aprovador previsto/efetivo, comprador,
-fornecedor, envio por e-mail, previsao de entrega e recebimento confirmado pela
-entrada da NF. O status manual permanece separado.
+fornecedor, envio por e-mail e recebimento confirmado pela entrada da NF.
+A previsao de chegada permanece exclusivamente manual no cadastro do DevFlow.
 
 ## Caminhos alternativos
 

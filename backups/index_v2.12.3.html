@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.13.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.12.3</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.13.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.12.3</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.13.0";
+const VERSAO_ATUAL = "2.12.3";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -532,10 +532,10 @@ function normalizarProjeto(p){
   if(!Array.isArray(p.compras.historico)) p.compras.historico = [];
   if(p.numSC && !p.compras.sc.numero) p.compras.sc.numero = p.numSC;
   if(p.numOC && !p.compras.oc.numero) p.compras.oc.numero = p.numOC;
-  if(!p.prazoFornecedor && p.compras.oc.prazoEntrega) p.prazoFornecedor = p.compras.oc.prazoEntrega;
-  p.compras.oc.prazoEntrega = p.prazoFornecedor || "";
+  if(p.prazoFornecedor && !p.compras.oc.prazoEntrega) p.compras.oc.prazoEntrega = p.prazoFornecedor;
   if(p.compras.sc.numero && !p.numSC) p.numSC = p.compras.sc.numero;
   if(p.compras.oc.numero && !p.numOC) p.numOC = p.compras.oc.numero;
+  if(p.compras.oc.prazoEntrega && !p.prazoFornecedor) p.prazoFornecedor = p.compras.oc.prazoEntrega;
   
   if(!p.montagem) p.montagem = {
     etapaAtual: 0, historico: [], responsavel: "", responsavelUid: "", assumidoEm: "",
@@ -2238,18 +2238,6 @@ function renderProjeto(){
     ${pend.length?`<div class="card p-4 mb-5 surgir" style="border-left:4px solid var(--vermelho)">
       <div class="font-semibold text-sm mb-2" style="color:var(--vermelho)">⚠ Pendências (${pend.length})</div>
       <ul class="text-[12.5px] space-y-1" style="color:var(--texto-2)">${pend.map(x=>`<li>• ${x}</li>`).join("")}</ul>
-    </div>`:""}
-
-    ${!isMontagem&&podeAcessarCompras()&&projetoTemCompras(p)?`<div class="card p-5 mb-5 surgir">
-      <div class="flex items-start justify-between gap-3 mb-4">
-        <div><div class="font-semibold text-sm">Compras / ERP</div><div class="text-[11px] mt-1" style="color:var(--texto-2)">Detalhes completos da SC e da OC vinculados a este item.</div></div>
-        <button class="btn btn-primario no-print" onclick="solicitarAtualizacaoComprasERP('${p.id}')">&#8635; Atualizar no ERP</button>
-      </div>
-      <div class="grid lg:grid-cols-2 gap-4">
-        <div><div class="text-[11px] font-bold uppercase mb-2" style="color:var(--texto-2)">Solicitação de Compra</div>${htmlSCERP(p,false)}</div>
-        <div><div class="text-[11px] font-bold uppercase mb-2" style="color:var(--texto-2)">Ordem de Compra</div>${htmlOCERP(p,false)}</div>
-      </div>
-      <div class="mt-4 rounded-md p-3 text-[12px]" style="background:#FFF9F5"><b>Previsão de chegada informada pelo fornecedor:</b> ${p.prazoFornecedor?fmtL(p.prazoFornecedor):"Não informada"}. Esta data é manual e não é substituída pelo ERP.</div>
     </div>`:""}
 
     <div class="grid md:grid-cols-3 gap-4">
@@ -4043,8 +4031,7 @@ function sincronizarComprasProjeto(p,origem="cadastro",etapaConcluida=""){
   if(origem==="followup"){
     p.numSC=c.sc.numero||"";
     p.numOC=c.oc.numero||"";
-    p.prazoFornecedor=c.oc.prazoEntrega||p.prazoFornecedor||"";
-    c.oc.prazoEntrega=p.prazoFornecedor;
+    p.prazoFornecedor=c.oc.prazoEntrega||"";
   }else{
     c.sc.numero=p.numSC||"";
     c.oc.numero=p.numOC||"";
@@ -4071,14 +4058,15 @@ function sincronizarComprasProjeto(p,origem="cadastro",etapaConcluida=""){
     const iOC=ETAPAS.indexOf("Ordem de Compra"), iAprovOC=ETAPAS.indexOf("Aprovação OC");
     if(idx<=iSolic){
       Object.assign(c.sc,{dataAbertura:"",dataAprovacao:""});
-      Object.assign(c.oc,{dataEmissao:"",dataAprovacao:""});
+      Object.assign(c.oc,{dataEmissao:"",dataAprovacao:"",prazoEntrega:""});
     }else if(idx<=iAprovSC){
       c.sc.dataAprovacao="";
-      Object.assign(c.oc,{dataEmissao:"",dataAprovacao:""});
+      Object.assign(c.oc,{dataEmissao:"",dataAprovacao:"",prazoEntrega:""});
     }else if(idx<=iOC){
-      Object.assign(c.oc,{dataEmissao:"",dataAprovacao:""});
+      Object.assign(c.oc,{dataEmissao:"",dataAprovacao:"",prazoEntrega:""});
     }else if(idx<=iAprovOC){
-      Object.assign(c.oc,{dataAprovacao:""});
+      Object.assign(c.oc,{dataAprovacao:"",prazoEntrega:""});
+      p.prazoFornecedor="";
     }
   }
   return c;
@@ -4093,7 +4081,7 @@ function resumoCompras(p){
   const ocIniciada=idx>=ETAPAS.indexOf("Ordem de Compra")||!!(c.oc.numero||p.numOC||c.oc.status);
   const scAberta=!STATUS_SC_ENCERRADOS.includes(st.sc), ocAberta=ocIniciada&&!STATUS_OC_ENCERRADOS.includes(st.oc);
   const diasEtapa=diasNaEtapa(p), el=document.getElementById("cfgDiasAlerta"), limite=el?(+el.value||5):5;
-  const diasFollow=diffDiasData(c.followUp.dataProximoFollowUp), diasEntrega=diffDiasData(p.prazoFornecedor);
+  const diasFollow=diffDiasData(c.followUp.dataProximoFollowUp), diasEntrega=diffDiasData(c.oc.prazoEntrega||p.prazoFornecedor);
   const comprasAbertas=scAberta||ocAberta;
   const followSemData=comprasAbertas&&!c.followUp.dataProximoFollowUp;
   const followVencido=comprasAbertas&&diasFollow!==null&&diasFollow<=0;
@@ -4121,39 +4109,6 @@ function htmlFerramentasCompras(p,limite=3){
   if(!lista.length) return '<span style="color:var(--texto-2)">Nenhuma ferramenta informada</span>';
   const exibidas=limite>0?lista.slice(0,limite):lista;
   return `<div class="flex flex-wrap gap-1" title="${esc(lista.join(", "))}">${exibidas.map(codigo=>`<span class="badge b-cinza">${esc(codigo)}</span>`).join("")}${limite>0&&lista.length>limite?`<span class="badge b-azul">+${lista.length-limite}</span>`:""}</div>`;
-}
-function htmlNumerosCompras(numeros,prefixo){
-  if(!numeros.length)return '<span style="color:var(--texto-2)">&mdash;</span>';
-  return `<div class="flex flex-wrap gap-1">${numeros.map(numero=>`<span class="badge b-cinza" title="${esc(prefixo)} ${esc(numero)}">${esc(numero)}</span>`).join("")}</div>`;
-}
-function htmlEtapaCompra(p,scERP,ocERP){
-  if(scERP.pendente||ocERP.pendente)return '<span class="badge b-laranja">Atualizando ERP</span>';
-  const registrosOC=ocERP.registros.filter(r=>r&&r.status);
-  if(registrosOC.length){
-    const unicos=[...new Map(registrosOC.map(r=>[r.statusCodigo||r.status,r])).values()];
-    return `<div class="flex flex-wrap gap-1">${unicos.map(r=>`<span class="badge ${classeStatusOCERP(r.statusCodigo)}">OC &middot; ${esc(r.status)}</span>`).join("")}</div>`;
-  }
-  if(ocERP.numeros.length)return '<span class="badge b-cinza">OC &middot; Aguardando consulta</span>';
-  const registrosSC=scERP.registros.filter(r=>r&&r.status);
-  if(registrosSC.length){
-    const unicos=[...new Map(registrosSC.map(r=>[r.statusCodigo||r.status,r])).values()];
-    return `<div class="flex flex-wrap gap-1">${unicos.map(r=>`<span class="badge ${classeStatusSCERP(r.statusCodigo)}">SC &middot; ${esc(r.status)}</span>`).join("")}</div>`;
-  }
-  if(scERP.numeros.length)return '<span class="badge b-cinza">SC &middot; Aguardando consulta</span>';
-  return `<span class="badge b-cinza">${esc(etapaNome(p))}</span>`;
-}
-function notasFiscaisCompras(ocERP){
-  const unicas=new Map();
-  ocERP.registros.forEach(oc=>(oc.notasFiscais||[]).forEach(nf=>{
-    const chave=`${nf.numero||"sem-numero"}|${nf.serie||""}|${nf.entradaEm||""}`;
-    if(!unicas.has(chave))unicas.set(chave,nf);
-  }));
-  return [...unicas.values()];
-}
-function htmlNotasFiscaisCompras(ocERP){
-  const notas=notasFiscaisCompras(ocERP);
-  if(!notas.length)return '<span class="badge b-cinza">Sem NF</span>';
-  return `<div class="space-y-1.5">${notas.map(nf=>`<div><span class="badge b-verde">NF ${esc(nf.numero||"registrada")}</span><div class="mt-1 text-[10.5px]" style="color:var(--texto-2)">Entrada: <b style="color:var(--texto)">${nf.entradaEm?fmtL(nf.entradaEm):"Data não informada"}</b></div></div>`).join("")}</div>`;
 }
 
 const STATUS_SC_ERP_PROBLEMA = ["NAO_ENCONTRADA","RECUSADA"];
@@ -4226,7 +4181,7 @@ function htmlSCERP(p,compacto=false){
     </div>`;
   }).join("")}</div>`;
 }
-const STATUS_OC_ERP_PROBLEMA = ["NAO_ENCONTRADA","RECUSADA"];
+const STATUS_OC_ERP_PROBLEMA = ["NAO_ENCONTRADA","RECUSADA","ATRASADA"];
 const STATUS_OC_ERP_PENDENTE = ["NAO_LIBERADA","AGUARDANDO_APROVACAO","AGUARDANDO_ENVIO","RECEBIDA_PARCIAL"];
 const STATUS_OC_ERP_OK = ["RECEBIDA","CANCELADA"];
 
@@ -4296,6 +4251,7 @@ function htmlOCERP(p,compacto=false){
         <div>Fornecedor: <b style="color:var(--texto)">${esc(r.fornecedor||"N\u00e3o informado")}</b></div>
         ${r.dataAprovacao?`<div>Aprovada: <b style="color:var(--texto)">${fmtDataHoraERP(r.dataAprovacao)}</b></div>`:""}
         <div>Enviada: <b style="color:var(--texto)">${r.enviadaEm?fmtL(r.enviadaEm):"N\u00e3o"}</b></div>
+        <div>Previs\u00e3o: <b style="color:${r.statusCodigo==="ATRASADA"?"var(--vermelho)":"var(--texto)"}">${r.previsaoEntrega?fmtL(r.previsaoEntrega):"\u2014"}</b></div>
         ${r.recebidaEm?`<div>Recebida: <b style="color:var(--verde)">${fmtDataHoraERP(r.recebidaEm)}</b></div>`:""}
         ${nfs.length?`<div>NF(s): <b style="color:var(--texto)">${esc(nfs.join(", "))}</b></div>`:""}
       </div>
@@ -4337,6 +4293,7 @@ function htmlOCERPHorizontal(p){
     return `<div><div class="flex items-center justify-between gap-2"><b>OC ${esc(r.numero)}</b><span class="badge ${classeStatusOCERP(r.statusCodigo)}">${esc(r.status)}</span></div>
       <div class="mt-1 space-y-0.5 text-[10.5px]" style="color:var(--texto-2)">
         <div>Fornecedor: <b style="color:var(--texto)">${esc(r.fornecedor||"N\u00e3o informado")}</b></div>
+        <div>Previs\u00e3o: <b style="color:${r.statusCodigo==="ATRASADA"?"var(--vermelho)":"var(--texto)"}">${r.previsaoEntrega?fmtL(r.previsaoEntrega):"\u2014"}</b></div>
         <div>Envio: <b style="color:var(--texto)">${r.enviadaEm?fmtL(r.enviadaEm):"N\u00e3o enviado"}</b></div>
         ${r.recebidaEm?`<div>Recebida: <b style="color:var(--verde)">${fmtDataHoraERP(r.recebidaEm)}</b></div>`:""}
         ${nfs.length?`<div>NF(s): <b style="color:var(--texto)">${esc(nfs.join(", "))}</b></div>`:""}
@@ -4501,7 +4458,7 @@ function renderCompras(){
   const base=estado.projetos.filter(projetoTemCompras).map(dadosComprasProjeto);
   const totalAtualizaveisERP=projetosAtualizacaoComprasERP(false).length;
   const totalSc=base.filter(x=>x.r.scAberta).length,totalOc=base.filter(x=>x.r.ocAberta||x.ocERP.acompanhando||x.ocERP.precisaAcao).length;
-  const totalFollow=base.filter(x=>x.r.followNecessario).length,totalAtrasados=base.filter(x=>x.r.fornecedorAtrasado).length;
+  const totalFollow=base.filter(x=>x.r.followNecessario).length,totalAtrasados=base.filter(x=>x.r.fornecedorAtrasado||x.ocERP.codigos.includes("ATRASADA")).length;
   const registrosSC=base.flatMap(x=>x.scERP.registros),registrosOC=base.flatMap(x=>x.ocERP.registros);
   const totalOCAprovacao=registrosOC.filter(r=>["NAO_LIBERADA","AGUARDANDO_APROVACAO"].includes(r.statusCodigo)).length;
   const totalOCEnvio=registrosOC.filter(r=>r.statusCodigo==="AGUARDANDO_ENVIO").length;
@@ -4517,7 +4474,7 @@ function renderCompras(){
   if(estado.comprasFiltro==="follow")itens=itens.filter(x=>x.r.followNecessario);
   if(estado.comprasFiltro==="sc")itens=itens.filter(x=>x.r.scAberta);
   if(estado.comprasFiltro==="oc")itens=itens.filter(x=>x.r.ocAberta||x.ocERP.precisaAcao||x.ocERP.acompanhando);
-  if(estado.comprasFiltro==="atrasados"||estado.comprasFiltro==="oc-atrasada")itens=itens.filter(x=>x.r.fornecedorAtrasado);
+  if(estado.comprasFiltro==="atrasados"||estado.comprasFiltro==="oc-atrasada")itens=itens.filter(x=>x.r.fornecedorAtrasado||x.ocERP.codigos.includes("ATRASADA"));
   if(estado.comprasFiltro==="oc-aprovacao")itens=itens.filter(x=>x.ocERP.codigos.some(c=>["NAO_LIBERADA","AGUARDANDO_APROVACAO"].includes(c)));
   if(estado.comprasFiltro==="oc-envio")itens=itens.filter(x=>x.ocERP.codigos.includes("AGUARDANDO_ENVIO"));
   if(estado.comprasFiltro==="oc-entrega")itens=itens.filter(x=>x.ocERP.codigos.some(c=>["AGUARDANDO_ENTREGA","RECEBIDA_PARCIAL"].includes(c)));
@@ -4531,7 +4488,7 @@ function renderCompras(){
   const filtros=[["abertos","Todos em aberto"],["oc-aprovacao","OC: aguardando aprova\u00e7\u00e3o"],["oc-envio","OC: aguardando envio"],["oc-entrega","OC: entrega / parcial"],["oc-atrasada","OC: atrasadas"],["oc-recebida","OC: recebidas"],["erp-pendente","SC: aguardando aprova\u00e7\u00e3o"],["erp-problema","ERP: verificar"],["follow","Follow-up necess\u00e1rio"],["sc","SC abertas"],["oc","OC abertas"],["todos","Todos, inclusive encerrados"]];
   view.innerHTML=`
     <div class="flex items-start justify-between flex-wrap gap-3 mb-4"><div><h1 class="text-xl font-bold surgir">Follow-up de Compras</h1><p class="text-[12px] mt-1" style="color:var(--texto-2)">Acompanhamento integrado da SC at\u00e9 o recebimento da OC por entrada de NF.</p></div><div class="flex items-center flex-wrap justify-end gap-2 no-print"><span class="badge ${registrosSC.length||registrosOC.length?"b-verde":"b-cinza"}">${registrosSC.length||registrosOC.length?"ERP conectado":"Aguardando primeira sincroniza\u00e7\u00e3o"}</span><button class="btn btn-primario !py-2" ${totalAtualizaveisERP?"":"disabled style='opacity:.45;cursor:not-allowed'"} onclick="solicitarAtualizacaoTodasComprasERP()">\u21bb Atualizar follow-ups (${totalAtualizaveisERP})</button>${isAdmin()?'<button class="btn btn-suave !py-2" onclick="solicitarAtualizacaoTodasComprasERP(true)">Atualiza\u00e7\u00e3o geral</button>':""}</div></div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("SC abertas",totalSc,"var(--laranja)","sc","Solicita\u00e7\u00f5es ainda abertas")}${card("OC abertas",totalOc,"#0F5FA8","oc","Ordens ainda em andamento")}${card("Follow-up necess\u00e1rio",totalFollow,"#C42B1C","follow","Manual ou indicado pelo ERP")}${card("Entrega atrasada",totalAtrasados,"#7C2D12","oc-atrasada","Previs\u00e3o manual do fornecedor ultrapassada")}</div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("SC abertas",totalSc,"var(--laranja)","sc","Solicita\u00e7\u00f5es ainda abertas")}${card("OC abertas",totalOc,"#0F5FA8","oc","Ordens ainda em andamento")}${card("Follow-up necess\u00e1rio",totalFollow,"#C42B1C","follow","Manual ou indicado pelo ERP")}${card("Entrega atrasada",totalAtrasados,"#7C2D12","oc-atrasada","Prazo do ERP ultrapassado")}</div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("OC \u00b7 aprova\u00e7\u00e3o",totalOCAprovacao,"var(--laranja)","oc-aprovacao","Aguardando libera\u00e7\u00e3o ou aprovador")}${card("OC \u00b7 envio",totalOCEnvio,"#8A5A00","oc-envio","Aprovadas, ainda n\u00e3o enviadas")}${card("OC \u00b7 entrega",totalOCEntrega,"#0F5FA8","oc-entrega","Em transporte ou recebimento parcial")}${card("OC \u00b7 recebidas",totalOCRecebida,"var(--verde)","oc-recebida","Confirmadas pela entrada da NF")}</div>
     <div class="card p-4 mb-4 no-print"><div class="grid md:grid-cols-4 gap-2">
       <div class="relative"><svg class="absolute left-2.5 top-2.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A93" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg><input id="comprasBusca" class="inp !pl-8" value="${esc(estado.comprasBusca)}" placeholder="Buscar desenvolvimento, ferramenta, SC, OC, NF..." oninput="atualizarBuscaCompras(this.value)"></div>
@@ -4539,16 +4496,16 @@ function renderCompras(){
       <select class="inp" onchange="estado.comprasResponsavel=this.value;renderTudo()"><option value="">Todos os respons\u00e1veis</option>${responsaveis.map(v=>`<option value="${esc(v)}" ${estado.comprasResponsavel===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
       <select class="inp" onchange="estado.comprasFornecedor=this.value;renderTudo()"><option value="">Todos os fornecedores</option>${fornecedores.map(v=>`<option value="${esc(v)}" ${estado.comprasFornecedor===v?"selected":""}>${esc(v)}</option>`).join("")}</select>
     </div></div>
-    <div class="card overflow-hidden surgir"><div class="overflow-x-auto"><table class="w-full text-left text-[11.5px]" style="min-width:1250px;table-layout:fixed"><thead style="background:#F7F7F8;color:var(--texto-2)"><tr><th class="p-3" style="width:240px">Item</th><th class="p-3" style="width:190px">Ferramentas</th><th class="p-3" style="width:110px">N\u00ba da SC</th><th class="p-3" style="width:110px">N\u00ba da OC</th><th class="p-3" style="width:175px">Etapa da compra</th><th class="p-3" style="width:190px">NF / entrada</th><th class="p-3" style="width:135px">Previs\u00e3o de chegada</th><th class="p-3" style="width:100px"></th></tr></thead><tbody>
+    <div class="card overflow-hidden surgir"><div class="overflow-x-auto"><table class="w-full text-left text-[11.5px]" style="min-width:1280px;table-layout:fixed"><thead style="background:#F7F7F8;color:var(--texto-2)"><tr><th class="p-3" style="width:150px">Situa\u00e7\u00e3o</th><th class="p-3" style="width:220px">Desenvolvimento / ferramentas</th><th class="p-3" style="width:110px">Etapa</th><th class="p-3" style="width:220px">SC no ERP</th><th class="p-3" style="width:245px">OC no ERP</th><th class="p-3" style="width:180px">Pr\u00f3ximo follow-up</th><th class="p-3" style="width:85px">Atualiza\u00e7\u00e3o</th><th class="p-3" style="width:70px"></th></tr></thead><tbody>
       ${itens.length?itens.map(({p,r,scERP,ocERP})=>`<tr class="border-t hover:bg-gray-50 cursor-pointer" style="border-color:var(--cinza-borda)" onclick="irPara('projeto','${p.id}')">
-        <td class="p-3 align-top"><div class="font-bold text-[12.5px]">${esc(p.codigo)} ${p.devId?`<span class="badge b-cinza">${esc(p.devId)}</span>`:""}</div><div class="mt-1 line-clamp-2" title="${esc(p.descricao)}" style="color:var(--texto-2)">${esc(p.descricao)}</div></td>
-        <td class="p-3 align-top">${htmlFerramentasCompras(p,5)}</td>
-        <td class="p-3 align-top">${htmlNumerosCompras(scERP.numeros,"SC")}</td>
-        <td class="p-3 align-top">${htmlNumerosCompras(ocERP.numeros,"OC")}</td>
-        <td class="p-3 align-top">${htmlEtapaCompra(p,scERP,ocERP)}</td>
-        <td class="p-3 align-top">${htmlNotasFiscaisCompras(ocERP)}</td>
-        <td class="p-3 align-top"><div class="font-semibold" style="color:${r.fornecedorAtrasado?"var(--vermelho)":"var(--texto)"}">${p.prazoFornecedor?fmtL(p.prazoFornecedor):"Não informada"}</div><div class="mt-1 text-[10px]" style="color:var(--texto-2)">Informada pelo fornecedor</div></td>
-        <td class="p-3 align-top"><button class="btn btn-primario !py-1.5 !px-2.5 w-full" onclick="event.stopPropagation();solicitarAtualizacaoComprasERP('${p.id}')">&#8635; Atualizar</button>${scERP.pendente?`<div class="mt-1 text-center text-[10px]" style="color:var(--laranja)">Solicitada</div>`:""}</td></tr>`).join(""):`<tr><td colspan="8" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
+        <td class="p-3 align-top"><div class="flex items-center gap-2"><span class="dot dot-${r.nivel}"></span><span class="font-semibold">${esc(r.alerta)}</span></div><div class="mt-1" style="color:var(--texto-2)">${r.diasEtapa} dia(s) na etapa</div></td>
+        <td class="p-3 align-top"><div class="font-bold text-[12.5px]">${esc(p.codigo)} ${p.devId?`<span class="badge b-cinza">${esc(p.devId)}</span>`:""}</div><div class="mt-1 truncate" title="${esc(p.descricao)}" style="color:var(--texto-2)">${esc(p.descricao)}</div><div class="mt-2">${htmlFerramentasCompras(p,4)}</div></td>
+        <td class="p-3 align-top"><div class="font-semibold">${esc(etapaNome(p))}</div>${projetoAntesFO050(p)?"":'<div class="mt-1 text-[10px]" style="color:var(--verde)">Follow-up de compras encerrado</div>'}</td>
+        <td class="p-3 align-top">${htmlSCERPHorizontal(p)}</td>
+        <td class="p-3 align-top">${htmlOCERPHorizontal(p)}</td>
+        <td class="p-3 align-top"><div class="font-semibold">${r.c.followUp.dataProximoFollowUp?fmtL(r.c.followUp.dataProximoFollowUp):"N\u00e3o programado"}</div><div class="mt-1 line-clamp-2" title="${esc(r.c.followUp.proximaAcao)}" style="color:var(--texto-2)">${esc(r.c.followUp.proximaAcao||ocERP.registros.find(v=>v.proximaAcao)?.proximaAcao||"Sem pr\u00f3xima a\u00e7\u00e3o")}</div><div class="mt-2 text-[10.5px]"><b>Respons\u00e1vel:</b> ${esc(r.c.followUp.responsavel||p.responsavel||"N\u00e3o definido")}</div></td>
+        <td class="p-3 align-top"><span class="badge ${r.c.integracao.fonte==="erp"?"b-verde":"b-cinza"}">${r.c.integracao.fonte==="erp"?"ERP":"Aguardando"}</span>${r.c.integracao.ultimaSincronizacao?`<div class="mt-1 text-[10px]" style="color:var(--texto-2)">${fmtDataHoraERP(r.c.integracao.ultimaSincronizacao)}</div>`:""}${scERP.pendente?`<div class="mt-1" style="color:var(--laranja)">Solicitada</div>`:""}</td>
+        <td class="p-3 align-top"><div class="flex flex-col gap-1.5"><button class="btn btn-primario !py-1.5 !px-2.5" onclick="event.stopPropagation();solicitarAtualizacaoComprasERP('${p.id}')">\u21bb ERP</button><button class="btn btn-suave !py-1.5 !px-2.5" onclick="event.stopPropagation();abrirFollowUpCompras('${p.id}')">Follow-up</button></div></td></tr>`).join(""):`<tr><td colspan="8" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
     </tbody></table></div><div class="p-3 border-t text-[10.5px]" style="border-color:var(--cinza-borda);color:var(--texto-2)">${itens.length} de ${base.length} desenvolvimento(s) exibido(s).</div></div>`;
 }
 
@@ -4575,7 +4532,7 @@ function abrirFollowUpCompras(id){
       <div class="card !shadow-none p-4"><div class="font-bold text-[13px] mb-3">Ordem de Compra (OC)</div><div class="grid grid-cols-2 gap-3">
         <div><label class="lbl">Número da OC</label><input id="cp-oc-numero" class="inp" value="${esc(c.oc.numero||p.numOC)}"></div><div><label class="lbl">Status da OC</label><select id="cp-oc-status" class="inp">${opcoesStatusCompra(STATUS_OC_COMPRAS,c.oc.status||st.oc)}</select></div>
         <div><label class="lbl">Data de emissão</label><input id="cp-oc-emissao" type="date" class="inp" value="${esc(c.oc.dataEmissao)}"></div><div><label class="lbl">Data de aprovação</label><input id="cp-oc-aprovacao" type="date" class="inp" value="${esc(c.oc.dataAprovacao)}"></div>
-        <div><label class="lbl">Fornecedor</label><input id="cp-fornecedor" class="inp" value="${esc(p.fornecedor)}"></div><div><label class="lbl">Previsão de chegada (informada pelo fornecedor)</label><input id="cp-oc-prazo" type="date" class="inp" value="${esc(p.prazoFornecedor)}"></div>
+        <div><label class="lbl">Fornecedor</label><input id="cp-fornecedor" class="inp" value="${esc(p.fornecedor)}"></div><div><label class="lbl">Prazo de entrega</label><input id="cp-oc-prazo" type="date" class="inp" value="${esc(c.oc.prazoEntrega||p.prazoFornecedor)}"></div>
       </div></div>
     </div>
     <div class="card !shadow-none p-4 mt-4" style="background:#FFF9F5">

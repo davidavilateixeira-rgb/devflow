@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.14.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.14.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.14.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.14.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.14.1";
+const VERSAO_ATUAL = "2.14.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -3721,8 +3721,7 @@ function salvarCadastro(id){
 function abrirModalFO050Montagem(id, requiredMode, callback){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
-  const fo = JSON.parse(JSON.stringify(p.montagem.fo050 || { linhasMontagem:[], processos:[], dataExecucao:"", numOP:"" }));
-  if(!fo.linhasMontagem) fo.linhasMontagem = [];
+  const fo = p.montagem.fo050 || { linhasMontagem:[], processos:[], dataExecucao:"", numOP:"" };
   if(!fo.processos || fo.processos.length===0) fo.processos = [{ nome: "Montagem", tempoProcesso: "" }, { nome: "Embalagem", tempoProcesso: "" }];
   if(!fo.dataExecucao && fo.processos[0] && fo.processos[0].dataExecucao) fo.dataExecucao = fo.processos[0].dataExecucao;
   if(!fo.numOP && fo.processos[0] && fo.processos[0].numOP) fo.numOP = fo.processos[0].numOP;
@@ -3780,14 +3779,12 @@ function abrirModalFO050Montagem(id, requiredMode, callback){
   window.__addProcessoFO050M = () => { procDraft.push({ nome:"Montagem", tempoProcesso:"" }); document.getElementById("listaProcessosFO050M").innerHTML = window.__renderProcessosFO050M(); };
   window.__remProcessoFO050M = (i) => { if(confirm("Remover este processo?")) { procDraft.splice(i, 1); document.getElementById("listaProcessosFO050M").innerHTML = window.__renderProcessosFO050M(); } };
 
-  window.__salvarFO050M = async () => {
+  window.__salvarFO050M = () => {
     document.querySelectorAll('.proc-nome').forEach(el => procDraft[el.dataset.idx].nome = el.value.trim());
     document.querySelectorAll('.proc-tp').forEach(el => procDraft[el.dataset.idx].tempoProcesso = el.value);
 
-    const campoData = document.getElementById("foMData");
-    const campoOP = document.getElementById("foMOp");
-    if(campoData) fo.dataExecucao = campoData.value;
-    if(campoOP) fo.numOP = campoOP.value.trim();
+    fo.dataExecucao = document.getElementById("foMData").value;
+    fo.numOP = document.getElementById("foMOp").value.trim();
 
     if(requiredMode === 'todos') {
       if(fo.linhasMontagem.length === 0) { alert("Informe pelo menos uma linha de montagem."); return; }
@@ -3798,25 +3795,14 @@ function abrirModalFO050Montagem(id, requiredMode, callback){
     }
     
     if(requiredMode === 'todos') {
-      for(const processo of procDraft) {
-        if(!processo.tempoProcesso) { alert("Tempo de processo é obrigatório para todos."); return; }
+      for(const p of procDraft) {
+        if(!p.tempoProcesso) { alert("Tempo de processo é obrigatório para todos."); return; }
       }
     }
 
-    fo.processos = procDraft.map(processo => Object.assign({}, processo, {
-      dataExecucao: fo.dataExecucao || "",
-      numOP: fo.numOP || ""
-    }));
-    const foAnterior = p.montagem.fo050;
+    fo.processos = procDraft;
     p.montagem.fo050 = fo;
-    const botaoSalvar = document.getElementById("btnSalvarFO050M");
-    if(botaoSalvar){ botaoSalvar.disabled = true; botaoSalvar.textContent = "Gravando..."; }
-    const salvo = await salvarProjeto(p);
-    if(!salvo){
-      p.montagem.fo050 = foAnterior;
-      if(botaoSalvar){ botaoSalvar.disabled = false; botaoSalvar.textContent = "Gravar Dados"; }
-      return;
-    }
+    salvarProjeto(p);
     fecharModal();
     if(callback) callback();
     else if(viewAtual==="projeto") renderProjeto();
@@ -3840,24 +3826,10 @@ function abrirModalFO050Montagem(id, requiredMode, callback){
       </div>
       <div id="listaProcessosFO050M">${window.__renderProcessosFO050M()}</div>
     </div>
-
-    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <div class="grid md:grid-cols-2 gap-4">
-        <div>
-          <label class="lbl">Data de Execução ${requiredMode==='todos'?'*':''}</label>
-          <input id="foMData" type="date" class="inp" value="${fo.dataExecucao||""}">
-        </div>
-        <div>
-          <label class="lbl">Nº da OP ${requiredMode==='todos'?'*':''}</label>
-          <input id="foMOp" class="inp" value="${esc(fo.numOP||"")}" placeholder="Número da ordem de produção">
-        </div>
-      </div>
-      <div class="text-[10.5px] mt-2" style="color:var(--texto-2)">A Data de Execução e o Nº da OP serão aplicados a todos os processos da FO050 de Montagem.</div>
-    </div>
     
     <div class="flex justify-end gap-2 mt-6 border-t pt-4">
       <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
-      <button id="btnSalvarFO050M" class="btn btn-primario font-bold px-6" onclick="window.__salvarFO050M()">Gravar Dados</button>
+      <button class="btn btn-primario font-bold px-6" onclick="window.__salvarFO050M()">Gravar Dados</button>
     </div>
   </div>`;
 }

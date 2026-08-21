@@ -1,3 +1,21 @@
+## [2.14.1] - 2026-08-21
+
+### Corrigido
+- Corrige o botao Gravar Dados da FO050 de Montagem, que era interrompido ao tentar acessar campos inexistentes.
+- Inclui Data de Execucao e Numero da OP no modal da FO050 de Montagem.
+- Aplica a Data de Execucao e a OP a todos os processos de Montagem e Embalagem.
+- Permite gravar no modo livre sem exigir os campos obrigatorios da conclusao da etapa.
+- Fecha o modal somente depois da confirmacao de gravacao no Firestore.
+- Restaura os dados anteriores se a gravacao falhar e preserva o cadastro ao cancelar.
+
+### Validacao
+- Sintaxe JavaScript, versao e estrutura do modal validadas.
+- 15 testes unitarios da integracao de compras aprovados.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.14.0.html`.
+- SHA-256: `AE48B601AAADED77188D57FC1D847FA0C24F97E097D256F3BC6A0B0A08FB818D`.
+
 ## [2.14.0] - 2026-08-21
 
 ### Adicionado

@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.14.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.13.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.14.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.13.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.14.0";
+const VERSAO_ATUAL = "2.13.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -2240,6 +2240,18 @@ function renderProjeto(){
       <ul class="text-[12.5px] space-y-1" style="color:var(--texto-2)">${pend.map(x=>`<li>• ${x}</li>`).join("")}</ul>
     </div>`:""}
 
+    ${!isMontagem&&podeAcessarCompras()&&projetoTemCompras(p)?`<div class="card p-5 mb-5 surgir">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div><div class="font-semibold text-sm">Compras / ERP</div><div class="text-[11px] mt-1" style="color:var(--texto-2)">Detalhes completos da SC e da OC vinculados a este item.</div></div>
+        <button class="btn btn-primario no-print" onclick="solicitarAtualizacaoComprasERP('${p.id}')">&#8635; Atualizar no ERP</button>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-4">
+        <div><div class="text-[11px] font-bold uppercase mb-2" style="color:var(--texto-2)">Solicitação de Compra</div>${htmlSCERP(p,false)}</div>
+        <div><div class="text-[11px] font-bold uppercase mb-2" style="color:var(--texto-2)">Ordem de Compra</div>${htmlOCERP(p,false)}</div>
+      </div>
+      <div class="mt-4 rounded-md p-3 text-[12px]" style="background:#FFF9F5"><b>Previsão de chegada informada pelo fornecedor:</b> ${p.prazoFornecedor?fmtL(p.prazoFornecedor):"Não informada"}. Esta data é manual e não é substituída pelo ERP.</div>
+    </div>`:""}
+
     <div class="grid md:grid-cols-3 gap-4">
       <div class="card p-5 surgir">
         <div class="font-semibold text-sm mb-3">Dados gerais</div>
@@ -2465,24 +2477,6 @@ function renderProjeto(){
           }
         })()}
       </div>
-
-      ${!isMontagem&&podeAcessarCompras()&&projetoTemCompras(p)?`<details class="card md:col-span-3 surgir overflow-hidden">
-        <summary class="p-5 cursor-pointer select-none">
-          <span class="font-semibold text-sm">Compras / ERP</span>
-          <span class="text-[11px] ml-2" style="color:var(--texto-2)">Clique para visualizar os detalhes completos da SC e da OC.</span>
-        </summary>
-        <div class="px-5 pb-5 pt-4 border-t" style="border-color:var(--cinza-borda)">
-          <div class="flex items-start justify-between gap-3 mb-4">
-            <div class="text-[11px]" style="color:var(--texto-2)">Dados consultivos do ERP vinculados a este item.</div>
-            <button class="btn btn-primario no-print" onclick="solicitarAtualizacaoComprasERP('${p.id}')">&#8635; Atualizar no ERP</button>
-          </div>
-          <div class="grid lg:grid-cols-2 gap-4">
-            <div><div class="text-[11px] font-bold uppercase mb-2" style="color:var(--texto-2)">Solicitação de Compra</div>${htmlSCERP(p,false)}</div>
-            <div><div class="text-[11px] font-bold uppercase mb-2" style="color:var(--texto-2)">Ordem de Compra</div>${htmlOCERP(p,false)}</div>
-          </div>
-          <div class="mt-4 rounded-md p-3 text-[12px]" style="background:#FFF9F5"><b>Previsão de chegada informada pelo fornecedor:</b> ${p.prazoFornecedor?fmtL(p.prazoFornecedor):"Não informada"}. Esta data é manual e não é substituída pelo ERP.</div>
-        </div>
-      </details>`:""}
     </div>`;
 }
 
@@ -4215,9 +4209,7 @@ function htmlSCERP(p,compacto=false){
   if(i.statusSincronizacao==="erro")return `<div class="rounded-md p-2 text-[11px]" style="background:#FDE7E5;color:var(--vermelho)"><b>Falha na consulta:</b> ${esc(i.erro||"Conector indisponível.")}</div>`;
   if(info.pendente)return htmlSincronizacaoERPPendente(i,compacto);
   const porNumero=new Map(info.registros.map(r=>[String(r.numero),r]));
-  const classeLista=compacto?"space-y-2 min-w-[250px]":"grid gap-3";
-  const estiloLista=compacto?"":' style="grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))"';
-  return `<div class="${classeLista}"${estiloLista}>${info.numeros.map(numero=>{
+  return `<div class="${compacto?"space-y-2 min-w-[250px]":"grid md:grid-cols-2 gap-3"}">${info.numeros.map(numero=>{
     const r=porNumero.get(String(numero));
     if(!r)return `<div class="rounded-md border p-2" style="border-color:var(--cinza-borda)"><div class="font-bold">SC ${esc(numero)}</div><div class="mt-1" style="color:var(--texto-2)">Aguardando primeira consulta ao ERP.</div></div>`;
     const diasAguardando=r.statusCodigo==="AGUARDANDO_APROVACAO"&&r.dataCriacao?Math.max(0,dias(parseData(r.dataCriacao),new Date())):null;
@@ -4291,9 +4283,7 @@ function htmlOCERP(p,compacto=false){
   if(i.statusSincronizacao==="erro")return `<div class="rounded-md p-2 text-[11px]" style="background:#FDE7E5;color:var(--vermelho)"><b>Falha na consulta:</b> ${esc(i.erro||"Conector indispon\u00edvel.")}</div>`;
   if(info.pendente)return htmlSincronizacaoERPPendente(i,compacto);
   const porNumero=new Map(info.registros.map(r=>[String(r.numero),r]));
-  const classeLista=compacto?"space-y-2 min-w-[280px]":"grid gap-3";
-  const estiloLista=compacto?"":' style="grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))"';
-  return `<div class="${classeLista}"${estiloLista}>${info.numeros.map(numero=>{
+  return `<div class="${compacto?"space-y-2 min-w-[280px]":"grid md:grid-cols-2 gap-3"}">${info.numeros.map(numero=>{
     const r=porNumero.get(String(numero));
     if(!r)return `<div class="rounded-md border p-2" style="border-color:var(--cinza-borda)"><div class="font-bold">OC ${esc(numero)}</div><div class="mt-1" style="color:var(--texto-2)">Aguardando primeira consulta ao ERP.</div></div>`;
     const percentual=Math.max(0,Math.min(100,Number(r.percentualRecebido)||0));
@@ -4505,48 +4495,6 @@ function renderComprasLegado(){
         <td class="p-3"><div class="flex flex-col gap-1.5"><button class="btn btn-primario !py-1.5 !px-2.5" onclick="event.stopPropagation();solicitarAtualizacaoSCERP('${p.id}')">↻ ERP</button><button class="btn btn-suave !py-1.5 !px-2.5" onclick="event.stopPropagation();abrirFollowUpCompras('${p.id}')">Follow-up</button></div></td></tr>`).join(""):`<tr><td colspan="12" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
     </tbody></table></div><div class="p-3 border-t text-[10.5px]" style="border-color:var(--cinza-borda);color:var(--texto-2)">${itens.length} de ${base.length} desenvolvimento(s) exibido(s).</div></div>`;
 }
-function htmlPrevisaoComprasTabela(p,r){
-  return `<div id="previsao-compras-${esc(p.id)}" onclick="event.stopPropagation()">
-    <div class="flex items-center gap-1.5">
-      <span class="font-semibold" style="color:${r.fornecedorAtrasado?"var(--vermelho)":"var(--texto)"}">${p.prazoFornecedor?fmtL(p.prazoFornecedor):"Não informada"}</span>
-      ${!firestoreModoConsulta?`<button type="button" class="btn btn-suave !p-1 no-print" title="Editar previsão de chegada" aria-label="Editar previsão de chegada" onclick="event.stopPropagation();editarPrevisaoCompras('${p.id}')">✎</button>`:""}
-    </div>
-    <div class="mt-1 text-[10px]" style="color:var(--texto-2)">Informada pelo fornecedor</div>
-  </div>`;
-}
-function editarPrevisaoCompras(id){
-  if(!podeAcessarCompras()||!podeGravarFirestore())return;
-  const p=estado.projetos.find(x=>x.id===id),area=document.getElementById(`previsao-compras-${id}`);
-  if(!p||!area)return;
-  area.innerHTML=`<input id="previsao-input-${id}" type="date" class="inp !py-1.5 !px-2" value="${esc(p.prazoFornecedor||"")}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){event.preventDefault();salvarPrevisaoCompras('${id}')}else if(event.key==='Escape'){cancelarEdicaoPrevisaoCompras()}">
-    <div class="flex gap-1.5 mt-2"><button id="previsao-salvar-${id}" class="btn btn-primario !py-1 !px-2" onclick="event.stopPropagation();salvarPrevisaoCompras('${id}')">Salvar</button><button class="btn btn-suave !py-1 !px-2" onclick="event.stopPropagation();cancelarEdicaoPrevisaoCompras()">Cancelar</button></div>`;
-  document.getElementById(`previsao-input-${id}`)?.focus();
-}
-function cancelarEdicaoPrevisaoCompras(){renderCompras();}
-async function salvarPrevisaoCompras(id){
-  if(!podeAcessarCompras()||!podeGravarFirestore())return;
-  const p=estado.projetos.find(x=>x.id===id),input=document.getElementById(`previsao-input-${id}`),botao=document.getElementById(`previsao-salvar-${id}`);
-  if(!p||!input)return;
-  const nova=input.value,anterior=p.prazoFornecedor||"";
-  if(nova===anterior){renderCompras();return;}
-  if(botao){botao.disabled=true;botao.textContent="Salvando...";}
-  const c=comprasDe(p),prazoOCAnterior=c.oc.prazoEntrega||"",historicoAnterior=c.historico.length;
-  p.comentarios=p.comentarios||[];
-  const comentariosAnterior=p.comentarios.length,agora=new Date().toISOString();
-  const textoAnterior=anterior?fmtL(anterior):"não informada",textoNovo=nova?fmtL(nova):"removida";
-  p.prazoFornecedor=nova;
-  c.oc.prazoEntrega=nova;
-  c.historico.push({data:agora,usuario:estado.usuario.nome,resumo:`Previsão de chegada alterada de ${textoAnterior} para ${textoNovo}.`});
-  p.comentarios.push({usuario:estado.usuario.nome,data:agora,texto:`Atualizou a previsão de chegada informada pelo fornecedor de ${textoAnterior} para ${textoNovo}.`,modulo:"usinagem"});
-  const salvo=await salvarProjeto(p);
-  if(!salvo){
-    p.prazoFornecedor=anterior;
-    c.oc.prazoEntrega=prazoOCAnterior;
-    c.historico.splice(historicoAnterior);
-    p.comentarios.splice(comentariosAnterior);
-  }
-  renderTudo();
-}
 function renderCompras(){
   const view=document.getElementById("view-compras");
   if(!podeAcessarCompras()){view.innerHTML='<div class="card p-6 text-[13px]">Seu perfil n\u00e3o possui acesso ao follow-up de compras.</div>';return;}
@@ -4602,15 +4550,6 @@ function renderCompras(){
         <td class="p-3 align-top"><div class="font-semibold" style="color:${r.fornecedorAtrasado?"var(--vermelho)":"var(--texto)"}">${p.prazoFornecedor?fmtL(p.prazoFornecedor):"Não informada"}</div><div class="mt-1 text-[10px]" style="color:var(--texto-2)">Informada pelo fornecedor</div></td>
         <td class="p-3 align-top"><button class="btn btn-primario !py-1.5 !px-2.5 w-full" onclick="event.stopPropagation();solicitarAtualizacaoComprasERP('${p.id}')">&#8635; Atualizar</button>${scERP.pendente?`<div class="mt-1 text-center text-[10px]" style="color:var(--laranja)">Solicitada</div>`:""}</td></tr>`).join(""):`<tr><td colspan="8" class="p-8 text-center" style="color:var(--texto-2)">Nenhum desenvolvimento encontrado para os filtros selecionados.</td></tr>`}
     </tbody></table></div><div class="p-3 border-t text-[10.5px]" style="border-color:var(--cinza-borda);color:var(--texto-2)">${itens.length} de ${base.length} desenvolvimento(s) exibido(s).</div></div>`;
-  const tabelaCompras=view.querySelector("table");
-  if(tabelaCompras){
-    tabelaCompras.style.minWidth="1320px";
-    if(tabelaCompras.tHead?.rows[0]?.cells[6]) tabelaCompras.tHead.rows[0].cells[6].style.width="180px";
-    Array.from(tabelaCompras.tBodies[0]?.rows||[]).forEach((linha,indice)=>{
-      if(!itens[indice]||!linha.cells[6])return;
-      linha.cells[6].innerHTML=htmlPrevisaoComprasTabela(itens[indice].p,itens[indice].r);
-    });
-  }
 }
 
 function opcoesStatusCompra(lista,atual){return lista.map(v=>`<option value="${v}" ${atual===v?"selected":""}>${v}</option>`).join("");}

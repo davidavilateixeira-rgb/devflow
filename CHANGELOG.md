@@ -1,3 +1,31 @@
+## [2.14.0] - 2026-08-21
+
+### Adicionado
+- Permite editar a previsao manual de chegada diretamente na tabela de Follow-up de Compras.
+- Registra a alteracao no historico do follow-up e nos comentarios do desenvolvimento.
+- Oferece Salvar, Cancelar, Enter para confirmar e Esc para cancelar.
+
+### Alterado
+- Move Compras / ERP para abaixo dos dados FO050 no cadastro do desenvolvimento.
+- Mantem a secao Compras / ERP recolhida por padrao e abre sob demanda.
+- Ajusta os cards de SC e OC para ocupar o espaco disponivel de forma adaptativa.
+- Amplia a coluna de previsao para acomodar a edicao sem sobreposicao.
+- Mantem a atualizacao do ERP separada da edicao da previsao do fornecedor.
+
+### Seguranca e dados
+- Mantem a previsao do fornecedor como dado manual, sem substituicao pela consulta ao ERP.
+- Restringe a edicao aos perfis com acesso ao Follow-up de Compras.
+- Reverte a alteracao local se a gravacao no Firestore falhar.
+
+### Validacao
+- 15 testes unitarios da integracao de compras aprovados.
+- Versao e sintaxe JavaScript validadas sem erros.
+- Estrutura e alinhamentos revisados estaticamente; a automacao visual ficou indisponivel no caminho de rede.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.13.0.html`.
+- SHA-256: `AAF6D21F58344A3C4701C7D7BB3772ED9419CE82F687E6A18B4B16DDCCC4BACC`.
+
 ## [2.13.0] - 2026-08-21
 
 ### Alterado

@@ -1,3 +1,23 @@
+## [2.12.2] - 2026-08-21
+
+### Alterado
+- O botao principal do ERP atualiza somente desenvolvimentos anteriores a FO050 com follow-up necessario.
+- A confirmacao informa a quantidade exata de desenvolvimentos que serao consultados.
+- A atualizacao geral permanece separada e disponivel apenas para administradores.
+
+### Interface
+- Reorganiza a tabela de compras horizontalmente, com SC e OC em colunas independentes.
+- Remove as colunas redundantes de status manual da tabela e prioriza o report oficial do ERP.
+- Agrupa ferramentas com o desenvolvimento e responsavel com o proximo follow-up.
+- Compacta as larguras para exibir todas as acoes em telas desktop e manter rolagem interna em telas menores.
+
+### Validacao
+- Regra seletiva validada com itens antes e depois da FO050.
+- Layout validado em 1600 px sem rolagem e em 1366 px com rolagem restrita a tabela.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.12.1.html`.
+- SHA-256: `19F689A7703D527A76252BB499808BD2023AFBC07D118C5EED7D78C9AFAF7FA6`.
 ## [2.12.1] - 2026-08-20
 
 ### Alterado

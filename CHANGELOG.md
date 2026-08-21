@@ -1,3 +1,20 @@
+## [2.12.3] - 2026-08-21
+
+### Corrigido
+- Substitui o processo continuo do conector por execucoes curtas a cada dois minutos.
+- Cada ciclo consulta somente documentos marcados como solicitado e encerra com retorno controlado.
+- O Firebird somente e aberto quando existe uma solicitacao pendente.
+- Adiciona alerta visual quando o conector leva cinco minutos ou mais para responder.
+
+### Operacao
+- Adiciona `Configurar_Tarefa_ERP_DevFlow.ps1` para instalar ou atualizar o agendamento.
+- Mantem o modo `--watch` apenas para diagnostico, fora da tarefa agendada.
+- P360228 reprocessado com sucesso: SC convertida em OC e OC aguardando entrega.
+- Recorrencia real validada em ciclos consecutivos, ambos com codigo de retorno zero.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.12.2.html`.
+- SHA-256: `4B948EEA612D79E4A5BB159DF110A62BA4A50D590252AF610FF8D435155A2838`.
 ## [2.12.2] - 2026-08-21
 
 ### Alterado

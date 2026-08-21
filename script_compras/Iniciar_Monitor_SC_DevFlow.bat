@@ -1,14 +1,14 @@
 @echo off
-title Monitor SC e OC sob demanda - DevFlow
+title Processar solicitacoes ERP - DevFlow
 cd /d "H:\DESENVOLVIMENTOS"
 echo =========================================
-echo MONITOR SC E OC SOB DEMANDA - DEVFLOW
+echo PROCESSAR SOLICITACOES ERP - DEVFLOW
 echo =========================================
 echo.
-echo Atualizacao completa automatica: desativada
-echo O conector reage somente aos botoes do sistema
+echo Somente documentos solicitados pelos botoes serao consultados.
+echo Nenhuma varredura completa sera executada.
 echo.
-python script_compras\sincronizar_compras_sc.py --watch --request-poll 60
+python script_compras\sincronizar_compras_sc.py --only-requested
 echo.
-echo O monitor foi encerrado.
+echo Processamento concluido.
 pause

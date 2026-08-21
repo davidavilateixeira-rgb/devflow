@@ -22,22 +22,32 @@ python -m pip install -r script_compras\requirements.txt
 python script_compras\sincronizar_compras_sc.py --dry-run --sc 666993 --oc 1285383
 ```
 
-## Monitor sob demanda
+## Tarefa sob demanda recomendada
 
 ```powershell
-python script_compras\sincronizar_compras_sc.py --watch --request-poll 60
+powershell -ExecutionPolicy Bypass -File script_compras\Configurar_Tarefa_ERP_DevFlow.ps1 -EnvFile "CAMINHO_AUTORIZADO\.env"
 ```
 
-No modo `--watch`, o conector abre um listener filtrado e aguarda documentos com
-`compras.integracao.statusSincronizacao == solicitado`. Nenhuma consulta completa
-da colecao `projetos` e executada em segundo plano.
+A tarefa executa a cada dois minutos, consulta somente documentos com
+`compras.integracao.statusSincronizacao == solicitado` e encerra. Esse formato
+evita depender de um processo continuo. Se nao houver pedido, o Firebird nao e
+aberto e nenhuma consulta ERP e executada.
 
 O fluxo normal e:
 
 1. O usuario clica em `ERP` para um desenvolvimento ou confirma a atualizacao geral.
 2. O DevFlow marca somente os documentos escolhidos como `solicitado`.
-3. O listener recebe esses documentos e consulta SC/OC no Tecnicon.
+3. A proxima execucao curta recebe esses documentos e consulta SC/OC no Tecnicon.
 4. O conector grava apenas o report ERP e remove o documento da consulta filtrada.
+
+Execucao manual do mesmo ciclo filtrado:
+
+```powershell
+python script_compras\sincronizar_compras_sc.py --only-requested
+```
+
+O modo `--watch` permanece disponivel para diagnostico, mas nao deve ser usado
+na tarefa agendada do Windows.
 
 ## Dados da OC
 

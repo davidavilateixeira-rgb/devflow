@@ -12,6 +12,98 @@ ARQUIVO_EXCEL = r"Q:\02 ENGENHARIA DE USINAGEM\Produtos vs componentes vs saldo.
 ARQUIVO_CREDENCIAIS_FIREBASE = "firebase-key.json"
 ABA_DADOS = "BANCO DE DADOS ENGENHARIA"
 
+ETAPAS_COMPLETAS = [
+    "Recebido", "Análise", "Projeto da Fixação", "Orçamento",
+    "Solicitação de Compra", "Aprovação SC", "Ordem de Compra",
+    "Aprovação OC", "Fornecedor", "Recebimento", "Validação/FO050",
+    "Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP",
+    "Liberação",
+]
+ETAPAS_SIMPLES = [
+    "Recebido", "Análise", "Programa CNC", "Validação/FO050",
+    "Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP",
+    "Liberação",
+]
+CAMPOS_COMPONENTES = (
+    "alojamento", "forjadoAlojamento", "pino", "forjadoPino",
+)
+
+
+def normalizar_codigo(valor):
+    if pd.isna(valor):
+        return ""
+    codigo = str(valor).strip().upper()
+    return "" if codigo in ("", "0") else codigo
+
+
+def projeto_ate_fo050(projeto):
+    necessita = projeto.get("necessita") or {}
+    etapas = ETAPAS_COMPLETAS if necessita.get("fixacao") else ETAPAS_SIMPLES
+    indice_fo050 = etapas.index("Validação/FO050")
+    try:
+        etapa_atual = int(float(projeto.get("etapaAtual", 0) or 0))
+    except (TypeError, ValueError):
+        etapa_atual = 0
+    return etapa_atual <= indice_fo050
+
+
+def componentes_do_projeto(projeto):
+    referencias = projeto.get("refs") or {}
+    return {
+        codigo
+        for campo in CAMPOS_COMPONENTES
+        if (codigo := normalizar_codigo(referencias.get(campo)))
+    }
+
+
+def buscar_componentes_ativos(db):
+    codigos = set()
+    total_projetos = 0
+    projetos_ativos = 0
+
+    for documento in db.collection("projetos").stream():
+        total_projetos += 1
+        projeto = documento.to_dict() or {}
+        if not projeto_ate_fo050(projeto):
+            continue
+        projetos_ativos += 1
+        codigos.update(componentes_do_projeto(projeto))
+
+    return codigos, projetos_ativos, total_projetos
+
+
+def saldos_relevantes_da_planilha(df, codigos_ativos):
+    saldos = {}
+    colunas = (
+        ("CAIXA", "SALDO CAIXA"),
+        ("PINO", "SALDO PINO"),
+        ("FORJ_CAIXA", "SALDO FORJ_CAIXA"),
+        ("FORJ_PINO", "SALDO FORJ_PINO"),
+    )
+
+    for _, linha in df.iterrows():
+        for coluna_codigo, coluna_saldo in colunas:
+            codigo = normalizar_codigo(linha.get(coluna_codigo))
+            if not codigo or codigo not in codigos_ativos:
+                continue
+            try:
+                saldo = int(float(str(linha.get(coluna_saldo, 0)).replace(",", ".")))
+            except (TypeError, ValueError):
+                saldo = 0
+            saldos[codigo] = saldo
+
+    return saldos
+
+
+def carregar_saldos_atuais(db, estoque_ref, codigos):
+    saldos = {}
+    referencias = [estoque_ref.document(codigo) for codigo in sorted(codigos)]
+    for inicio in range(0, len(referencias), 500):
+        for documento in db.get_all(referencias[inicio:inicio + 500]):
+            if documento.exists:
+                saldos[documento.id] = (documento.to_dict() or {}).get("saldo", 0)
+    return saldos
+
 def atualizar_planilha(caminho_arquivo):
     print("Iniciando o Excel invisível...")
     xlapp = win32com.client.DispatchEx("Excel.Application")
@@ -54,79 +146,65 @@ def ler_e_enviar_para_firebase():
         firebase_admin.initialize_app(cred)
     db = firestore.client()
     
-    print("Iniciando envio para o Firebase (Lote)...")
-    batch = db.batch()
-    estoque_ref = db.collection('estoque')
-    
-    print("Baixando saldos atuais do Firebase para poupar limite diário de gravação...")
-    # Isso gasta leituras (limite 50.000) mas poupa gravações (limite 20.000)
-    estoque_atual = {}
+    print("Localizando desenvolvimentos até a etapa Validação/FO050...")
     try:
-        for doc in estoque_ref.stream():
-            estoque_atual[doc.id] = doc.to_dict().get('saldo', 0)
+        codigos_ativos, projetos_ativos, total_projetos = buscar_componentes_ativos(db)
     except Exception as e:
-        print(f"Aviso ao ler estoque atual: {e}")
+        print(f"Erro ao consultar os projetos no Firebase: {e}")
+        return
+
+    print(
+        f"{projetos_ativos} de {total_projetos} desenvolvimento(s) estão até a FO050; "
+        f"{len(codigos_ativos)} componente(s) único(s) serão verificados."
+    )
+    if not codigos_ativos:
+        print("Nenhum componente elegível. Nada será lido ou alterado na coleção de estoque.")
+        return
+
+    saldos_planilha = saldos_relevantes_da_planilha(df, codigos_ativos)
+    codigos_nao_encontrados = codigos_ativos - set(saldos_planilha)
+    if codigos_nao_encontrados:
+        print(
+            f"Aviso: {len(codigos_nao_encontrados)} componente(s) ativo(s) não foram encontrados "
+            "na planilha e não serão alterados."
+        )
+
+    estoque_ref = db.collection("estoque")
+    print("Lendo no Firebase somente os saldos dos componentes elegíveis...")
+    try:
+        estoque_atual = carregar_saldos_atuais(db, estoque_ref, saldos_planilha)
+    except Exception as e:
+        print(f"Erro ao ler os saldos atuais no Firebase: {e}")
+        return
+
+    alteracoes = [
+        (codigo, saldo)
+        for codigo, saldo in sorted(saldos_planilha.items())
+        if estoque_atual.get(codigo) != saldo
+    ]
+    itens_ignorados = len(saldos_planilha) - len(alteracoes)
+    if not alteracoes:
+        print("Sincronização concluída! Todos os componentes elegíveis já estão atualizados.")
+        print(f"{itens_ignorados} item(ns) permaneceram com o saldo correto.")
+        return
 
     total_atualizados = 0
-    contador = 0
     lotes_enviados = 0
-    itens_ignorados = 0
-    
-    # Um Batch no Firebase aceita até 500 operações por vez. 
-    # Vamos processar linha a linha da planilha e extrair o saldo dos 4 tipos de componentes.
-    for index, row in df.iterrows():
-        componentes = {
-            row.get('CAIXA'): row.get('SALDO CAIXA'),
-            row.get('PINO'): row.get('SALDO PINO'),
-            row.get('FORJ_CAIXA'): row.get('SALDO FORJ_CAIXA'),
-            row.get('FORJ_PINO'): row.get('SALDO FORJ_PINO')
-        }
-        
-        for codigo_peca, saldo in componentes.items():
-            if pd.isna(codigo_peca) or str(codigo_peca).strip() == '' or str(codigo_peca) == '0':
-                continue
-                
-            codigo_peca_str = str(codigo_peca).strip().upper()
-
-            try:
-                # Converte o saldo para número inteiro, removendo .0 se houver
-                saldo_limpo = int(float(str(saldo).replace(',', '.')))
-            except:
-                saldo_limpo = 0
-                
-            # OTIMIZAÇÃO DE COTA: Só grava se o saldo for diferente do que já está lá
-            if estoque_atual.get(codigo_peca_str) == saldo_limpo:
-                itens_ignorados += 1
-                continue
-
-            doc_ref = estoque_ref.document(codigo_peca_str)
-            batch.set(doc_ref, {
-                'saldo': saldo_limpo,
-                'ultima_atualizacao': firestore.SERVER_TIMESTAMP
+    for inicio in range(0, len(alteracoes), 400):
+        lote = alteracoes[inicio:inicio + 400]
+        batch = db.batch()
+        for codigo, saldo in lote:
+            batch.set(estoque_ref.document(codigo), {
+                "saldo": saldo,
+                "ultima_atualizacao": firestore.SERVER_TIMESTAMP,
             })
-            contador += 1
-            total_atualizados += 1
-            
-            # Se chegou em 400 registros, envia o lote e cria um novo
-            if contador >= 400:
-                print(f"Enviando lote {lotes_enviados + 1} ({contador} itens no lote)...")
-                try:
-                    batch.commit()
-                except Exception as e:
-                    print(f"Erro ao enviar lote (Cota pode estar excedida): {e}")
-                    return
-                lotes_enviados += 1
-                batch = db.batch()
-                contador = 0
-
-    # Envia os que sobraram no último lote
-    if contador > 0:
-        print(f"Enviando lote final {lotes_enviados + 1} ({contador} itens no lote)...")
+        print(f"Enviando lote {lotes_enviados + 1} ({len(lote)} itens no lote)...")
         try:
             batch.commit()
         except Exception as e:
-            print(f"Erro ao enviar lote final (Cota pode estar excedida): {e}")
+            print(f"Erro ao enviar lote (cota pode estar excedida): {e}")
             return
+        total_atualizados += len(lote)
         lotes_enviados += 1
 
     print(f"Sincronização concluída! {total_atualizados} itens atualizados.")

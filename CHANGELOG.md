@@ -1,3 +1,26 @@
+## [2.15.0] - 2026-08-21
+
+### Alterado
+- Limita a consulta e a atualização de saldos aos componentes de desenvolvimentos que estejam até a etapa Validação/FO050, inclusive.
+- Aplica o limite corretamente tanto ao fluxo completo quanto ao fluxo simplificado, usando a posição da FO050 em cada fluxo.
+- Considera somente as referências de alojamento, forjado do alojamento, pino e forjado do pino.
+- Preserva no Firestore os saldos históricos dos projetos que já passaram da FO050, sem novas leituras ou alterações nesses documentos.
+- Exibe no cadastro que o saldo deixou de ser monitorado quando o desenvolvimento já passou da FO050.
+
+### Otimização de cota
+- Substitui a assinatura da coleção inteira de estoque por consultas em lotes contendo somente os códigos atualmente necessários.
+- Faz o sincronizador consultar os projetos primeiro e ler no estoque apenas os documentos dos componentes elegíveis.
+- Mantém a regra de gravar somente quando o saldo efetivamente mudou.
+
+### Validação
+- 5 testes unitários aprovados para os fluxos completo e simplificado, seleção das referências e filtragem da planilha.
+- Sintaxe Python e JavaScript validadas sem erros.
+- Versão da interface e do arquivo de atualização validadas.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.14.1.html`.
+- SHA-256: `9342D83B6439798E38732EFE8F726000BB717CDD5AB996B6904ED043659B9704`.
+
 ## [2.14.1] - 2026-08-21
 
 ### Corrigido

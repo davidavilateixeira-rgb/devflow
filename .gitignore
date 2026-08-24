@@ -6,3 +6,4 @@ __pycache__/
 *.pyc
 
 script_estoque/firebase-key.json
+script_compras/logs/

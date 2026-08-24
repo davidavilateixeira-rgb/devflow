@@ -29,6 +29,10 @@ DEFAULT_ERP_ENV = Path(
 DEFAULT_FIREBASE_CREDENTIALS = REPO_DIR / "script_estoque" / "firebase-key.json"
 SC_NUMBER = re.compile(r"\d+")
 ERP_QUERY_BATCH = 80
+LOG_FILE = Path(
+    os.getenv("DEVFLOW_COMPRAS_LOG_FILE", "")
+    or SCRIPT_DIR / "logs" / "compras.log"
+)
 
 
 SC_QUERY = """
@@ -82,26 +86,55 @@ order by oc.compra
 
 
 OC_ITEM_QUERY = """
+with alvo as (
+    select
+        oci.compra,
+        oci.ocitem,
+        oci.cproduto,
+        oci.descricao,
+        oci.qtde as qtde_oc,
+        oci.solocitem
+    from ocitem oci
+    where oci.compra in ({placeholders})
+), recebimentos as (
+    select
+        a.ocitem,
+        nfi.nfeitem,
+        nfi.qtde as qtde_nf,
+        nfi.nfe
+    from alvo a
+    join nfeitem nfi on nfi.ocitem = a.ocitem
+
+    union
+
+    select
+        a.ocitem,
+        nfi.nfeitem,
+        nfi.qtde as qtde_nf,
+        nfi.nfe
+    from alvo a
+    join ocitembx bx on bx.ocitem = a.ocitem
+    join nfeitem nfi on nfi.nfeitem = bx.nfeitem
+)
 select
     oci.compra,
     oci.ocitem,
     oci.cproduto,
     oci.descricao,
-    oci.qtde as qtde_oc,
+    oci.qtde_oc,
     sci.solcompra,
     nfi.nfeitem,
-    nfi.qtde as qtde_nf,
+    nfi.qtde_nf,
     nfi.nfe,
     nf.nf,
     nf.serie,
     nf.data as data_nf,
     nf.dataentrada,
     nf.horaentrada
-from ocitem oci
+from alvo oci
 left join solcompraitem sci on sci.solocitem = oci.solocitem
-left join nfeitem nfi on nfi.ocitem = oci.ocitem
+left join recebimentos nfi on nfi.ocitem = oci.ocitem
 left join nfentrada nf on nf.nfe = nfi.nfe
-where oci.compra in ({placeholders})
 order by oci.compra, oci.ocitem, nf.dataentrada, nfi.nfeitem
 """
 
@@ -144,7 +177,14 @@ order by
 
 def log(message: str) -> None:
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{stamp}] {message}", flush=True)
+    line = f"[{stamp}] {message}"
+    print(line, flush=True)
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_FILE.open("a", encoding="utf-8") as log_file:
+            log_file.write(line + "\n")
+    except OSError:
+        pass
 
 
 def load_env_file(path: Path) -> None:

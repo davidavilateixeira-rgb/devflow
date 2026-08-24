@@ -1,3 +1,24 @@
+## [2.15.1] - 2026-08-24
+
+### Corrigido
+- Reconhece entradas de NF vinculadas diretamente ao item da OC ou por meio da tabela de baixa `OCITEMBX`.
+- Corrige OCs recebidas que permaneciam como "Aguardando entrega" e "Sem NF" no Follow-up de Compras.
+- Mantém a deduplicação por item de NF para evitar soma duplicada quando os dois vínculos existirem.
+
+### Observabilidade
+- Registra as execuções relevantes e os erros do conector em `script_compras/logs/compras.log`.
+- Mantém a execução invisível pelo Agendador de Tarefas, agora com histórico persistente para diagnóstico.
+
+### Validação
+- SQL validada no ERP com a OC 1288813, localizando a NF 5265 e sua entrada em 21/08/2026.
+- Testes unitários da integração de SC/OC aprovados, incluindo cobertura dos dois caminhos de recebimento.
+- Sintaxe Python e JavaScript validadas sem erros.
+- Versão da interface e do arquivo de atualização validadas.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.15.0.html`.
+- SHA-256: `80553E20E986E4C5FECBFBD7F0539A5D4FCBB28DEED1C3945E46A5376B546D7C`.
+
 ## [2.15.0] - 2026-08-21
 
 ### Alterado

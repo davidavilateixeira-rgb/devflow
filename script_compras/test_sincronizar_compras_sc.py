@@ -3,6 +3,7 @@ from datetime import date
 from unittest.mock import patch
 
 from sincronizar_compras_sc import (
+    OC_ITEM_QUERY,
     aggregate_oc,
     aggregate_sc,
     oc_numbers_from_project,
@@ -175,6 +176,15 @@ class OcAggregationTests(unittest.TestCase):
         self.assertEqual(rejected["statusCodigo"], "RECUSADA")
         self.assertEqual(missing["statusCodigo"], "NAO_ENCONTRADA")
         self.assertIn("OC recusada", summarize_oc_status([rejected, missing]))
+
+
+class OcReceiptQueryTests(unittest.TestCase):
+    def test_receipt_query_supports_direct_and_ocitembx_links(self):
+        query = " ".join(OC_ITEM_QUERY.lower().split())
+        self.assertIn("join nfeitem nfi on nfi.ocitem = a.ocitem", query)
+        self.assertIn("join ocitembx bx on bx.ocitem = a.ocitem", query)
+        self.assertIn("join nfeitem nfi on nfi.nfeitem = bx.nfeitem", query)
+        self.assertIn("union", query)
 
 
 class DemandMonitorTests(unittest.TestCase):

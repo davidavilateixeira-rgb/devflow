@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.16.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.15.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.16.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.15.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.16.0";
+const VERSAO_ATUAL = "2.15.1";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -520,8 +520,7 @@ function migrarEtapasCadastroERP(historico, dataReal, migracaoAplicada){
 }
 function normalizarProjeto(p){
   if(!p.historico) p.historico = [];
-  if(!p.fo050) p.fo050 = { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"", observacao:"" };
-  if(typeof p.fo050.observacao !== "string") p.fo050.observacao = "";
+  if(!p.fo050) p.fo050 = { celulas:[], maquina:"", tempoUsinagem:"", tempoTroca:"", dataExecucao:"", numOP:"" };
   if(!p.programaCnc) p.programaCnc = {feito:false, data:"", usuario:""};
   if(!p.compras) p.compras = {};
   p.compras.sc = Object.assign({numero:"", status:"", dataAbertura:"", dataAprovacao:""}, p.compras.sc||{});
@@ -542,13 +541,11 @@ function normalizarProjeto(p){
     etapaAtual: 0, historico: [], responsavel: "", responsavelUid: "", assumidoEm: "",
     prazoAnalise: "", prazoProjetoFerramentas: "", ferramentas: [], codigoDesenhoConjunto: "",
     codigoSolicitacao: "", dataFabricacao: "", necessitaComplexo: true, comentarios: [], obsEtapas: {},
-    fo050: { linhasMontagem: [], observacao:"", processos: [
+    fo050: { linhasMontagem: [], processos: [
       { nome: "Montagem", maquina: "", tempoProcesso: "", dataExecucao: "", numOP: "" },
       { nome: "Embalagem", maquina: "", tempoProcesso: "", dataExecucao: "", numOP: "" }
     ]}
   };
-  if(!p.montagem.fo050) p.montagem.fo050 = { linhasMontagem:[], processos:[], dataExecucao:"", numOP:"", observacao:"" };
-  if(typeof p.montagem.fo050.observacao !== "string") p.montagem.fo050.observacao = "";
 
   p.historico.forEach(h=>{ if(RENOMES_ETAPAS[h.etapa]) h.etapa = RENOMES_ETAPAS[h.etapa]; });
   // "Desenvolver Programas CNC" deixou de ser etapa linear: se estava no histórico, converte em tarefa paralela concluída
@@ -2423,17 +2420,14 @@ function renderProjeto(){
       <div class="card p-5 surgir md:col-span-3">
         <div class="flex items-center justify-between mb-3">
           <div class="font-semibold text-sm">Dados FO050 ${isMontagem?"(Montagem)":"(Usinagem)"}</div>
-          <div class="flex items-center gap-2 no-print">
-            <button class="btn btn-primario !p-1.5" onclick="abrirImpressaoFO050('${p.id}')">⎙ Imprimir FO050</button>
-            ${gerencia && !isSomenteLeitura() ? `<button class="btn btn-suave !p-1.5" onclick="${isMontagem?`abrirModalFO050Montagem('${p.id}', 'livre')`:`abrirModalFO050('${p.id}', 'livre')`}">✎ Editar</button>` : ''}
-          </div>
+          ${gerencia && !isSomenteLeitura() ? `<button class="btn btn-suave !p-1.5 no-print" onclick="${isMontagem?`abrirModalFO050Montagem('${p.id}', 'livre')`:`abrirModalFO050('${p.id}', 'livre')`}">✎ Editar</button>` : ''}
         </div>
         ${(()=>{
           if(isMontagem){
             const fo = obj.fo050 || { linhasMontagem:[], processos:[] };
             if(!fo.linhasMontagem) fo.linhasMontagem = [];
             if(!fo.processos) fo.processos = [];
-            if(!fo.linhasMontagem.length && fo.processos.length === 0 && !fo.observacao) return '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum dado FO050 de Montagem registrado.</div>';
+            if(!fo.linhasMontagem.length && fo.processos.length === 0) return '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum dado FO050 de Montagem registrado.</div>';
             
             let linhasHtml = fo.linhasMontagem.length > 0 ? `<div class="mb-4">
                 <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Linhas de Montagem</div>
@@ -2472,8 +2466,7 @@ function renderProjeto(){
                 Tempo Total Montagem: ${totalTempo.toFixed(1)} s
               </div>`;
             }
-            const obsHtml = fo.observacao ? `<div class="mt-4 rounded-lg border p-3 text-[12.5px]" style="background:#FFF9F5;border-color:#F5CBAF"><b>Observações da FO050:</b> ${esc(fo.observacao)}</div>` : "";
-            return linhasHtml + procHtml + obsHtml;
+            return linhasHtml + procHtml;
           } else {
             const fo = p.fo050 || { celulas:[], processos:[] };
             if(fo.maquina && !fo.processos) {
@@ -2481,7 +2474,7 @@ function renderProjeto(){
             }
             if(!fo.processos) fo.processos = [];
             if(!fo.celulas) fo.celulas = [];
-            if(!fo.celulas.length && fo.processos.length === 0 && !fo.observacao) return '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum dado FO050 registrado.</div>';
+            if(!fo.celulas.length && fo.processos.length === 0) return '<div class="text-[12px]" style="color:var(--texto-2)">Nenhum dado FO050 registrado.</div>';
             
             let celulasHtml = fo.celulas.length > 0 ? `<div class="mb-4">
                 <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Células</div>
@@ -2523,8 +2516,7 @@ function renderProjeto(){
                 Tempo Total Geral: ${(totalUsi+totalTro).toFixed(1)} s
               </div>`;
             }
-            const obsHtml = fo.observacao ? `<div class="mt-4 rounded-lg border p-3 text-[12.5px]" style="background:#FFF9F5;border-color:#F5CBAF"><b>Observações da FO050:</b> ${esc(fo.observacao)}</div>` : "";
-            return celulasHtml + procHtml + obsHtml;
+            return celulasHtml + procHtml;
           }
         })()}
       </div>
@@ -3784,7 +3776,7 @@ function salvarCadastro(id){
 function abrirModalFO050Montagem(id, requiredMode, callback){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
-  const fo = JSON.parse(JSON.stringify(p.montagem.fo050 || { linhasMontagem:[], processos:[], dataExecucao:"", numOP:"", observacao:"" }));
+  const fo = JSON.parse(JSON.stringify(p.montagem.fo050 || { linhasMontagem:[], processos:[], dataExecucao:"", numOP:"" }));
   if(!fo.linhasMontagem) fo.linhasMontagem = [];
   if(!fo.processos || fo.processos.length===0) fo.processos = [{ nome: "Montagem", tempoProcesso: "" }, { nome: "Embalagem", tempoProcesso: "" }];
   if(!fo.dataExecucao && fo.processos[0] && fo.processos[0].dataExecucao) fo.dataExecucao = fo.processos[0].dataExecucao;
@@ -3849,10 +3841,8 @@ function abrirModalFO050Montagem(id, requiredMode, callback){
 
     const campoData = document.getElementById("foMData");
     const campoOP = document.getElementById("foMOp");
-    const campoObs = document.getElementById("foMObs");
     if(campoData) fo.dataExecucao = campoData.value;
     if(campoOP) fo.numOP = campoOP.value.trim();
-    if(campoObs) fo.observacao = campoObs.value.trim();
 
     if(requiredMode === 'todos') {
       if(fo.linhasMontagem.length === 0) { alert("Informe pelo menos uma linha de montagem."); return; }
@@ -3919,12 +3909,6 @@ function abrirModalFO050Montagem(id, requiredMode, callback){
       </div>
       <div class="text-[10.5px] mt-2" style="color:var(--texto-2)">A Data de Execução e o Nº da OP serão aplicados a todos os processos da FO050 de Montagem.</div>
     </div>
-
-    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <label class="lbl">Observações da FO050</label>
-      <textarea id="foMObs" class="inp min-h-[90px]" placeholder="Registre observações relevantes para o relatório impresso.">${esc(fo.observacao||"")}</textarea>
-      <div class="text-[10.5px] mt-2" style="color:var(--texto-2)">Este texto será incluído automaticamente no documento padrão da FO050.</div>
-    </div>
     
     <div class="flex justify-end gap-2 mt-6 border-t pt-4">
       <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
@@ -3936,12 +3920,12 @@ function abrirModalFO050Montagem(id, requiredMode, callback){
 function abrirModalFO050(id, requiredMode, callback){
   const p = estado.projetos.find(x=>x.id===id);
   if(!p) return;
-  if(!p.fo050) p.fo050 = { celulas:[], processos:[], observacao:"" };
+  if(!p.fo050) p.fo050 = { celulas:[], processos:[] };
   if(p.fo050.maquina && !p.fo050.processos) {
     p.fo050.processos = [{ nome:"Processo Principal", maquina:p.fo050.maquina, tempoUsinagem:p.fo050.tempoUsinagem||"", tempoTroca:p.fo050.tempoTroca||"", dataExecucao:p.fo050.dataExecucao||"", numOP:p.fo050.numOP||"" }];
   }
   if(!p.fo050.processos) p.fo050.processos = [];
-  const fo = JSON.parse(JSON.stringify(p.fo050));
+  const fo = p.fo050;
   
   let procDraft = JSON.parse(JSON.stringify(fo.processos));
   
@@ -4030,7 +4014,7 @@ function abrirModalFO050(id, requiredMode, callback){
     }
   };
 
-  window.__salvarFO050 = async () => {
+  window.__salvarFO050 = () => {
     // Sincroniza valores caso tenham sido alterados via HTML e não tenham acionado o onchange por algum motivo
     document.querySelectorAll('.proc-nome').forEach(el => procDraft[el.dataset.idx].nome = el.value.trim());
     document.querySelectorAll('.proc-maq').forEach(el => procDraft[el.dataset.idx].maquina = el.value.trim());
@@ -4055,22 +4039,11 @@ function abrirModalFO050(id, requiredMode, callback){
     }
     
     fo.processos = procDraft;
-    const campoObs = document.getElementById("foObs");
-    fo.observacao = campoObs ? campoObs.value.trim() : (fo.observacao||"");
     
     // Remove fields from legacy items just in case
     delete fo.maquina; delete fo.tempoUsinagem; delete fo.tempoTroca; delete fo.dataExecucao; delete fo.numOP;
     
-    const foAnterior = p.fo050;
-    p.fo050 = fo;
-    const botaoSalvar = document.getElementById("btnSalvarFO050");
-    if(botaoSalvar){ botaoSalvar.disabled = true; botaoSalvar.textContent = "Gravando..."; }
-    const salvo = await salvarProjeto(p);
-    if(!salvo){
-      p.fo050 = foAnterior;
-      if(botaoSalvar){ botaoSalvar.disabled = false; botaoSalvar.textContent = "Salvar" + (callback ? " e continuar" : ""); }
-      return;
-    }
+    salvarProjeto(p);
     fecharModal();
     if(callback) callback();
     else if(viewAtual==="projeto") renderProjeto();
@@ -4102,16 +4075,10 @@ function abrirModalFO050(id, requiredMode, callback){
         <div id="fo-total-geral" class="text-xl font-bold text-blue-900">0.0 s</div>
       </div>
     ` : `<div class="text-[12px] text-yellow-800 mb-5 p-3 bg-yellow-50 rounded border border-yellow-200 flex items-start gap-2"><div class="text-yellow-600 font-bold text-lg leading-none">!</div><div>Nesta etapa o sistema exige apenas a Célula e a Máquina. Os demais dados (Tempos, Data e OP) serão solicitados na etapa de <b>Validação/FO050</b>.</div></div>`}
-
-    <div class="mb-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <label class="lbl">Observações da FO050</label>
-      <textarea id="foObs" class="inp min-h-[90px]" placeholder="Registre observações relevantes para o relatório impresso.">${esc(fo.observacao||"")}</textarea>
-      <div class="text-[10.5px] mt-2" style="color:var(--texto-2)">Este texto será incluído automaticamente no documento padrão da FO050.</div>
-    </div>
     
     <div class="flex justify-end gap-2">
       <button class="btn btn-suave" onclick="fecharModal()">Cancelar</button>
-      <button id="btnSalvarFO050" class="btn btn-primario" onclick="window.__salvarFO050()">Salvar${callback?' e continuar':''}</button>
+      <button class="btn btn-primario" onclick="window.__salvarFO050()">Salvar${callback?' e continuar':''}</button>
     </div>
   </div>`;
   
@@ -4130,230 +4097,6 @@ function abrirModalFO050(id, requiredMode, callback){
     if(el) el.innerText = geral.toFixed(1) + " s";
   };
   
-}
-
-function numeroFO050(valor){
-  const numero = Number(String(valor??"").replace(",", "."));
-  return Number.isFinite(numero) ? numero : 0;
-}
-
-function htmlRelatorioFO050(p, isMontagem){
-  normalizarProjeto(p);
-  const obj = isMontagem ? p.montagem : p;
-  const fo = obj.fo050 || {};
-  const processos = Array.isArray(fo.processos) ? fo.processos : [];
-  const locais = isMontagem ? (fo.linhasMontagem||[]) : (fo.celulas||[]);
-  const ferramentas = Array.isArray(obj.ferramentas) ? obj.ferramentas.filter(Boolean) : [];
-  const componentes = nomesComponentes(p);
-  const refs = p.refs || {};
-  const modulo = isMontagem ? "Montagem" : "Usinagem";
-  const responsavel = obj.responsavel || "Não informado";
-  const emitidoPor = estado.usuario?.nome || "Usuário DevFlow";
-  const emitidoEm = new Date().toLocaleString("pt-BR", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
-  const logoUrl = new URL("logo_viemar.png", window.location.href).href;
-  const ausente = valor => String(valor??"").trim() ? esc(valor) : '<span class="ausente">Não informado</span>';
-  const lista = valores => valores.length ? valores.map(v=>`<span class="tag">${esc(v)}</span>`).join("") : '<span class="ausente">Não informado</span>';
-  const tempo = valor => String(valor??"").trim() ? `${esc(valor)} s` : "—";
-  const locaisTexto = locais.length ? locais.join(", ") : "";
-  const referencias = [
-    ["Produto final", p.codigo],
-    ["Alojamento", refs.alojamento],
-    ["Forjado alojamento", refs.forjadoAlojamento],
-    ["Pino", refs.pino],
-    ["Forjado pino", refs.forjadoPino],
-    ["NP de Usinagem", refs.npUsinagem]
-  ].filter(([,valor], indice)=>indice===0 || String(valor??"").trim());
-  const linhasReferencias = referencias.map(([rotulo,valor])=>`<div class="ref-item"><span>${esc(rotulo)}</span><b>${ausente(valor)}</b></div>`).join("");
-  const totalProcessos = processos.reduce((soma, processo)=>soma + (isMontagem
-    ? numeroFO050(processo.tempoProcesso)
-    : numeroFO050(processo.tempoUsinagem) + numeroFO050(processo.tempoTroca)), 0);
-
-  const cabecalhoProcessos = isMontagem ? `
-    <th>Processo</th><th>Linha(s)</th><th>Posto / máquina</th><th>Tempo</th><th>Data</th><th>OP</th>
-  ` : `
-    <th>Processo</th><th>Célula(s)</th><th>Máquina</th><th>T. usinagem</th><th>T. troca</th><th>T. total</th><th>Data</th><th>OP</th>
-  `;
-  const colspanProcessos = isMontagem ? 6 : 8;
-  const linhasProcessos = processos.length ? processos.map(processo=>{
-    const dataExecucao = processo.dataExecucao || fo.dataExecucao;
-    const numOP = processo.numOP || fo.numOP;
-    if(isMontagem){
-      return `<tr>
-        <td><b>${ausente(processo.nome)}</b></td>
-        <td>${ausente(locaisTexto)}</td>
-        <td>${ausente(processo.posto || processo.maquina)}</td>
-        <td>${tempo(processo.tempoProcesso)}</td>
-        <td>${dataExecucao ? fmtL(dataExecucao) : "—"}</td>
-        <td>${ausente(numOP)}</td>
-      </tr>`;
-    }
-    const total = numeroFO050(processo.tempoUsinagem) + numeroFO050(processo.tempoTroca);
-    return `<tr>
-      <td><b>${ausente(processo.nome)}</b></td>
-      <td>${ausente(locaisTexto)}</td>
-      <td>${ausente(processo.maquina)}</td>
-      <td>${tempo(processo.tempoUsinagem)}</td>
-      <td>${tempo(processo.tempoTroca)}</td>
-      <td>${total ? total.toLocaleString("pt-BR", {minimumFractionDigits:1,maximumFractionDigits:1})+" s" : "—"}</td>
-      <td>${dataExecucao ? fmtL(dataExecucao) : "—"}</td>
-      <td>${ausente(numOP)}</td>
-    </tr>`;
-  }).join("") : `<tr><td colspan="${colspanProcessos}" class="vazio">Nenhum processo FO050 registrado.</td></tr>`;
-  const areasAprovacao = ["QUALIDADE","PRODUÇÃO","PRESET","ENGª PRODUTO","ENGº PROCESSO (1)"];
-  const linhasAprovacao = areasAprovacao.map(area=>`<tr>
-    <td><b>${area}</b></td>
-    <td><span class="caixa"></span> Aprovado&nbsp;&nbsp; <span class="caixa"></span> Reprovado</td>
-    <td></td><td></td><td></td>
-  </tr>`).join("");
-
-  return `<!doctype html>
-  <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>FO050 · ${esc(p.codigo||p.devId||"Desenvolvimento")}</title>
-    <style>
-      :root{--laranja:#ea5b0c;--azul:#17365d;--texto:#20242a;--muted:#68717d;--borda:#cfd5dc;--fundo:#f3f5f7}
-      *{box-sizing:border-box}
-      body{margin:0;background:var(--fundo);color:var(--texto);font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.35}
-      .barra{position:sticky;top:0;z-index:5;display:flex;justify-content:center;gap:8px;padding:10px;background:#20242a}
-      .barra button{border:1px solid #fff;border-radius:6px;padding:8px 14px;background:#fff;color:#20242a;font-weight:700;cursor:pointer}
-      .barra .primario{background:var(--laranja);border-color:var(--laranja);color:#fff}
-      .folha{width:210mm;min-height:297mm;margin:14px auto;padding:11mm 10mm;background:#fff;box-shadow:0 4px 20px #0002}
-      .cabecalho{display:grid;grid-template-columns:42mm 1fr 34mm;align-items:center;gap:6mm;border-bottom:2px solid var(--azul);padding-bottom:4mm}
-      .cabecalho img{max-width:38mm;max-height:14mm;object-fit:contain}
-      .titulo{text-align:center}
-      .titulo h1{margin:0;color:var(--azul);font-size:16px;letter-spacing:.2px}
-      .titulo p{margin:3px 0 0;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:1px}
-      .documento{text-align:right}
-      .documento b{display:inline-block;padding:5px 8px;background:var(--laranja);color:#fff;border-radius:4px;font-size:11px}
-      .documento span{display:block;margin-top:4px;color:var(--muted)}
-      .aviso{margin:4mm 0 3mm;padding:2.5mm 3mm;border-left:3px solid var(--laranja);background:#fff8f3;color:#5d4638}
-      .grade-info{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--borda);border-right:0;border-bottom:0}
-      .campo{min-height:14mm;padding:2.5mm;border-right:1px solid var(--borda);border-bottom:1px solid var(--borda)}
-      .campo.duplo{grid-column:span 2}
-      .rotulo{display:block;margin-bottom:1.2mm;color:var(--muted);font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-      .valor{font-size:10px;font-weight:700}
-      .secao{margin-top:4mm;break-inside:avoid}
-      .secao h2{margin:0 0 2mm;padding:2mm 2.5mm;background:var(--azul);color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.6px}
-      .duas-colunas{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
-      .painel{border:1px solid var(--borda);padding:3mm;min-height:25mm}
-      .painel h3{margin:0 0 2mm;color:var(--azul);font-size:9px;text-transform:uppercase}
-      .ref-item{display:flex;justify-content:space-between;gap:4mm;padding:1.2mm 0;border-bottom:1px dotted #d9dde2}
-      .ref-item:last-child{border-bottom:0}
-      .ref-item span{color:var(--muted)}
-      .tags{display:flex;flex-wrap:wrap;gap:1.5mm}
-      .tag{display:inline-block;padding:1mm 2mm;border:1px solid #f2b58f;border-radius:10px;background:#fff7f2;color:#8d390a;font-weight:700}
-      table{width:100%;border-collapse:collapse}
-      th,td{border:1px solid var(--borda);padding:2mm;vertical-align:middle;text-align:left}
-      th{background:#edf1f5;color:#3d4855;font-size:8px;text-transform:uppercase}
-      tr{break-inside:avoid}
-      .total{text-align:right;padding:2mm;border:1px solid var(--borda);border-top:0;background:#f7f9fb;font-weight:700;color:var(--azul)}
-      .observacao{min-height:22mm;padding:3mm;border:1px solid var(--borda);white-space:pre-wrap}
-      .aprovacoes td{height:13mm}
-      .aprovacoes th:nth-child(1){width:23%}.aprovacoes th:nth-child(2){width:25%}.aprovacoes th:nth-child(3){width:13%}.aprovacoes th:nth-child(4){width:19%}.aprovacoes th:nth-child(5){width:20%}
-      .caixa{display:inline-block;width:3mm;height:3mm;border:1px solid #20242a;vertical-align:-.5mm}
-      .ausente,.vazio{color:#858c95;font-weight:400;font-style:italic}
-      .rodape{display:flex;justify-content:space-between;gap:5mm;margin-top:4mm;padding-top:2mm;border-top:1px solid var(--borda);color:var(--muted);font-size:8px}
-      @page{size:A4 portrait;margin:8mm}
-      @media print{
-        body{background:#fff}
-        .barra{display:none}
-        .folha{width:auto;min-height:auto;margin:0;padding:0;box-shadow:none}
-        .secao,.painel,.aprovacoes{break-inside:avoid}
-        thead{display:table-header-group}
-      }
-    </style>
-  </head>
-  <body>
-    <div class="barra">
-      <button class="primario" onclick="window.print()">Imprimir / Salvar em PDF</button>
-      <button onclick="window.close()">Fechar</button>
-    </div>
-    <main class="folha">
-      <header class="cabecalho">
-        <img src="${esc(logoUrl)}" alt="Viemar Automotive">
-        <div class="titulo">
-          <h1>RELATÓRIO DE APROVAÇÃO DE PROCESSO</h1>
-          <p>FO050 · ${modulo}</p>
-        </div>
-        <div class="documento"><b>FO050</b><span>DevFlow v${VERSAO_ATUAL}</span></div>
-      </header>
-
-      <div class="aviso"><b>Documento gerado automaticamente.</b> Os dados abaixo vêm do cadastro do desenvolvimento e da FO050 do módulo ${modulo}.</div>
-
-      <section class="grade-info">
-        <div class="campo"><span class="rotulo">DEV</span><span class="valor">${ausente(p.devId)}</span></div>
-        <div class="campo"><span class="rotulo">Ref. produto final</span><span class="valor">${ausente(p.codigo)}</span></div>
-        <div class="campo"><span class="rotulo">Módulo</span><span class="valor">${modulo}</span></div>
-        <div class="campo"><span class="rotulo">Responsável</span><span class="valor">${ausente(responsavel)}</span></div>
-        <div class="campo duplo"><span class="rotulo">Descrição</span><span class="valor">${ausente(p.descricao)}</span></div>
-        <div class="campo"><span class="rotulo">Cliente</span><span class="valor">${ausente(p.cliente)}</span></div>
-        <div class="campo"><span class="rotulo">Família / tipo</span><span class="valor">${ausente([p.familia,p.tipo].filter(Boolean).join(" · "))}</span></div>
-      </section>
-
-      <section class="secao duas-colunas">
-        <div>
-          <h2>Produto e componentes</h2>
-          <div class="painel">
-            <h3>Componentes</h3>
-            <div class="tags" style="margin-bottom:2.5mm">${lista(componentes)}</div>
-            <h3>Referências</h3>
-            ${linhasReferencias}
-          </div>
-        </div>
-        <div>
-          <h2>Ferramentas utilizadas</h2>
-          <div class="painel">
-            <div class="tags">${lista(ferramentas)}</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="secao">
-        <h2>Dados do processo FO050</h2>
-        <table>
-          <thead><tr>${cabecalhoProcessos}</tr></thead>
-          <tbody>${linhasProcessos}</tbody>
-        </table>
-        <div class="total">Tempo total registrado: ${totalProcessos ? totalProcessos.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" s" : "Não informado"}</div>
-      </section>
-
-      <section class="secao">
-        <h2>Observações</h2>
-        <div class="observacao">${String(fo.observacao||"").trim() ? esc(fo.observacao) : '<span class="ausente">Nenhuma observação registrada.</span>'}</div>
-      </section>
-
-      <section class="secao">
-        <h2>Aprovação do processo</h2>
-        <table class="aprovacoes">
-          <thead><tr><th>Área</th><th>Status</th><th>Data</th><th>Nome</th><th>Assinatura</th></tr></thead>
-          <tbody>${linhasAprovacao}</tbody>
-        </table>
-      </section>
-
-      <footer class="rodape">
-        <span>Emitido em ${emitidoEm} por ${esc(emitidoPor)}</span>
-        <span>DevFlow v${VERSAO_ATUAL} · FO050 ${modulo}</span>
-      </footer>
-    </main>
-  </body>
-  </html>`;
-}
-
-function abrirImpressaoFO050(id){
-  const p = estado.projetos.find(x=>x.id===id);
-  if(!p) return;
-  const janela = window.open("", "_blank");
-  if(!janela){
-    alert("O navegador bloqueou a nova aba. Permita pop-ups para o DevFlow e tente novamente.");
-    return;
-  }
-  janela.opener = null;
-  janela.document.open();
-  janela.document.write(htmlRelatorioFO050(p, estado.moduloAtual === "montagem"));
-  janela.document.close();
-  janela.focus();
 }
 
 /* ============================================================

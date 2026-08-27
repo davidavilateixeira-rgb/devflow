@@ -1,3 +1,31 @@
+## [2.16.0] - 2026-08-27
+
+### Adicionado
+- Inclui o botão `Imprimir FO050` nos dados FO050 do desenvolvimento, disponível nos módulos Usinagem e Montagem.
+- Gera uma aba exclusiva com documento A4 pronto para impressão ou salvamento em PDF.
+- Preenche automaticamente identificação do desenvolvimento, componentes, referências, ferramentas, responsável, processos, células ou linhas, máquinas ou postos, tempos, data de execução e OP.
+- Inclui no documento a tabela para assinatura manual das áreas Qualidade, Produção, Preset, Engenharia de Produto e Engenharia de Processo.
+- Adiciona o campo `Observações da FO050` aos formulários de Usinagem e Montagem.
+- Adiciona teste de regressão do relatório em `scripts/test_relatorio_fo050.mjs`.
+
+### Segurança e dados
+- Escapa os dados do cadastro antes de inseri-los no documento de impressão.
+- Mantém as assinaturas fora do banco nesta etapa; os campos permanecem em branco para preenchimento manual após a impressão.
+- Aguarda a confirmação do Firestore antes de fechar o formulário FO050 de Usinagem e restaura os dados anteriores se a gravação falhar.
+- Preserva os dados existentes: o único campo persistente novo é a observação específica da FO050.
+
+### Validação
+- Sintaxe JavaScript validada sem erros.
+- Versão `2.16.0` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- 16 testes unitários da integração de compras aprovados.
+- 5 testes unitários da integração de estoque aprovados.
+- Relatórios de Usinagem e Montagem validados pelo novo teste automatizado.
+- Prévia de Usinagem renderizada em HTML e PDF A4 sem sobreposição, com todos os blocos e assinaturas em uma página no cenário de teste.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.15.1.html`.
+- SHA-256: `FC321BF6A66F31E37473AE00103DDE0F6F450BF257DA6B78CE631ABD277C8EAC`.
+
 ## [2.15.1] - 2026-08-24
 
 ### Corrigido

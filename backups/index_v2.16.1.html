@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.16.2</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.16.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.16.2</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.16.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.16.2";
+const VERSAO_ATUAL = "2.16.1";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -516,9 +516,9 @@ function migrarEtapasCadastroERP(historico, dataReal, migracaoAplicada){
     })));
     return {historico, alterado:true};
   }
-  // O desenvolvimento em aberto nunca e movido de etapa por esta migracao: ela apenas completa
-  // o historico de quem ja foi concluido. Nao restam projetos legados parados em "Liberacao".
-  return {historico, alterado:false};
+  const semLiberacao = historico.filter(h=>h.etapa !== ETAPA_LIBERACAO && !ETAPAS_CADASTRO_ERP.includes(h.etapa));
+  semLiberacao.push({etapa:ETAPAS_CADASTRO_ERP[0], data:new Date().toISOString(), usuario:USUARIO_MIGRACAO_ETAPAS_ERP, origem:"migracao"});
+  return {historico:semLiberacao, alterado:true};
 }
 function normalizarProjeto(p){
   if(!p.historico) p.historico = [];

@@ -1,3 +1,23 @@
+## [2.16.2] - 2026-09-04
+
+### Alterado
+- A migracao de etapas de cadastro no ERP (v2.5.0) deixa de mover o desenvolvimento em aberto para tras.
+- Ela passa a apenas completar o historico dos desenvolvimentos ja concluidos que nao registram as duas etapas de cadastro no ERP.
+- Motivo: o ramo removido nunca atendeu um caso legitimo. As tres vezes que executou, corrompeu o historico de desenvolvimentos que percorriam o fluxo novo. O unico caso legitimo observado (DEV-030, 21/08) usou o ramo que insere as etapas sem apagar nada.
+- Levantamento no Firestore: nenhum dos 58 desenvolvimentos ainda sem o marcador de migracao esta parado em "Liberacao", entao o ramo removido nao tinha mais destinatario.
+
+### Validacao
+- Cenarios da migracao verificados: fluxo novo intacto, legado em aberto intacto, legado concluido ainda recebe as duas etapas, migracao ja aplicada permanece inerte.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.16.2` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- 16 testes unitarios da integracao de compras aprovados.
+- 5 testes unitarios da integracao de estoque aprovados.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.16.1.html`.
+- SHA-256: `0D3223846235CE6C6DE427AA347E51CCA6AEDDD07F5401E5E965EB0A3194AB21`.
+
 ## [2.16.1] - 2026-09-04
 
 ### Corrigido

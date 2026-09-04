@@ -1,3 +1,23 @@
+## [2.16.1] - 2026-09-04
+
+### Corrigido
+- Corrige o retrocesso automatico do desenvolvimento que avancava para a etapa "Liberacao".
+- A migracao de etapas de cadastro no ERP (v2.5.0) apagava do historico as etapas "Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP" e "Liberacao" e devolvia o projeto para a primeira etapa de ERP, com a tela piscando durante a regravacao.
+- A migracao passa a ser aplicada somente aos projetos legados, que chegaram a "Liberacao" sem nenhuma das duas etapas de cadastro no ERP no historico.
+- Vale para os modulos Usinagem e Montagem, que compartilham a mesma rotina de migracao.
+
+### Validacao
+- Cenarios da migracao verificados na v2.16.0 e na v2.16.1: fluxo novo preservado apos a correcao, migracao legada em aberto e legada concluida mantidas, migracao ja aplicada permanece inerte.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.16.1` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- 16 testes unitarios da integracao de compras aprovados.
+- 5 testes unitarios da integracao de estoque aprovados.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.16.0.html`.
+- SHA-256: `3107139388EBF620D57DDFFCC658E9655DCE036BAB38A6F5C4BF6352CF4D9396`.
+
 ## [2.16.0] - 2026-08-27
 
 ### Adicionado

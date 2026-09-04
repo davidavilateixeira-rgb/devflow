@@ -1,3 +1,30 @@
+## [2.18.1] - 2026-09-04
+
+### Adicionado
+- Exibe no Follow-up de Compras um aviso com os desenvolvimentos parados em "Fornecedor" que ja tem entrada de NF confirmada no ERP, com o botao "Avancar para Recebimento".
+- Um clique conclui a etapa de todos eles, cada um com a data da sua propria entrada de NF.
+
+### Corrigido
+- O avanco automatico da v2.18.0 so alcancava o desenvolvimento cuja consulta ao ERP tivesse sido pedida na mesma aba e ainda estivesse aberta quando a resposta chegasse.
+- Ficavam de fora as NFs que entraram antes do recurso existir e os casos em que a aba foi fechada antes da resposta do conector.
+- O caminho automatico continua valendo; o aviso cobre o que ele nao alcanca.
+
+### Seguranca e dados
+- O botao pede confirmacao listando os desenvolvimentos e as datas de entrada antes de gravar.
+- Carregar o app continua sem gravar no banco: o avanco depende sempre de uma acao humana.
+- Respeita a permissao de gerenciar a Usinagem e o modo somente consulta do Firestore.
+
+### Validacao
+- 10 cenarios no teste de regressao, cobrindo o caminho automatico e o manual: entrada completa, entrega parcial, sem OC no ERP, outra etapa, fluxo simples, resposta pendente, listagem dos elegiveis, cancelamento da confirmacao e aplicacao em lote.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.18.1` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- Tela de login renderizada no servidor local sem erros de codigo.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.18.0.html`.
+- SHA-256: `148856397FD660293AB74D6DCA439C96B33B5A5C8AF1B435AB2D582C8A2ECBE2`.
+
 ## [2.18.0] - 2026-09-04
 
 ### Adicionado

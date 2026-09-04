@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.18.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.18.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.18.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.18.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.18.1";
+const VERSAO_ATUAL = "2.18.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -4605,32 +4605,9 @@ function entradaNFCompleta(p){
   if(!registros.length || !registros.every(r=>r.recebidaEm)) return "";
   return registros.map(r=>r.recebidaEm).sort().slice(-1)[0] || "";
 }
-// O desenvolvimento esta parado em "Fornecedor" com a entrada de NF ja confirmada pelo ERP.
-function aguardaAvancoPorEntradaNF(p){
-  return !!(p && p.necessita && p.necessita.fixacao && podeGerenciarUsinagem(p)
-    && ETAPAS[p.etapaAtual] === "Fornecedor" && entradaNFCompleta(p));
-}
-function projetosEntradaNFPendente(){
-  return estado.projetos.filter(aguardaAvancoPorEntradaNF);
-}
-// Conclui "Fornecedor" com a data da entrada da NF e avanca para "Recebimento".
-function avancarPorEntradaNF(p){
-  const entrada = entradaNFCompleta(p);
-  if(!entrada) return false;
-  p.etapaAtual = ETAPAS.indexOf("Recebimento");
-  p.historico.push({etapa:"Recebimento", data:entrada, usuario:USUARIO_ENTRADA_NF});
-  comprasDe(p).oc.status = "Recebida";
-  if(!p.comentarios) p.comentarios = [];
-  p.comentarios.push({
-    usuario: USUARIO_ENTRADA_NF,
-    data: new Date().toISOString(),
-    texto: `Entrada da NF confirmada no ERP em ${fmtL(entrada.slice(0,10))}. A etapa "Fornecedor" foi concluída e o desenvolvimento avançou para "Recebimento".`
-  });
-  salvarProjeto(p);
-  return true;
-}
-// Caminho automatico: continuacao do clique em "Atualizar", quando a resposta do conector chega.
-// Roda so para os desenvolvimentos que este navegador pediu, uma unica vez por pedido — nunca ao abrir a tela.
+// Conclui a etapa "Fornecedor" quando o ERP confirma a entrada da NF, carimbando a data da entrada.
+// Roda so para os desenvolvimentos que este navegador mandou atualizar, uma unica vez por pedido: e a
+// continuacao do clique em "Atualizar", nao um efeito de abrir a tela.
 function concluirFornecedorPorEntradaNF(){
   if(!estado.aguardandoERP || !estado.aguardandoERP.size || !podeGravarFirestore()) return;
   [...estado.aguardandoERP].forEach(id=>{
@@ -4638,21 +4615,22 @@ function concluirFornecedorPorEntradaNF(){
     if(!p){ estado.aguardandoERP.delete(id); return; }
     if(sincronizacaoSCPendente(comprasDe(p).integracao)) return;   // conector ainda nao respondeu
     estado.aguardandoERP.delete(id);
-    if(!aguardaAvancoPorEntradaNF(p)) return;
-    if(avancarPorEntradaNF(p)) notificarSistema(`${p.devId||p.codigo}: NF recebida, avançou para "Recebimento".`);
+    if(!podeGerenciarUsinagem(p) || !p.necessita.fixacao) return;   // "Fornecedor" so existe no fluxo com fixacao
+    if(ETAPAS[p.etapaAtual] !== "Fornecedor") return;
+    const entrada = entradaNFCompleta(p);
+    if(!entrada) return;
+    p.etapaAtual = ETAPAS.indexOf("Recebimento");
+    p.historico.push({etapa:"Recebimento", data:entrada, usuario:USUARIO_ENTRADA_NF});
+    comprasDe(p).oc.status = "Recebida";
+    if(!p.comentarios) p.comentarios = [];
+    p.comentarios.push({
+      usuario: USUARIO_ENTRADA_NF,
+      data: new Date().toISOString(),
+      texto: `Entrada da NF confirmada no ERP em ${fmtL(entrada.slice(0,10))}. A etapa "Fornecedor" foi concluída automaticamente e o desenvolvimento avançou para "Recebimento".`
+    });
+    salvarProjeto(p);
+    notificarSistema(`${p.devId||p.codigo}: NF recebida, avançou para "Recebimento".`);
   });
-}
-// Caminho manual: alcanca o que ficou para tras — NF que entrou antes deste recurso existir, ou aba
-// fechada antes da resposta do ERP chegar. Um clique aplica todos, sempre por acao humana.
-function aplicarEntradaNFPendentes(){
-  if(!podeGravarFirestore()) return;
-  const pendentes = projetosEntradaNFPendente();
-  if(!pendentes.length) return;
-  const lista = pendentes.map(p=>`• ${p.devId||p.codigo} — entrada em ${fmtL(entradaNFCompleta(p).slice(0,10))}`).join("\n");
-  if(!confirm(`AVANÇAR POR ENTRADA DE NF\n\n${pendentes.length} desenvolvimento(s) com entrada de NF confirmada no ERP:\n\n${lista}\n\nConcluir a etapa "Fornecedor" com a data da entrada e avançar para "Recebimento"?`)) return;
-  const avancados = pendentes.filter(avancarPorEntradaNF).length;
-  notificarSistema(`${avancados} desenvolvimento(s) avançaram para "Recebimento".`);
-  renderTudo();
 }
 function dadosComprasProjeto(p){
   const r=resumoCompras(p),scERP=resumoSCERPProjeto(p),ocERP=resumoOCERPProjeto(p);
@@ -4971,19 +4949,9 @@ function renderCompras(){
   if(estado.comprasFiltro==="erp-problema")itens=itens.filter(x=>x.scERP.problema||x.ocERP.problema);
   itens.sort((a,b)=>{const peso=x=>x.ocERP.problema?0:x.ocERP.precisaAcao?1:x.scERP.problema?2:x.scERP.aguardando?3:x.r.nivel==="vermelho"?4:x.r.nivel==="amarelo"?5:6;return peso(a)-peso(b)||(a.r.c.followUp.dataProximoFollowUp||"9999").localeCompare(b.r.c.followUp.dataProximoFollowUp||"9999")||b.r.diasEtapa-a.r.diasEtapa;});
   const card=(titulo,valor,cor,filtro,detalhe)=>`<button class="card p-4 text-left hover:shadow-md transition-shadow" onclick="estado.comprasFiltro='${filtro}';renderTudo()"><div class="text-[11px] uppercase font-semibold tracking-wide" style="color:var(--texto-2)">${titulo}</div><div class="text-2xl font-bold mt-1" style="color:${cor}">${valor}</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">${detalhe}</div></button>`;
-  const pendentesNF=projetosEntradaNFPendente();
-  const avisoEntradaNF=pendentesNF.length?`
-    <div class="card p-4 mb-4 no-print flex items-center flex-wrap gap-3" style="border-color:var(--verde);background:#E6F4EC">
-      <div class="flex-1 min-w-[240px]">
-        <div class="font-bold text-[13px]" style="color:var(--verde)">${pendentesNF.length} desenvolvimento(s) com entrada de NF confirmada</div>
-        <div class="text-[11.5px] mt-0.5" style="color:var(--texto-2)">Parados em "Fornecedor": ${pendentesNF.map(p=>esc(p.devId||p.codigo)).join(", ")}. A etapa recebe a data da entrada da NF.</div>
-      </div>
-      <button class="btn btn-primario !py-2 flex-none" onclick="aplicarEntradaNFPendentes()">Avançar para Recebimento</button>
-    </div>`:"";
   const filtros=[["abertos","Todos em aberto"],["oc-aprovacao","OC: aguardando aprova\u00e7\u00e3o"],["oc-envio","OC: aguardando envio"],["oc-entrega","OC: entrega / parcial"],["oc-atrasada","OC: atrasadas"],["oc-recebida","OC: recebidas"],["erp-pendente","SC: aguardando aprova\u00e7\u00e3o"],["erp-problema","ERP: verificar"],["follow","Follow-up necess\u00e1rio"],["sc","SC abertas"],["oc","OC abertas"],["todos","Todos, inclusive encerrados"]];
   view.innerHTML=`
     <div class="flex items-start justify-between flex-wrap gap-3 mb-4"><div><h1 class="text-xl font-bold surgir">Follow-up de Compras</h1><p class="text-[12px] mt-1" style="color:var(--texto-2)">Acompanhamento integrado da SC at\u00e9 o recebimento da OC por entrada de NF.</p></div><div class="flex items-center flex-wrap justify-end gap-2 no-print"><span class="badge ${registrosSC.length||registrosOC.length?"b-verde":"b-cinza"}">${registrosSC.length||registrosOC.length?"ERP conectado":"Aguardando primeira sincroniza\u00e7\u00e3o"}</span><button class="btn btn-primario !py-2" ${totalAtualizaveisERP?"":"disabled style='opacity:.45;cursor:not-allowed'"} onclick="solicitarAtualizacaoTodasComprasERP()">\u21bb Atualizar follow-ups (${totalAtualizaveisERP})</button>${isAdmin()?'<button class="btn btn-suave !py-2" onclick="solicitarAtualizacaoTodasComprasERP(true)">Atualiza\u00e7\u00e3o geral</button>':""}</div></div>
-    ${avisoEntradaNF}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("SC abertas",totalSc,"var(--laranja)","sc","Solicita\u00e7\u00f5es ainda abertas")}${card("OC abertas",totalOc,"#0F5FA8","oc","Ordens ainda em andamento")}${card("Follow-up necess\u00e1rio",totalFollow,"#C42B1C","follow","Manual ou indicado pelo ERP")}${card("Entrega atrasada",totalAtrasados,"#7C2D12","oc-atrasada","Previs\u00e3o manual do fornecedor ultrapassada")}</div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">${card("OC \u00b7 aprova\u00e7\u00e3o",totalOCAprovacao,"var(--laranja)","oc-aprovacao","Aguardando libera\u00e7\u00e3o ou aprovador")}${card("OC \u00b7 envio",totalOCEnvio,"#8A5A00","oc-envio","Aprovadas, ainda n\u00e3o enviadas")}${card("OC \u00b7 entrega",totalOCEntrega,"#0F5FA8","oc-entrega","Em transporte ou recebimento parcial")}${card("OC \u00b7 recebidas",totalOCRecebida,"var(--verde)","oc-recebida","Confirmadas pela entrada da NF")}</div>
     <div class="card p-4 mb-4 no-print"><div class="grid md:grid-cols-4 gap-2">

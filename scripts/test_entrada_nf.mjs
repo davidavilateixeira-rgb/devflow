@@ -21,12 +21,15 @@ const salvos = [];
 const avisos = [];
 const estado = { projetos: [], aguardandoERP: new Set() };
 
+let confirmarResposta = true;
 const factory = new Function(
   "ETAPAS", "estado", "USUARIO_ENTRADA_NF", "registrosOCERP", "comprasDe", "podeGravarFirestore",
   "podeGerenciarUsinagem", "sincronizacaoSCPendente", "salvarProjeto", "notificarSistema", "fmtL",
-  indexHtml.slice(inicio, fim) + "\nreturn { entradaNFCompleta, concluirFornecedorPorEntradaNF };"
+  "confirm", "renderTudo",
+  indexHtml.slice(inicio, fim)
+    + "\nreturn { entradaNFCompleta, concluirFornecedorPorEntradaNF, projetosEntradaNFPendente, aplicarEntradaNFPendentes };"
 );
-const { entradaNFCompleta, concluirFornecedorPorEntradaNF } = factory(
+const { entradaNFCompleta, concluirFornecedorPorEntradaNF, projetosEntradaNFPendente, aplicarEntradaNFPendentes } = factory(
   ETAPAS,
   estado,
   "Sistema · Entrada de NF",
@@ -37,7 +40,9 @@ const { entradaNFCompleta, concluirFornecedorPorEntradaNF } = factory(
   integracao => !!(integracao.solicitadoEm && (!integracao.processadoEm || integracao.solicitadoEm > integracao.processadoEm)),
   p => salvos.push(p.id),
   msg => avisos.push(msg),
-  valor => new Date(/^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor + "T08:00:00" : valor).toLocaleDateString("pt-BR")
+  valor => new Date(/^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor + "T08:00:00" : valor).toLocaleDateString("pt-BR"),
+  () => confirmarResposta,
+  () => {}
 );
 
 const projeto = (id, over = {}) => ({
@@ -113,4 +118,30 @@ assert.equal(estado.aguardandoERP.size, 1, "deveria continuar aguardando o conec
 assert.equal(entradaNFCompleta({ compras: { integracao: { ocERP: [] } } }), "");
 assert.equal(entradaNFCompleta({ compras: { integracao: { ocERP: [nf("2026-09-02T08:00:00Z")] } } }), "2026-09-02T08:00:00Z");
 
-console.log("Avanço automático por entrada de NF validado (7 cenários).");
+// 8. Caminho manual: so lista quem esta em "Fornecedor" com entrada completa.
+const comNF = numero => projeto(numero, {
+  compras: { oc: { status: "" }, integracao: { solicitadoEm: "2026-09-04T10:00:00Z", processadoEm: "2026-09-04T10:01:00Z",
+    ocERP: [nf("2026-09-03T14:30:00Z")] } }
+});
+estado.projetos = [comNF("DEV-G"), comNF("DEV-H"), projeto("DEV-I")];   // DEV-I sem OC no ERP
+estado.aguardandoERP = new Set();
+assert.deepEqual(projetosEntradaNFPendente().map(p => p.id), ["DEV-G", "DEV-H"]);
+
+// 9. Cancelar a confirmacao nao grava nada.
+salvos.length = 0;
+confirmarResposta = false;
+aplicarEntradaNFPendentes();
+assert.deepEqual(salvos, [], "cancelar a confirmacao nao deveria gravar");
+assert.equal(ETAPAS[estado.projetos[0].etapaAtual], "Fornecedor");
+
+// 10. Confirmando, avanca todos os pendentes de uma vez.
+confirmarResposta = true;
+aplicarEntradaNFPendentes();
+assert.deepEqual(salvos, ["DEV-G", "DEV-H"], "deveria gravar os dois pendentes");
+assert.equal(ETAPAS[estado.projetos[0].etapaAtual], "Recebimento");
+assert.equal(estado.projetos[0].historico.at(-1).data, "2026-09-03T14:30:00Z");
+assert.equal(estado.projetos[1].historico.at(-1).usuario, "Sistema · Entrada de NF");
+assert.equal(ETAPAS[estado.projetos[2].etapaAtual], "Fornecedor", "quem nao tem NF nao deveria mover");
+assert.deepEqual(projetosEntradaNFPendente(), [], "a fila deveria ficar vazia depois de aplicar");
+
+console.log("Avanço por entrada de NF validado (10 cenários: automático e manual).");

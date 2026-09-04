@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.17.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.16.2</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.17.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.16.2</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.17.0";
+const VERSAO_ATUAL = "2.16.2";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -682,6 +682,7 @@ let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuar
   moduloAtual: "usinagem" };
 let unsubProjetos = null, unsubUsuarios = null, unsubEstoque = [], chaveEstoqueAssinado = "", estoquePorLote = new Map(), avisoDesativado = false;
 let firestoreModoConsulta = false, firestoreRetryTimer = null, toastSistemaTimer = null;
+const migracoesERPEmAndamento = new Set();
 
 const isAdmin = ()=> estado.usuario && estado.usuario.papel === "admin";
 const isProduto = ()=> estado.usuario && estado.usuario.papel === "produto";   // visualiza + cadastra, não edita
@@ -890,11 +891,23 @@ function iniciarApp(){
   if(!unsubProjetos){
     unsubProjetos = db.collection("projetos").onSnapshot(s=>{
       desativarModoConsultaFirestore();
-      // As normalizacoes de normalizarProjeto valem apenas em memoria: abrir o app nunca grava
-      // no banco. Migracao de dados e rotina de manutencao conferida, nao efeito colateral de carregar a tela.
       estado.projetos = s.docs.map(x=>normalizarProjeto(Object.assign({id:x.id}, x.data())));
+      estado.projetos.forEach(p=>persistirMigracaoCadastroERP(p));
       estado.projetos.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
       assinarEstoqueNecessario();
+      
+      // SCRIPT DE MIGRAÇÃO ÚNICO: Gerar DEV-XXX para projetos existentes
+      if (!window.__migracaoIniciada && estado.projetos.length > 0 && estado.projetos.some(p => !p.devId)) {
+        window.__migracaoIniciada = true;
+        console.log("Migrando projetos antigos para DEV-XXX...");
+        const ordemCrescente = estado.projetos.slice().sort((a,b)=>(a.dataInicio||"").localeCompare(b.dataInicio||""));
+        ordemCrescente.forEach((p, i) => {
+          if (!p.devId) {
+            p.devId = "DEV-" + String(i+1).padStart(3, '0');
+            db.collection("projetos").doc(p.id).update({ devId: p.devId });
+          }
+        });
+      }
 
       renderTudo();
     }, e=>tratarErroFirestore(e,"projetos"));
@@ -911,6 +924,24 @@ function iniciarApp(){
 /* ============================================================
    4. PERSISTÊNCIA
    ============================================================ */
+function persistirMigracaoCadastroERP(p){
+  if(firestoreModoConsulta) return;
+  if(!p || !p.id || !p.__migracaoCadastroERP || migracoesERPEmAndamento.has(p.id)) return;
+  migracoesERPEmAndamento.add(p.id);
+  db.collection("projetos").doc(p.id).update({
+    historico: p.historico,
+    etapaAtual: p.etapaAtual,
+    montagem: p.montagem,
+    migracoes: p.migracoes
+  }).then(()=>{
+    delete p.__migracaoCadastroERP;
+    migracoesERPEmAndamento.delete(p.id);
+  }).catch(e=>{
+    migracoesERPEmAndamento.delete(p.id);
+    console.error("Erro ao persistir migração de cadastro ERP:", e);
+  });
+}
+
 function salvarProjeto(p){
   if(!podeGravarFirestore()) return Promise.resolve(false);
   const dados = Object.assign({}, p); delete dados.id; delete dados.__migracaoCadastroERP;
@@ -3699,27 +3730,9 @@ function salvarCadastro(id){
   if(id){
     const p = estado.projetos.find(x=>x.id===id);
     const mudouFluxo = p.necessita.fixacao !== dados.necessita.fixacao;
-    // Trocar o fluxo invalida o caminho ja percorrido e recua o desenvolvimento para a Analise.
-    // O descarte nunca acontece em silencio: quem edita ve o que sai do historico e fica registrado nos comentarios.
-    const alvoFluxo = Math.min(p.etapaAtual, 1);
-    const descartadas = mudouFluxo ? p.historico.slice(alvoFluxo+1).map(h=>h.etapa) : [];
-    if(descartadas.length){
-      const lista = descartadas.map(e=>`• ${e}`).join("\n");
-      if(!confirm(`⚠ MUDANÇA DE FLUXO\n\nAlterar "necessita nova fixação" descarta ${descartadas.length} etapa(s) do histórico da Usinagem:\n\n${lista}\n\nO desenvolvimento volta para a "Análise". Deseja continuar?`)) return;
-    }
     Object.assign(p,dados);
     sincronizarComprasProjeto(p, "cadastro");
-    if(mudouFluxo){
-      p.etapaAtual = alvoFluxo; p.historico = p.historico.slice(0,alvoFluxo+1);   // fluxo mudou: recua p/ análise
-      if(descartadas.length){
-        if(!p.comentarios) p.comentarios = [];
-        p.comentarios.push({
-          usuario: estado.usuario.nome || "Sistema",
-          data: new Date().toISOString(),
-          texto: `Alterou a necessidade de nova fixação no cadastro. O desenvolvimento voltou para a "Análise" e saíram do histórico as etapas: ${descartadas.join(", ")}.`
-        });
-      }
-    }
+    if(mudouFluxo){ p.etapaAtual = Math.min(p.etapaAtual,1); p.historico = p.historico.slice(0,p.etapaAtual+1); } // fluxo mudou: recua p/ análise
     salvarProjeto(p);
   } else {
     const maxDev = estado.projetos.reduce((max, proj) => {

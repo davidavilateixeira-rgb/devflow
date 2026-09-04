@@ -1,3 +1,28 @@
+## [2.17.0] - 2026-09-04
+
+### Alterado
+- Carregar o app deixa de gravar no banco. As normalizacoes de `normalizarProjeto` passam a valer somente em memoria.
+- Remove a gravacao automatica da migracao de cadastro no ERP disparada pelo `onSnapshot` dos projetos.
+- Remove a migracao retroativa que atribuia `DEV-XXX` durante a inicializacao. Os 87 desenvolvimentos ja possuem `devId` e o cadastro de novos continua atribuindo o proximo numero.
+- Migracao de dados passa a ser rotina de manutencao conferida, e nao efeito colateral de abrir a tela.
+
+### Seguranca e dados
+- Alterar "necessita nova fixacao" no cadastro de um desenvolvimento em andamento agora exige confirmacao, com a lista das etapas que serao descartadas do historico.
+- Registra nos comentarios do desenvolvimento a troca de fluxo e as etapas removidas.
+- O comportamento de recuar para a Analise permanece o mesmo; apenas deixa de acontecer em silencio.
+
+### Validacao
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.17.0` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- Cenarios da migracao de cadastro no ERP reexecutados sem alteracao de comportamento.
+- Tela de login renderizada no servidor local sem erros de console.
+- Levantamento no Firestore confirmou 87 de 87 desenvolvimentos com `devId` antes da remocao da migracao retroativa.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.16.2.html`.
+- SHA-256: `9AAC8C43B3EA8C618B0031405277363E3E4E90315A1CB514321B2BF4C8FD987D`.
+
 ## [2.16.2] - 2026-09-04
 
 ### Alterado

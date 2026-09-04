@@ -1,3 +1,33 @@
+## [2.18.0] - 2026-09-04
+
+### Adicionado
+- Conclui automaticamente a etapa "Fornecedor" quando o ERP confirma a entrada da NF, e avanca o desenvolvimento para "Recebimento", onde o tecnico confirma que a ferramenta esta ok.
+- Carimba a etapa com a data da entrada da NF informada pelo ERP, e nao com a data do dia.
+- Registra o avanco nos comentarios do desenvolvimento e marca a OC como "Recebida" no follow-up.
+- Adiciona teste de regressao em `scripts/test_entrada_nf.mjs`.
+
+### Regras adotadas
+- So avanca quando TODAS as OCs do desenvolvimento registram entrada de NF. Entrega parcial mantem a etapa em "Fornecedor".
+- A data usada e a da ultima entrada entre as OCs.
+- So avanca a partir da propria etapa "Fornecedor": nunca pula etapas intermediarias.
+- Vale apenas para o fluxo com fixacao, unico em que a etapa "Fornecedor" existe.
+
+### Seguranca e dados
+- O avanco acontece como continuacao do clique em "Atualizar" no follow-up: somente o navegador que pediu a consulta grava, e uma unica vez por pedido.
+- Carregar o app continua sem gravar no banco, conforme a v2.17.0.
+- Respeita a permissao de gerenciar a Usinagem e o modo somente consulta do Firestore.
+
+### Validacao
+- 7 cenarios cobertos pelo novo teste: entrada completa, entrega parcial, sem OC no ERP, desenvolvimento em outra etapa, fluxo simples, resposta do ERP ainda pendente e a funcao de data isolada.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.18.0` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- Tela de login renderizada no servidor local sem erros de console.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.17.0.html`.
+- SHA-256: `4AD9568A110563A57C5FCE5A78C8944491041D27A828DE61D55151F49B222855`.
+
 ## [2.17.0] - 2026-09-04
 
 ### Alterado

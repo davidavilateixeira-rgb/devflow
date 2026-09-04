@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.18.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.17.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.18.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.17.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.18.0";
+const VERSAO_ATUAL = "2.17.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -484,7 +484,6 @@ const RENOMES_ETAPAS = {"Liberado":"Liberação","Validação":"Validação/FO05
 const ETAPAS_CADASTRO_ERP = ["Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP"];
 const ETAPA_LIBERACAO = "Libera\u00e7\u00e3o";
 const USUARIO_MIGRACAO_ETAPAS_ERP = "Sistema \u00b7 Migra\u00e7\u00e3o v2.5.0";
-const USUARIO_ENTRADA_NF = "Sistema \u00b7 Entrada de NF";
 const MARCADOR_MIGRACAO_CADASTRO_ERP = "cadastroERP25";
 
 // A migração é idempotente: aplicada uma vez e persistida no documento do projeto.
@@ -680,9 +679,7 @@ function novoProjeto(o){
 let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuarios:[], ordLista:"", mesesLanc:[], resps:[], fams:[], statusSel:[], estoque: {},
   movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"",
   comprasBusca:"", comprasFiltro:"abertos", comprasResponsavel:"", comprasFornecedor:"",
-  moduloAtual: "usinagem",
-  // Desenvolvimentos que ESTE navegador mandou atualizar no ERP e cuja resposta ainda nao chegou.
-  aguardandoERP: new Set() };
+  moduloAtual: "usinagem" };
 let unsubProjetos = null, unsubUsuarios = null, unsubEstoque = [], chaveEstoqueAssinado = "", estoquePorLote = new Map(), avisoDesativado = false;
 let firestoreModoConsulta = false, firestoreRetryTimer = null, toastSistemaTimer = null;
 
@@ -898,7 +895,7 @@ function iniciarApp(){
       estado.projetos = s.docs.map(x=>normalizarProjeto(Object.assign({id:x.id}, x.data())));
       estado.projetos.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
       assinarEstoqueNecessario();
-      concluirFornecedorPorEntradaNF();
+
       renderTudo();
     }, e=>tratarErroFirestore(e,"projetos"));
   }
@@ -4598,40 +4595,6 @@ function resumoOCERPProjeto(p){
   const concluida=codigos.length>0&&codigos.every(codigo=>STATUS_OC_ERP_OK.includes(codigo));
   return {numeros,registros,codigos,pendente,problema,precisaAcao,acompanhando,concluida,integracao:c.integracao};
 }
-// Data da ultima entrada de NF quando TODAS as OCs do desenvolvimento ja registraram entrada no ERP.
-// Vazio enquanto faltar a entrada de qualquer OC: a ferramenta so chegou por inteiro quando nenhuma esta pendente.
-function entradaNFCompleta(p){
-  const registros = registrosOCERP(p);
-  if(!registros.length || !registros.every(r=>r.recebidaEm)) return "";
-  return registros.map(r=>r.recebidaEm).sort().slice(-1)[0] || "";
-}
-// Conclui a etapa "Fornecedor" quando o ERP confirma a entrada da NF, carimbando a data da entrada.
-// Roda so para os desenvolvimentos que este navegador mandou atualizar, uma unica vez por pedido: e a
-// continuacao do clique em "Atualizar", nao um efeito de abrir a tela.
-function concluirFornecedorPorEntradaNF(){
-  if(!estado.aguardandoERP || !estado.aguardandoERP.size || !podeGravarFirestore()) return;
-  [...estado.aguardandoERP].forEach(id=>{
-    const p = estado.projetos.find(x=>x.id===id);
-    if(!p){ estado.aguardandoERP.delete(id); return; }
-    if(sincronizacaoSCPendente(comprasDe(p).integracao)) return;   // conector ainda nao respondeu
-    estado.aguardandoERP.delete(id);
-    if(!podeGerenciarUsinagem(p) || !p.necessita.fixacao) return;   // "Fornecedor" so existe no fluxo com fixacao
-    if(ETAPAS[p.etapaAtual] !== "Fornecedor") return;
-    const entrada = entradaNFCompleta(p);
-    if(!entrada) return;
-    p.etapaAtual = ETAPAS.indexOf("Recebimento");
-    p.historico.push({etapa:"Recebimento", data:entrada, usuario:USUARIO_ENTRADA_NF});
-    comprasDe(p).oc.status = "Recebida";
-    if(!p.comentarios) p.comentarios = [];
-    p.comentarios.push({
-      usuario: USUARIO_ENTRADA_NF,
-      data: new Date().toISOString(),
-      texto: `Entrada da NF confirmada no ERP em ${fmtL(entrada.slice(0,10))}. A etapa "Fornecedor" foi concluída automaticamente e o desenvolvimento avançou para "Recebimento".`
-    });
-    salvarProjeto(p);
-    notificarSistema(`${p.devId||p.codigo}: NF recebida, avançou para "Recebimento".`);
-  });
-}
 function dadosComprasProjeto(p){
   const r=resumoCompras(p),scERP=resumoSCERPProjeto(p),ocERP=resumoOCERPProjeto(p);
   if(ocERP.problema){r.nivel="vermelho";r.alerta=ocERP.registros.find(v=>STATUS_OC_ERP_PROBLEMA.includes(v.statusCodigo))?.status||r.alerta;}
@@ -4736,7 +4699,6 @@ async function solicitarAtualizacaoERP(id){
       "compras.integracao.statusSincronizacao":"solicitado",
       "compras.integracao.erro":""
     });
-    estado.aguardandoERP.add(id);   // a resposta do conector pode concluir a etapa "Fornecedor"
   }catch(e){Object.assign(c.integracao,{statusSincronizacao:"erro",erro:e.message});renderTudo();alert("Erro ao solicitar atualização: "+e.message);}
 }
 async function solicitarAtualizacaoTodasSCERP(){
@@ -4759,7 +4721,6 @@ async function solicitarAtualizacaoTodasSCERP(){
         });
       });
       await lote.commit();
-      projetos.slice(inicio,inicio+400).forEach(p=>estado.aguardandoERP.add(p.id));
     }
     renderTudo();
   }catch(e){alert("Erro ao solicitar atualização das SCs: "+e.message);}
@@ -4806,7 +4767,6 @@ async function solicitarAtualizacaoTodasComprasERP(todos=false){
         });
       });
       await lote.commit();
-      projetos.slice(inicio,inicio+400).forEach(p=>estado.aguardandoERP.add(p.id));
     }
     renderTudo();
   }catch(e){alert("Erro ao solicitar atualiza\u00e7\u00e3o das SCs e OCs: "+e.message);}

@@ -1,3 +1,26 @@
+## [2.19.1] - 2026-09-08
+
+### Corrigido
+- A previsao de chegada editada no cadastro ou no follow-up passa a aparecer no checklist e no Status Report.
+- Antes o "Prazo da etapa" da etapa "Fornecedor" vinha de `prazosEtapas`, gravado no momento em que a etapa foi concluida, e ignorava a previsao do fornecedor alterada depois.
+- A previsao do fornecedor passa a ser a fonte unica desse prazo, tanto na leitura quanto na gravacao.
+
+### Alterado
+- `sincronizarPrazoFornecedor` mantem `prazosEtapas["Fornecedor"]` igual a `prazoFornecedor` em todos os caminhos de gravacao: cadastro, follow-up, edicao da previsao, conclusao de etapa, retrocesso e avanco automatico pelo ERP.
+- Os dados ja gravados com os dois campos divergentes aparecem corretos de imediato, sem migracao, porque a leitura passa a preferir a previsao do fornecedor.
+
+### Validacao
+- 13 cenarios do teste de avanco pelo ERP aprovados, agora conferindo tambem que o prazo da etapa acompanha a previsao adotada de 7 dias uteis.
+- Divergencia reproduzida no DEV-075 antes da correcao: previsao 08/10/2026 no cadastro contra 08/09/2026 no checklist.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.19.1` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- Tela de login renderizada no servidor local sem erros de codigo.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.19.0.html`.
+- SHA-256: `1620C10C4B0C934AD1963C78403D8096AE8E0E4F2EACC4D506F2E1EF3641375A`.
+
 ## [2.19.0] - 2026-09-08
 
 ### Adicionado

@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.19.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.19.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.19.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.19.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.19.1";
+const VERSAO_ATUAL = "2.19.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -1735,10 +1735,9 @@ function renderStatusReport() {
     const resp = (isM ? (m && m.responsavel) : p.responsavel) || "";
     const diasNaE = isM ? diasNaEtapaMontagem(p) : diasNaEtapa(p);
 
-    // Prazo da etapa. Em "Fornecedor" a previsão do fornecedor é a fonte única: editá-la no cadastro
-    // ou no follow-up precisa refletir aqui, mesmo que a etapa tenha sido concluída com outra data.
+    // Prazo da etapa
     const prazos = (isM ? (m && m.prazosEtapas) : p.prazosEtapas) || {};
-    let prazoEtapa = (!isM && etapaAtualStr === "Fornecedor" && p.prazoFornecedor) || prazos[etapaAtualStr] || "";
+    let prazoEtapa = prazos[etapaAtualStr] || "";
     if(!prazoEtapa) {
       if(!isM) {
         if(etapaAtualStr === "Projeto da Fixação") prazoEtapa = p.prazoProjetoFixacao || "";
@@ -2291,8 +2290,7 @@ function renderProjeto(){
           const podeMarcar = atual && gerencia;
           const h = p.historico[i+1] || (concluido(p) && i===p.etapaAtual ? p.historico[i] : null);
           const temDuracao = !!p.historico[i+1];
-          // "Fornecedor": a previsão do fornecedor manda, para que editá-la no cadastro ou no follow-up apareça aqui.
-          const prazoEtapa = (et === "Fornecedor" && p.prazoFornecedor) || (p.prazosEtapas && p.prazosEtapas[et]) || ({"Análise":p.prazoAnalise,"Projeto da Fixação":p.prazoProjetoFixacao,"Fornecedor":p.prazoFornecedor})[et];
+          const prazoEtapa = (p.prazosEtapas && p.prazosEtapas[et]) || ({"Análise":p.prazoAnalise,"Projeto da Fixação":p.prazoProjetoFixacao,"Fornecedor":p.prazoFornecedor})[et];
           const grupo = gruposDe(p).find(g=>g[1]===i);
           const tituloGrupo = grupo?`<div class="flex items-center gap-2 mt-3 mb-1 px-1">
             <span class="w-2 h-2 rounded-full flex-none" style="background:${COR_GRUPO[GRUPO_ETAPA[et]]||'var(--laranja)'}"></span>
@@ -4378,13 +4376,6 @@ function statusComprasDerivado(p){
   const c=comprasDe(p), inferido=statusComprasInferido(p);
   return {sc:c.sc.status||inferido.sc,oc:c.oc.status||inferido.oc};
 }
-// O prazo da etapa "Fornecedor" e a previsao de chegada sao o mesmo dado: mantem os dois iguais,
-// para que editar a previsao no cadastro ou no follow-up nao deixe o checklist com a data antiga.
-function sincronizarPrazoFornecedor(p){
-  if(!p.prazosEtapas) p.prazosEtapas = {};
-  if(p.prazoFornecedor) p.prazosEtapas["Fornecedor"] = p.prazoFornecedor;
-  else delete p.prazosEtapas["Fornecedor"];
-}
 function sincronizarComprasProjeto(p,origem="cadastro",etapaConcluida=""){
   const c=p.compras||normalizarProjeto(p).compras;
   if(origem==="followup"){
@@ -4428,7 +4419,6 @@ function sincronizarComprasProjeto(p,origem="cadastro",etapaConcluida=""){
       Object.assign(c.oc,{dataAprovacao:""});
     }
   }
-  sincronizarPrazoFornecedor(p);
   return c;
 }
 function projetoTemCompras(p){
@@ -4698,7 +4688,6 @@ function avancarEtapasComprasPorERP(p){
       // O ERP nao tem a previsao do fornecedor: adota 7 dias uteis a partir da aprovacao da OC.
       p.prazoFornecedor = somarDiasUteis(dia, DIAS_UTEIS_PRAZO_FORNECEDOR);
       c.oc.prazoEntrega = p.prazoFornecedor;
-      sincronizarPrazoFornecedor(p);
       detalhe = ` Prazo do fornecedor adotado: ${fmtL(p.prazoFornecedor)} (${DIAS_UTEIS_PRAZO_FORNECEDOR} dias úteis).`;
     }
     avancos.push({etapa, proxima, data:sinal.data});
@@ -5014,14 +5003,12 @@ async function salvarPrevisaoCompras(id){
   const textoAnterior=anterior?fmtL(anterior):"não informada",textoNovo=nova?fmtL(nova):"removida";
   p.prazoFornecedor=nova;
   c.oc.prazoEntrega=nova;
-  sincronizarPrazoFornecedor(p);
   c.historico.push({data:agora,usuario:estado.usuario.nome,resumo:`Previsão de chegada alterada de ${textoAnterior} para ${textoNovo}.`});
   p.comentarios.push({usuario:estado.usuario.nome,data:agora,texto:`Atualizou a previsão de chegada informada pelo fornecedor de ${textoAnterior} para ${textoNovo}.`,modulo:"usinagem"});
   const salvo=await salvarProjeto(p);
   if(!salvo){
     p.prazoFornecedor=anterior;
     c.oc.prazoEntrega=prazoOCAnterior;
-    sincronizarPrazoFornecedor(p);
     c.historico.splice(historicoAnterior);
     p.comentarios.splice(comentariosAnterior);
   }

@@ -35,7 +35,7 @@ const statusComprasInferido = p => {
 const factory = new Function(
   "ETAPAS", "estado", "USUARIO_ERP", "registrosOCERP", "registrosSCERP", "numerosOCERP", "comprasDe",
   "podeGravarFirestore", "podeGerenciarUsinagem", "sincronizacaoSCPendente", "statusComprasInferido",
-  "salvarProjeto", "notificarSistema", "fmtL", "confirm", "renderTudo",
+  "sincronizarPrazoFornecedor", "salvarProjeto", "notificarSistema", "fmtL", "confirm", "renderTudo",
   indexHtml.slice(inicio, fim)
     + "\nreturn { entradaNFCompleta, somarDiasUteis, sinalERPDaEtapa, destinoAvancoERP,"
     + " avancarEtapasComprasPorERP, concluirEtapasComprasPorERP, projetosAvancoERPPendente,"
@@ -57,6 +57,11 @@ const api = factory(
   () => true,
   i => !!(i.solicitadoEm && (!i.processadoEm || i.solicitadoEm > i.processadoEm)),
   statusComprasInferido,
+  p => {
+    p.prazosEtapas = p.prazosEtapas || {};
+    if (p.prazoFornecedor) p.prazosEtapas["Fornecedor"] = p.prazoFornecedor;
+    else delete p.prazosEtapas["Fornecedor"];
+  },
   p => salvos.push(p.id),
   msg => avisos.push(msg),
   valor => new Date(/^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor + "T08:00:00" : valor).toLocaleDateString("pt-BR"),
@@ -131,6 +136,8 @@ assert.equal(ETAPAS[p.etapaAtual], "Fornecedor");
 assert.equal(p.compras.oc.dataAprovacao, "2026-09-10");
 assert.equal(p.prazoFornecedor, "2026-09-21", "7 dias úteis a partir da aprovação da OC");
 assert.equal(p.compras.oc.prazoEntrega, "2026-09-21");
+assert.equal(p.prazosEtapas["Fornecedor"], "2026-09-21",
+  "o prazo da etapa deve acompanhar a previsão do fornecedor");
 
 // 6. OC ainda não aprovada não avança.
 p = projeto("DEV-F", "Aprovação OC", { ocERP: [oc({ statusCodigo: "AGUARDANDO_APROVACAO" })] });

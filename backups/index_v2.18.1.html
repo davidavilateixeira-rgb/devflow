@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.19.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.18.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.19.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.18.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.19.0";
+const VERSAO_ATUAL = "2.18.1";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -484,7 +484,7 @@ const RENOMES_ETAPAS = {"Liberado":"Liberação","Validação":"Validação/FO05
 const ETAPAS_CADASTRO_ERP = ["Revisar/Atualizar cadastro no ERP", "Aprovar cadastro no sistema ERP"];
 const ETAPA_LIBERACAO = "Libera\u00e7\u00e3o";
 const USUARIO_MIGRACAO_ETAPAS_ERP = "Sistema \u00b7 Migra\u00e7\u00e3o v2.5.0";
-const USUARIO_ERP = "Sistema \u00b7 ERP";
+const USUARIO_ENTRADA_NF = "Sistema \u00b7 Entrada de NF";
 const MARCADOR_MIGRACAO_CADASTRO_ERP = "cadastroERP25";
 
 // A migração é idempotente: aplicada uma vez e persistida no documento do projeto.
@@ -898,7 +898,7 @@ function iniciarApp(){
       estado.projetos = s.docs.map(x=>normalizarProjeto(Object.assign({id:x.id}, x.data())));
       estado.projetos.sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
       assinarEstoqueNecessario();
-      concluirEtapasComprasPorERP();
+      concluirFornecedorPorEntradaNF();
       renderTudo();
     }, e=>tratarErroFirestore(e,"projetos"));
   }
@@ -4605,129 +4605,53 @@ function entradaNFCompleta(p){
   if(!registros.length || !registros.every(r=>r.recebidaEm)) return "";
   return registros.map(r=>r.recebidaEm).sort().slice(-1)[0] || "";
 }
-// Soma dias uteis a uma data. Conta apenas dias de semana; nao ha tabela de feriados no sistema.
-function somarDiasUteis(dataISO, dias){
-  const [ano, mes, dia] = String(dataISO||"").slice(0,10).split("-").map(Number);
-  if(!ano || !mes || !dia) return "";
-  const d = new Date(ano, mes-1, dia, 12);
-  for(let restantes = dias; restantes > 0;){
-    d.setDate(d.getDate()+1);
-    const semana = d.getDay();
-    if(semana !== 0 && semana !== 6) restantes--;
-  }
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-// Etapas de compras que o ERP consegue confirmar sozinho, com o sinal objetivo de cada uma.
-const ETAPAS_ERP_AUTOMATICAS = ["Aprovação SC","Ordem de Compra","Aprovação OC","Fornecedor"];
-const SC_ERP_APROVADA = ["APROVADA","PARCIALMENTE_CONVERTIDA","CONVERTIDA_EM_OC"];
-const OC_ERP_APROVADA = ["AGUARDANDO_ENVIO","AGUARDANDO_ENTREGA","RECEBIDA_PARCIAL","RECEBIDA"];
-const DIAS_UTEIS_PRAZO_FORNECEDOR = 7;
-const maiorData = valores => valores.map(v=>v||"").sort().slice(-1)[0] || "";
-// Devolve a data com que a etapa deve ser carimbada, ou null enquanto o ERP nao confirmar.
-// Exige o estado em TODAS as SCs/OCs do desenvolvimento: uma pendente segura a etapa.
-function sinalERPDaEtapa(p, etapa){
-  if(etapa === "Aprovação SC"){
-    const regs = registrosSCERP(p);
-    if(!regs.length || !regs.every(r=>SC_ERP_APROVADA.includes(r.statusCodigo))) return null;
-    const data = maiorData(regs.map(r=>r.dataAprovacao));
-    return data ? {data} : null;
-  }
-  if(etapa === "Ordem de Compra"){
-    const numeros = numerosOCERP(p), regs = registrosOCERP(p);
-    if(!numeros.length || !regs.length || !regs.every(r=>r.encontrada !== false)) return null;
-    const data = maiorData(regs.map(r=>r.dataEmissao));
-    return data ? {data, numeroOC: numeros.join(", ")} : null;
-  }
-  if(etapa === "Aprovação OC"){
-    const regs = registrosOCERP(p);
-    if(!regs.length || !regs.every(r=>OC_ERP_APROVADA.includes(r.statusCodigo))) return null;
-    const data = maiorData(regs.map(r=>r.dataAprovacao));
-    return data ? {data} : null;
-  }
-  if(etapa === "Fornecedor"){
-    const data = entradaNFCompleta(p);
-    return data ? {data} : null;
-  }
-  return null;
-}
-// O desenvolvimento esta parado numa etapa que o ERP ja confirmou.
-function aguardaAvancoPorERP(p){
+// O desenvolvimento esta parado em "Fornecedor" com a entrada de NF ja confirmada pelo ERP.
+function aguardaAvancoPorEntradaNF(p){
   return !!(p && p.necessita && p.necessita.fixacao && podeGerenciarUsinagem(p)
-    && sinalERPDaEtapa(p, ETAPAS[p.etapaAtual]));
+    && ETAPAS[p.etapaAtual] === "Fornecedor" && entradaNFCompleta(p));
 }
-function projetosAvancoERPPendente(){
-  return estado.projetos.filter(aguardaAvancoPorERP);
+function projetosEntradaNFPendente(){
+  return estado.projetos.filter(aguardaAvancoPorEntradaNF);
 }
-// Nome da etapa que o desenvolvimento alcanca aplicando tudo que o ERP ja confirmou.
-function destinoAvancoERP(p){
-  let idx = p.etapaAtual;
-  while(ETAPAS_ERP_AUTOMATICAS.includes(ETAPAS[idx]) && sinalERPDaEtapa(p, ETAPAS[idx])) idx++;
-  return ETAPAS[idx];
-}
-// Conclui, em cascata, cada etapa que o ERP ja confirmou, carimbando a data do proprio ERP.
-// Quando o ERP esta adiantado, percorre as etapas uma a uma em vez de saltar para a ultima.
-function avancarEtapasComprasPorERP(p){
-  if(!p || !p.necessita || !p.necessita.fixacao || !podeGerenciarUsinagem(p)) return [];
-  const avancos = [];
-  for(;;){
-    const etapa = ETAPAS[p.etapaAtual];
-    if(!ETAPAS_ERP_AUTOMATICAS.includes(etapa)) break;
-    const sinal = sinalERPDaEtapa(p, etapa);
-    if(!sinal) break;
-    const c = comprasDe(p), proxima = ETAPAS[p.etapaAtual+1], dia = sinal.data.slice(0,10);
-    p.etapaAtual++;
-    p.historico.push({etapa:proxima, data:sinal.data, usuario:USUARIO_ERP});
-    let detalhe = "";
-    if(etapa === "Aprovação SC") c.sc.dataAprovacao = dia;
-    if(etapa === "Ordem de Compra"){
-      p.numOC = sinal.numeroOC; c.oc.numero = sinal.numeroOC; c.oc.dataEmissao = dia;
-      detalhe = ` Nº da OC: ${sinal.numeroOC}.`;
-    }
-    if(etapa === "Aprovação OC"){
-      c.oc.dataAprovacao = dia;
-      // O ERP nao tem a previsao do fornecedor: adota 7 dias uteis a partir da aprovacao da OC.
-      p.prazoFornecedor = somarDiasUteis(dia, DIAS_UTEIS_PRAZO_FORNECEDOR);
-      c.oc.prazoEntrega = p.prazoFornecedor;
-      detalhe = ` Prazo do fornecedor adotado: ${fmtL(p.prazoFornecedor)} (${DIAS_UTEIS_PRAZO_FORNECEDOR} dias úteis).`;
-    }
-    avancos.push({etapa, proxima, data:sinal.data});
-    if(!p.comentarios) p.comentarios = [];
-    p.comentarios.push({
-      usuario: USUARIO_ERP,
-      data: new Date().toISOString(),
-      texto: `ERP confirmou "${etapa}" em ${fmtL(dia)}. A etapa foi concluída e o desenvolvimento avançou para "${proxima}".${detalhe}`
-    });
-  }
-  if(!avancos.length) return [];
-  const c = comprasDe(p), inferido = statusComprasInferido(p);
-  c.sc.status = inferido.sc;
-  c.oc.status = avancos.some(a=>a.etapa === "Fornecedor") ? "Recebida" : inferido.oc;
+// Conclui "Fornecedor" com a data da entrada da NF e avanca para "Recebimento".
+function avancarPorEntradaNF(p){
+  const entrada = entradaNFCompleta(p);
+  if(!entrada) return false;
+  p.etapaAtual = ETAPAS.indexOf("Recebimento");
+  p.historico.push({etapa:"Recebimento", data:entrada, usuario:USUARIO_ENTRADA_NF});
+  comprasDe(p).oc.status = "Recebida";
+  if(!p.comentarios) p.comentarios = [];
+  p.comentarios.push({
+    usuario: USUARIO_ENTRADA_NF,
+    data: new Date().toISOString(),
+    texto: `Entrada da NF confirmada no ERP em ${fmtL(entrada.slice(0,10))}. A etapa "Fornecedor" foi concluída e o desenvolvimento avançou para "Recebimento".`
+  });
   salvarProjeto(p);
-  return avancos;
+  return true;
 }
 // Caminho automatico: continuacao do clique em "Atualizar", quando a resposta do conector chega.
 // Roda so para os desenvolvimentos que este navegador pediu, uma unica vez por pedido — nunca ao abrir a tela.
-function concluirEtapasComprasPorERP(){
+function concluirFornecedorPorEntradaNF(){
   if(!estado.aguardandoERP || !estado.aguardandoERP.size || !podeGravarFirestore()) return;
   [...estado.aguardandoERP].forEach(id=>{
     const p = estado.projetos.find(x=>x.id===id);
     if(!p){ estado.aguardandoERP.delete(id); return; }
     if(sincronizacaoSCPendente(comprasDe(p).integracao)) return;   // conector ainda nao respondeu
     estado.aguardandoERP.delete(id);
-    const avancos = avancarEtapasComprasPorERP(p);
-    if(avancos.length) notificarSistema(`${p.devId||p.codigo}: avançou para "${avancos[avancos.length-1].proxima}" pelo ERP.`);
+    if(!aguardaAvancoPorEntradaNF(p)) return;
+    if(avancarPorEntradaNF(p)) notificarSistema(`${p.devId||p.codigo}: NF recebida, avançou para "Recebimento".`);
   });
 }
-// Caminho manual: alcanca o que ficou para tras — etapa confirmada antes deste recurso existir, ou aba
+// Caminho manual: alcanca o que ficou para tras — NF que entrou antes deste recurso existir, ou aba
 // fechada antes da resposta do ERP chegar. Um clique aplica todos, sempre por acao humana.
-function aplicarAvancosERPPendentes(){
+function aplicarEntradaNFPendentes(){
   if(!podeGravarFirestore()) return;
-  const pendentes = projetosAvancoERPPendente();
+  const pendentes = projetosEntradaNFPendente();
   if(!pendentes.length) return;
-  const lista = pendentes.map(p=>`• ${p.devId||p.codigo}: ${ETAPAS[p.etapaAtual]} → ${destinoAvancoERP(p)}`).join("\n");
-  if(!confirm(`APLICAR CONFIRMAÇÕES DO ERP\n\n${pendentes.length} desenvolvimento(s) com etapa já confirmada no ERP:\n\n${lista}\n\nConcluir cada etapa com a data do ERP e avançar?`)) return;
-  const avancados = pendentes.filter(p=>avancarEtapasComprasPorERP(p).length).length;
-  notificarSistema(`${avancados} desenvolvimento(s) avançaram pelo ERP.`);
+  const lista = pendentes.map(p=>`• ${p.devId||p.codigo} — entrada em ${fmtL(entradaNFCompleta(p).slice(0,10))}`).join("\n");
+  if(!confirm(`AVANÇAR POR ENTRADA DE NF\n\n${pendentes.length} desenvolvimento(s) com entrada de NF confirmada no ERP:\n\n${lista}\n\nConcluir a etapa "Fornecedor" com a data da entrada e avançar para "Recebimento"?`)) return;
+  const avancados = pendentes.filter(avancarPorEntradaNF).length;
+  notificarSistema(`${avancados} desenvolvimento(s) avançaram para "Recebimento".`);
   renderTudo();
 }
 function dadosComprasProjeto(p){
@@ -5047,14 +4971,14 @@ function renderCompras(){
   if(estado.comprasFiltro==="erp-problema")itens=itens.filter(x=>x.scERP.problema||x.ocERP.problema);
   itens.sort((a,b)=>{const peso=x=>x.ocERP.problema?0:x.ocERP.precisaAcao?1:x.scERP.problema?2:x.scERP.aguardando?3:x.r.nivel==="vermelho"?4:x.r.nivel==="amarelo"?5:6;return peso(a)-peso(b)||(a.r.c.followUp.dataProximoFollowUp||"9999").localeCompare(b.r.c.followUp.dataProximoFollowUp||"9999")||b.r.diasEtapa-a.r.diasEtapa;});
   const card=(titulo,valor,cor,filtro,detalhe)=>`<button class="card p-4 text-left hover:shadow-md transition-shadow" onclick="estado.comprasFiltro='${filtro}';renderTudo()"><div class="text-[11px] uppercase font-semibold tracking-wide" style="color:var(--texto-2)">${titulo}</div><div class="text-2xl font-bold mt-1" style="color:${cor}">${valor}</div><div class="text-[10.5px] mt-1" style="color:var(--texto-2)">${detalhe}</div></button>`;
-  const pendentesERP=projetosAvancoERPPendente();
-  const avisoEntradaNF=pendentesERP.length?`
+  const pendentesNF=projetosEntradaNFPendente();
+  const avisoEntradaNF=pendentesNF.length?`
     <div class="card p-4 mb-4 no-print flex items-center flex-wrap gap-3" style="border-color:var(--verde);background:#E6F4EC">
       <div class="flex-1 min-w-[240px]">
-        <div class="font-bold text-[13px]" style="color:var(--verde)">${pendentesERP.length} desenvolvimento(s) com etapa confirmada pelo ERP</div>
-        <div class="text-[11.5px] mt-0.5" style="color:var(--texto-2)">${pendentesERP.map(p=>`${esc(p.devId||p.codigo)}: ${esc(ETAPAS[p.etapaAtual])} &rarr; ${esc(destinoAvancoERP(p))}`).join(" · ")}. Cada etapa recebe a data do próprio ERP.</div>
+        <div class="font-bold text-[13px]" style="color:var(--verde)">${pendentesNF.length} desenvolvimento(s) com entrada de NF confirmada</div>
+        <div class="text-[11.5px] mt-0.5" style="color:var(--texto-2)">Parados em "Fornecedor": ${pendentesNF.map(p=>esc(p.devId||p.codigo)).join(", ")}. A etapa recebe a data da entrada da NF.</div>
       </div>
-      <button class="btn btn-primario !py-2 flex-none" onclick="aplicarAvancosERPPendentes()">Aplicar confirmações</button>
+      <button class="btn btn-primario !py-2 flex-none" onclick="aplicarEntradaNFPendentes()">Avançar para Recebimento</button>
     </div>`:"";
   const filtros=[["abertos","Todos em aberto"],["oc-aprovacao","OC: aguardando aprova\u00e7\u00e3o"],["oc-envio","OC: aguardando envio"],["oc-entrega","OC: entrega / parcial"],["oc-atrasada","OC: atrasadas"],["oc-recebida","OC: recebidas"],["erp-pendente","SC: aguardando aprova\u00e7\u00e3o"],["erp-problema","ERP: verificar"],["follow","Follow-up necess\u00e1rio"],["sc","SC abertas"],["oc","OC abertas"],["todos","Todos, inclusive encerrados"]];
   view.innerHTML=`

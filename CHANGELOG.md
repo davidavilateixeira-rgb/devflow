@@ -1,3 +1,41 @@
+## [2.19.0] - 2026-09-08
+
+### Adicionado
+- Conclui automaticamente as etapas de compras que o ERP consegue confirmar sozinho, carimbando cada uma com a data do proprio ERP.
+- `Aprovacao SC`: concluida quando a SC volta aprovada ou convertida, com a data de aprovacao do ERP.
+- `Ordem de Compra`: concluida quando a OC e gerada, com a data de emissao, e o numero da OC passa a ser gravado no cadastro do desenvolvimento.
+- `Aprovacao OC`: concluida quando a OC e aprovada, com a data de aprovacao.
+- `Fornecedor`: mantida a conclusao pela entrada da NF, ja existente desde a v2.18.0.
+- Registra cada etapa concluida nos comentarios do desenvolvimento, com a data e o numero da OC quando houver.
+
+### Regras adotadas
+- So avanca quando TODAS as SCs e OCs do desenvolvimento estao no estado exigido. Uma pendente segura a etapa.
+- Quando o ERP esta adiantado, percorre as etapas em cascata, uma a uma, em vez de saltar para a ultima.
+- Nunca ultrapassa `Recebimento`, que continua sendo a confirmacao humana de que a ferramenta esta ok.
+- Vale apenas para o fluxo com fixacao, unico com etapas de compras.
+- O ERP nao tem a previsao de entrega do fornecedor: ao concluir `Aprovacao OC`, o sistema adota 7 dias uteis a partir da data de aprovacao da OC. A contagem ignora sabados e domingos; nao ha tabela de feriados.
+
+### Alterado
+- A faixa do Follow-up de Compras deixa de tratar apenas a entrada de NF e passa a listar qualquer etapa ja confirmada pelo ERP, mostrando a etapa atual e o destino de cada desenvolvimento.
+- `scripts/test_entrada_nf.mjs` renomeado para `scripts/test_avanco_erp.mjs`, agora cobrindo as quatro etapas.
+
+### Seguranca e dados
+- Os dois gatilhos da v2.18.1 sao mantidos: o automatico como continuacao do clique em "Atualizar" e o manual pela faixa, que pede confirmacao listando origem e destino.
+- Carregar o app continua sem gravar no banco.
+- Respeita a permissao de gerenciar a Usinagem e o modo somente consulta do Firestore.
+
+### Validacao
+- 13 cenarios no teste de regressao: SC aprovada, SC pendente, SC parcial entre varias, OC gerada com gravacao do numero, OC aprovada com o prazo de 7 dias uteis, OC nao aprovada, cascata completa com data propria por etapa, limite em `Recebimento`, fluxo simples, caminho automatico antes e depois da resposta do conector, caminho manual com cancelamento e aplicacao em lote, contagem de dias uteis e entrada de NF parcial.
+- Contagem de dias uteis conferida contra o calendario: 10/09/2026 e quinta-feira e 7 dias uteis caem na segunda 21/09/2026.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.19.0` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- Teste de regressao do relatorio FO050 aprovado.
+- Tela de login renderizada no servidor local sem erros de codigo.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.18.1.html`.
+- SHA-256: `AD87774CE32A045210C390E2120F81E27334A2E4C65ECA74F6AE68B997A3B6C0`.
+
 ## [2.18.1] - 2026-09-04
 
 ### Adicionado

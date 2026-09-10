@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.20.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.19.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.20.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.19.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.20.0";
+const VERSAO_ATUAL = "2.19.1";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -4193,7 +4193,7 @@ function htmlRelatorioFO050(p, isMontagem){
       <td>${ausente(numOP)}</td>
     </tr>`;
   }).join("") : `<tr><td colspan="${colspanProcessos}" class="vazio">Nenhum processo FO050 registrado.</td></tr>`;
-  const areasAprovacao = ["QUALIDADE","PRESET","ENGª PRODUTO","ENGº PROCESSO"];
+  const areasAprovacao = ["QUALIDADE","PRODUÇÃO","PRESET","ENGª PRODUTO","ENGº PROCESSO (1)"];
   const linhasAprovacao = areasAprovacao.map(area=>`<tr>
     <td><b>${area}</b></td>
     <td><span class="caixa"></span> Aprovado&nbsp;&nbsp; <span class="caixa"></span> Reprovado</td>

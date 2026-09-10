@@ -1,3 +1,21 @@
+## [2.20.0] - 2026-09-10
+
+### Alterado
+- Remove a area PRODUCAO da tabela de aprovacao do relatorio FO050, nos modulos Usinagem e Montagem.
+- Renomeia a area `ENGº PROCESSO (1)` para `ENGº PROCESSO`, sem o indice.
+- A tabela passa a ter quatro assinaturas: Qualidade, Preset, Engenharia de Produto e Engenharia de Processo.
+
+### Validacao
+- Previa do relatorio de Usinagem renderizada e conferida: quatro areas na tabela, sem Producao e sem o indice no rotulo.
+- Teste de regressao do relatorio FO050 atualizado, passando a exigir a ausencia de PRODUCAO e do rotulo antigo.
+- Sintaxe JavaScript validada sem erros.
+- Versao `2.20.0` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+- 13 cenarios do teste de avanco pelo ERP aprovados.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.19.1.html`.
+- SHA-256: `4E06A5EDDE39F4DC7FDF6CEE9465E6A8372E1B65B62F303A7152D2C754B52073`.
+
 ## [2.19.1] - 2026-09-08
 
 ### Corrigido

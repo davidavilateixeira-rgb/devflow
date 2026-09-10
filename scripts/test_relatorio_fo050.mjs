@@ -94,10 +94,11 @@ for (const [modulo, relatorio] of [["Usinagem", relatorioUsinagem], ["Montagem",
   assert.match(relatorio, new RegExp("FO050 · " + modulo));
   assert.match(relatorio, /Imprimir \/ Salvar em PDF/);
   assert.match(relatorio, /QUALIDADE/);
-  assert.match(relatorio, /PRODUÇÃO/);
   assert.match(relatorio, /PRESET/);
   assert.match(relatorio, /ENGª PRODUTO/);
-  assert.match(relatorio, /ENGº PROCESSO \(1\)/);
+  assert.match(relatorio, /ENGº PROCESSO</, "o cabeçalho da área não leva mais o \"(1)\"");
+  assert.doesNotMatch(relatorio, /PRODUÇÃO/, "Produção deixou de assinar a FO050");
+  assert.doesNotMatch(relatorio, /ENGº PROCESSO \(1\)/);
   assert.doesNotMatch(relatorio, />undefined</);
 }
 

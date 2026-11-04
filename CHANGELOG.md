@@ -1,3 +1,22 @@
+## [2.21.1] - 2026-11-04
+
+### Corrigido
+- A serie "concluidos" do grafico de producao mensal por tecnico vinha sempre vazia, nos dois modulos. Ela contava registros de historico com a etapa `Concluído`, mas `normalizarProjeto` descarta do historico toda etapa fora do fluxo e `Concluído` nao esta em `ETAPAS` nem em `MONT_ETAPAS`, entao o evento nunca sobrevivia a carga. Como o modo padrao do grafico e "movimentados", a falha passava despercebida.
+
+### Alterado
+- A contagem de concluidos passa a usar a data real de conclusao do projeto (`dataReal` na Usinagem, `montagem.dataReal` na Montagem), creditada a quem registrou a ultima etapa do historico. Projetos em andamento continuam fora da serie.
+- Predicado `eventoDeTecnico` extraido para um ponto so, usado tanto pelos movimentados quanto pelos concluidos: descarta eventos sem data, sem usuario, de origem `migracao` e os gravados por `Sistema`.
+
+### Validacao
+- Teste funcional no preview chamando `renderDashboard` com quatro projetos sinteticos: a serie passa a marcar Set/26 com Leonardo 1 e Giovane 1 e Out/26 com Leonardo 1; o projeto parado na `Criar Desenho de Conjunto no ERP` nao e contado. Modo "movimentados" conferido no mesmo cenario, sem alteracao.
+- Simulacao sobre os 98 documentos reais: Usinagem passa a exibir 50 conclusoes distribuidas de abril a novembro e Montagem 39, de agosto a novembro. Antes as duas series eram zero.
+- `node --check` do bloco de script aprovado; 13 cenarios do teste de avanco pelo ERP e o teste do relatorio FO050 aprovados.
+- Versao `2.21.1` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.21.0.html`.
+- SHA-256: `3BE61D4BFBBF514757CA3902B9FA5B7171101E19DA009A8EA1D48D83AB002842`.
+
 ## [2.21.0] - 2026-11-04
 
 ### Corrigido

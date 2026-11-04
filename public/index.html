@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.20.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.21.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.20.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.21.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.20.0";
+const VERSAO_ATUAL = "2.21.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -589,6 +589,11 @@ function normalizarProjeto(p){
   const ultMont = p.montagem.historico[p.montagem.historico.length-1];
   if(ultMont){ const idx = flxMont.indexOf(ultMont.etapa); if(idx>=0) p.montagem.etapaAtual = idx; }
   if(p.montagem.etapaAtual > flxMont.length-1) p.montagem.etapaAtual = flxMont.length-1;
+  // Completa a data real de quem ja chegou na Liberacao sem data gravada (ver concluidoMontagem).
+  // Vale apenas em memoria, como as demais normalizacoes: so vai ao banco no proximo salvamento.
+  if(!p.montagem.dataReal && p.montagem.etapaAtual === flxMont.length-1 && ultMont && ultMont.data){
+    p.montagem.dataReal = String(ultMont.data).slice(0,10);
+  }
 
   if(migracaoERPPendente){
     p.migracoes = Object.assign({}, p.migracoes, {[MARCADOR_MIGRACAO_CADASTRO_ERP]:true});
@@ -2094,7 +2099,13 @@ function statusDeMontagem(p){
   return "Em Andamento";
 }
 
-function concluidoMontagem(p) { return p.montagem.etapaAtual === (p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES).length - 1; }
+function concluidoMontagem(p) {
+  // Simetrico ao concluido() da Usinagem: chegar na Liberacao nao conclui, e preciso ter data real.
+  // Antes bastava estar na ultima etapa, o que travava o guard de concluirEtapaMontagem e deixava
+  // o ramo final (o unico que grava montagem.dataReal) inalcancavel.
+  const f = p.montagem.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES;
+  return p.montagem.etapaAtual >= f.length || (p.montagem.etapaAtual === f.length-1 && !!p.montagem.dataReal);
+}
 const isConcluidoGlobal = (p, isM) => isM ? concluidoMontagem(p) : concluido(p);
 const etapaNomeMontagem = (p) => {
   if (concluidoMontagem(p)) return "Concluído";

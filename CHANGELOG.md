@@ -1,3 +1,26 @@
+## [2.21.0] - 2026-11-04
+
+### Corrigido
+- `montagem.dataReal` nunca era gravado: `concluidoMontagem` considerava concluido quem apenas chegava na etapa `Liberacao`, o que fazia o guard de `concluirEtapaMontagem` retornar antes do unico ramo que grava a data. Os 39 desenvolvimentos ja liberados na Montagem estavam sem data de conclusao.
+- Como consequencia, `leadTimeMontagem` caia no fallback `HOJE` e o lead time dos concluidos crescia um dia por dia, contaminando a mediana e o grafico de evolucao historica; `diasAtrasoMontagem` nunca entrava no ramo de desvio real, deixando a Montagem sem medicao de no prazo x atrasado do que ja foi entregue.
+
+### Alterado
+- `concluidoMontagem` passa a ser simetrico ao `concluido` da Usinagem: exige `etapaAtual` na ultima posicao **e** `montagem.dataReal` preenchido. Com isso a etapa `Liberacao` volta a ser concluivel e o ramo final grava a data, igual ao fluxo de Usinagem.
+- `normalizarProjeto` completa em memoria o `montagem.dataReal` de quem ja esta na `Liberacao` sem data, usando a data do ultimo registro do historico. Segue a regra da casa: normalizacao nao grava no banco, so vai ao Firestore no proximo salvamento do projeto.
+
+### Validacao
+- Simulacao sobre os 98 documentos reais da colecao `projetos`: os 39 com a Montagem na `Liberacao` recebem data, nenhum reabre por falta de data e nenhum item de Pistao e afetado.
+- Teste funcional no preview local chamando as funcoes da propria pagina: item na `Liberacao` sem data recebe `2026-08-16` e fica concluido com lead time fixo em 187 dias (antes 267 e subindo); item parado na `Validacao/FO050` segue em aberto e sem data; item que ja tinha data nao e sobrescrito.
+- `node --check` do bloco de script aprovado; 13 cenarios do teste de avanco pelo ERP e o teste do relatorio FO050 aprovados.
+- Versao `2.21.0` consistente entre interface, `VERSAO_ATUAL` e `public/version.json`.
+
+### Nao alterado
+- A exclusao dos itens de Pistao do modulo de Montagem ja existia e foi conferida: `isPistao` e aplicado em `projetosVisiveis`, no Kanban, na Lista, no Status Report, no Dashboard, no Gerencial e na pagina do projeto. Nenhuma mudanca foi necessaria.
+
+### Backup
+- Backup exato anterior: `backups/index_v2.20.0.html`.
+- SHA-256: `70F3184738D256F06EA74929DF92F3ECF201157B56FB6A452ABD3AD890A57270`.
+
 ## [2.20.0] - 2026-09-10
 
 ### Alterado

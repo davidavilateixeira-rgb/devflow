@@ -1,3 +1,18 @@
+## [2.22.0] - 2026-11-10
+
+### Alterado
+- Para a Montagem, o item passa a contar como "Usinado" assim que a Usinagem conclui a etapa `Validacao/FO050`, sem esperar `Revisar/Atualizar cadastro no ERP`, `Aprovar cadastro no sistema ERP` e `Liberacao`. Essas tres etapas finais sao documentacao e nao precisam mais segurar a Montagem, que antes so era liberada quando a Usinagem ficava integralmente concluida.
+- Novo predicado `usinadoParaMontagem(p)`, que substitui `concluido(p)` nos quatro pontos em que a Montagem consulta a Usinagem: o badge "Usinado" no card, os filtros "Somente Usinados" e "Aguardando Usinagem", o status `Aguardando Usinagem` em `statusDeMontagem` e a ordenacao do Kanban da Montagem. O predicado continua retornando verdadeiro para projetos ja concluidos.
+- Nova constante `ETAPA_FO050`, usada para localizar a etapa nos dois fluxos de Usinagem (`ETAPAS` e `ETAPAS_SIMPLES`).
+
+### Validacao
+- `node --check` sobre o bloco de script do `index.html`: sem erro de sintaxe.
+- Simulacao do novo predicado sobre os 98 documentos reais do Firestore: 4 projetos passam a contar como usinados de imediato (P335804/DEV-091, P335860/DEV-090 e P335861/DEV-090, parados em `Aprovar cadastro no sistema ERP`, e P109030/DEV-079, em `Revisar/Atualizar cadastro no ERP`). Nenhum projeto deixa de contar como usinado.
+- Conferido que a regra nao altera a Usinagem: `concluido()` permanece inalterado e segue exigindo a `Liberacao` concluida com data real.
+
+### Backup
+- `backups/index_v2.21.1.html` (SHA-256 `D9107217088B8F954E62538464A357636B85D097F68B8AF6F6C36102D8CA8BB6`)
+
 ## [2.21.1] - 2026-11-04
 
 ### Corrigido

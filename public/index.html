@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.21.1</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.22.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.21.1</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.22.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.21.1";
+const VERSAO_ATUAL = "2.22.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -1004,6 +1004,16 @@ const concluido = p => {
   return p.etapaAtual >= f.length || (p.etapaAtual === f.length-1 && !!p.dataReal);
 };
 
+// Para a Montagem o item ja conta como "Usinado" assim que a Usinagem conclui a Validacao/FO050.
+// As etapas seguintes (cadastro no ERP e Liberacao) sao documentacao e nao precisam mais segurar
+// a Montagem. Usar concluido() aqui atrasava a Montagem em tres etapas.
+const ETAPA_FO050 = "Validação/FO050";
+const usinadoParaMontagem = p => {
+  if(concluido(p)) return true;
+  const i = fluxoDe(p).indexOf(ETAPA_FO050);
+  return i >= 0 && p.etapaAtual > i;
+};
+
 const dataInicioMontagem = p => {
   if (p.montagem && p.montagem.dataInicio) return p.montagem.dataInicio;
   if (p.montagem && p.montagem.historico && p.montagem.historico.length > 0 && p.montagem.historico[0].data) {
@@ -1126,8 +1136,8 @@ function projetosVisiveis(){
         if(f==="Atrasados" && diasAtraso(p)>0 && !concluido(p)) return true;
         
         if (estado.moduloAtual === "montagem") {
-          if(f==="Somente Usinados" && concluido(p)) return true;
-          if(f==="Aguardando Usinagem" && !concluido(p)) return true;
+          if(f==="Somente Usinados" && usinadoParaMontagem(p)) return true;
+          if(f==="Aguardando Usinagem" && !usinadoParaMontagem(p)) return true;
         } else {
           if(f==="Compras" && ETAPAS_COMPRAS.includes(etapaNome(p))) return true;
           if(f==="Fornecedor" && etapaNome(p)==="Fornecedor") return true;
@@ -1328,7 +1338,7 @@ function cardProjeto(p){
       ${p.familia?`<span class="badge b-laranja">${esc(p.familia)}</span>`:""}
       ${nomesComponentes(p).map(l=>`<span class="badge b-azul">${l}</span>`).join("")}
       ${p.prioridade==="Alta"?'<span class="badge b-vermelho">Urgente</span>':""}
-      ${isM && concluido(p) ? '<span class="badge b-verde text-[9px] !px-1.5 leading-none" title="Usinagem concluída"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="inline mr-0.5 mb-0.5"><path d="M20 6L9 17l-5-5"/></svg>Usinado</span>' : ""}
+      ${isM && usinadoParaMontagem(p) ? '<span class="badge b-verde text-[9px] !px-1.5 leading-none" title="Usinagem liberada para a Montagem (FO050 concluída)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="inline mr-0.5 mb-0.5"><path d="M20 6L9 17l-5-5"/></svg>Usinado</span>' : ""}
     </div>
     <div class="flex items-center justify-between text-[11px]" style="color:var(--texto-2)">
       ${resp
@@ -1664,9 +1674,9 @@ function renderKanban(){
   
   ps.sort((a,b) => {
     if (isM) {
-      const concA = concluido(a) ? 1 : 0;
-      const concB = concluido(b) ? 1 : 0;
-      if (concA !== concB) return concB - concA; // Usinagem concluída vem primeiro
+      const concA = usinadoParaMontagem(a) ? 1 : 0;
+      const concB = usinadoParaMontagem(b) ? 1 : 0;
+      if (concA !== concB) return concB - concA; // Usinagem já liberada vem primeiro
     }
     const dPa = a.dataPrevista || "9999-99-99";
     const dPb = b.dataPrevista || "9999-99-99";
@@ -2100,7 +2110,7 @@ function renderLista(){
    ============================================================ */
 function statusDeMontagem(p){
   if(concluidoMontagem(p)) return "Concluído";
-  if(!concluido(p)) return "Aguardando Usinagem"; // Etapa zero (Usinagem precisa estar concluída)
+  if(!usinadoParaMontagem(p)) return "Aguardando Usinagem"; // Etapa zero (a Usinagem precisa ter concluído a FO050)
   const m = p.montagem;
   const et = (m.necessitaComplexo ? MONT_ETAPAS : MONT_ETAPAS_SIMPLES)[m.etapaAtual];
   if(["Projeto de Ferramentas","Criar Desenho de Conjunto no ERP","Solicitação de Fabricação","Fabricação"].includes(et)) return "Aguardando Ferramentas";
@@ -2340,7 +2350,7 @@ function renderProjeto(){
         // --- MONTAGEM CHECKLIST ---
         : flx.map((et,i)=>{
           const feita = i < obj.etapaAtual || (concluidoMontagem(p) && i === obj.etapaAtual);
-          const usiEmAndamento = !concluido(p);
+          const usiEmAndamento = !usinadoParaMontagem(p);
           const atual = i === obj.etapaAtual && !concluidoMontagem(p);
           const podeMarcar = atual && gerencia;
           const h = obj.historico[i+1] || (concluidoMontagem(p) && i===obj.etapaAtual ? obj.historico[i] : null);

@@ -1,3 +1,25 @@
+## [2.23.0] - 2026-11-11
+
+### Alterado
+- A previsao de chegada que o fluxo automatico adota ao concluir a `Aprovacao OC` passa a ser de **20 dias corridos** de fabricacao contados da aprovacao da OC no ERP, no lugar dos 7 dias uteis anteriores. `somarDiasUteis` foi substituida por `somarDiasCorridos` e `DIAS_UTEIS_PRAZO_FORNECEDOR` por `DIAS_FABRICACAO_FORNECEDOR = 20`.
+- O ERP nao sobrescreve mais a previsao ja preenchida. Antes a atribuicao era incondicional e o estimado substituia a data real que o comprador tinha digitado, contrariando o aviso da propria tela ("esta data e manual e nao e substituida pelo ERP"). Agora a estimativa so entra quando `prazoFornecedor` esta vazio; havendo data, o comentario do avanco registra que a previsao foi mantida.
+- Novo campo `prazoFornecedorEstimado` no projeto, que separa a estimativa do sistema da data real: `true` so quando o ERP adotou os 20 dias. Todo preenchimento manual (conclusao da `Aprovacao OC`, prazo da etapa `Fornecedor` no Kanban, edicao rapida na tela de Compras, follow-up e cadastro) grava `false` pela nova `definirPrazoFornecedorManual`, e o retrocesso de etapa limpa o campo junto com a data.
+- As telas passam a dizer de onde vem a data, com os helpers `prazoFornecedorEstimado`, `textoOrigemPrazoFornecedor` e `badgeOrigemPrazoFornecedor`: badge `Estimada` (amarelo) ou `Confirmada` (verde) no painel de Compras do projeto, na tabela de dados, nas duas tabelas de Compras, no follow-up e no cadastro. O painel do projeto explica que a data real so vale depois do preenchimento manual, e a pendencia de prazo vencido pede a confirmacao do prazo real quando a data e estimada.
+
+### Migracao
+- Projetos anteriores a esta versao nao gravavam a origem da previsao. `normalizarProjeto` infere a origem pelos comentarios: quando o ultimo registro sobre a previsao e o do ERP (`Prazo do fornecedor adotado`), a data em uso e marcada como estimada; se depois houve edicao manual (`Atualizou a previsao de chegada`), permanece confirmada. Sem registro algum, fica confirmada.
+
+### Validacao
+- `node --check` sobre o bloco de script do `index.html`: sem erro de sintaxe.
+- `scripts/test_avanco_erp.mjs` ampliado para 14 cenarios, todos aprovados: o cenario 5 passou a exigir 30/09/2026 (20 corridos sobre a aprovacao de 10/09), `prazoFornecedorEstimado === true` e o aviso "ESTIMADA" no comentario; o novo cenario 5B confirma que uma previsao manual de 15/10/2026 sobrevive ao avanco pelo ERP, sem virar estimada e com o comentario dizendo "mantida"; o cenario 12 cobre `somarDiasCorridos` (fim de semana, virada de ano e data invalida).
+- `scripts/test_relatorio_fo050.mjs` aprovado, sem alteracao.
+- Os tres helpers de rotulo avaliados em Node nos tres estados (sem data, estimada e confirmada), devolvendo o texto e o badge esperados.
+- Logica de migracao avaliada em Node nos seis estados possiveis (legado do ERP, legado do ERP com edicao posterior, legado sem registro, sem data, e os dois casos com o campo ja gravado).
+- Versao `2.23.0` consistente entre `VERSAO_ATUAL` e `public/version.json`.
+
+### Backup
+- `backups/index_v2.22.0.html` (SHA-256 `DB51BE90463E04A89D8877DA3B31157E8097EC07B54EC44D7BF843724F4E7FC3`)
+
 ## [2.22.0] - 2026-11-10
 
 ### Alterado

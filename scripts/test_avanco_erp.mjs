@@ -37,9 +37,9 @@ const factory = new Function(
   "podeGravarFirestore", "podeGerenciarUsinagem", "sincronizacaoSCPendente", "statusComprasInferido",
   "sincronizarPrazoFornecedor", "salvarProjeto", "notificarSistema", "fmtL", "confirm", "renderTudo",
   indexHtml.slice(inicio, fim)
-    + "\nreturn { entradaNFCompleta, somarDiasUteis, sinalERPDaEtapa, destinoAvancoERP,"
+    + "\nreturn { entradaNFCompleta, somarDiasCorridos, sinalERPDaEtapa, destinoAvancoERP,"
     + " avancarEtapasComprasPorERP, concluirEtapasComprasPorERP, projetosAvancoERPPendente,"
-    + " aplicarAvancosERPPendentes, DIAS_UTEIS_PRAZO_FORNECEDOR };"
+    + " aplicarAvancosERPPendentes, DIAS_FABRICACAO_FORNECEDOR };"
 );
 const api = factory(
   ETAPAS,
@@ -68,9 +68,9 @@ const api = factory(
   () => confirmarResposta,
   () => {}
 );
-const { entradaNFCompleta, somarDiasUteis, destinoAvancoERP, avancarEtapasComprasPorERP,
+const { entradaNFCompleta, somarDiasCorridos, destinoAvancoERP, avancarEtapasComprasPorERP,
   concluirEtapasComprasPorERP, projetosAvancoERPPendente, aplicarAvancosERPPendentes,
-  DIAS_UTEIS_PRAZO_FORNECEDOR } = api;
+  DIAS_FABRICACAO_FORNECEDOR } = api;
 
 const projeto = (id, etapa, integracao = {}) => ({
   id, devId: id, codigo: id,
@@ -126,18 +126,35 @@ assert.equal(p.compras.oc.numero, "1291033");
 assert.equal(p.compras.oc.dataEmissao, "2026-09-09");
 assert.equal(p.historico.at(-1).data, "2026-09-09T08:15:00");
 
-// 5. OC aprovada conclui "Aprovação OC" e adota 7 dias úteis como prazo do fornecedor.
-// Aprovada numa quinta (10/09/2026): 7 dias úteis caem na segunda 21/09.
+// 5. OC aprovada conclui "Aprovação OC" e estima 20 dias corridos de fabricação.
+// Aprovada em 10/09/2026: a estimativa cai em 30/09/2026, marcada como estimada.
 p = projeto("DEV-E", "Aprovação OC", {
   ocERP: [oc({ statusCodigo: "AGUARDANDO_ENVIO", dataAprovacao: "2026-09-10T16:00:00" })]
 });
 avancos = avancarEtapasComprasPorERP(p);
 assert.equal(ETAPAS[p.etapaAtual], "Fornecedor");
 assert.equal(p.compras.oc.dataAprovacao, "2026-09-10");
-assert.equal(p.prazoFornecedor, "2026-09-21", "7 dias úteis a partir da aprovação da OC");
-assert.equal(p.compras.oc.prazoEntrega, "2026-09-21");
-assert.equal(p.prazosEtapas["Fornecedor"], "2026-09-21",
+assert.equal(p.prazoFornecedor, "2026-09-30", "20 dias corridos a partir da aprovação da OC");
+assert.equal(p.compras.oc.prazoEntrega, "2026-09-30");
+assert.equal(p.prazoFornecedorEstimado, true, "a data adotada pelo ERP é estimada");
+assert.equal(p.prazosEtapas["Fornecedor"], "2026-09-30",
   "o prazo da etapa deve acompanhar a previsão do fornecedor");
+assert.ok(p.comentarios.at(-1).texto.includes("ESTIMADA"),
+  "o registro deve avisar que a data é estimada");
+
+// 5B. Previsão já informada a mão é a data real: o ERP não a substitui nem a marca como estimada.
+p = projeto("DEV-E2", "Aprovação OC", {
+  ocERP: [oc({ statusCodigo: "AGUARDANDO_ENVIO", dataAprovacao: "2026-09-10T16:00:00" })]
+});
+p.prazoFornecedor = "2026-10-15";
+p.compras.oc.prazoEntrega = "2026-10-15";
+avancarEtapasComprasPorERP(p);
+assert.equal(ETAPAS[p.etapaAtual], "Fornecedor");
+assert.equal(p.prazoFornecedor, "2026-10-15", "a data informada pelo fornecedor deve ser mantida");
+assert.equal(p.compras.oc.prazoEntrega, "2026-10-15");
+assert.ok(!p.prazoFornecedorEstimado, "data manual não pode virar estimada");
+assert.ok(p.comentarios.at(-1).texto.includes("mantida"),
+  "o registro deve dizer que a previsão foi mantida");
 
 // 6. OC ainda não aprovada não avança.
 p = projeto("DEV-F", "Aprovação OC", { ocERP: [oc({ statusCodigo: "AGUARDANDO_APROVACAO" })] });
@@ -201,14 +218,16 @@ assert.deepEqual(salvos, ["DEV-J", "DEV-L"]);
 assert.deepEqual(projetosAvancoERPPendente(), [], "a fila deveria esvaziar");
 assert.equal(ETAPAS[estado.projetos[1].etapaAtual], "Aprovação SC", "quem não tem sinal não move");
 
-// 12. Dias úteis pulam fim de semana.
-assert.equal(somarDiasUteis("2026-09-10", 7), "2026-09-21");
-assert.equal(somarDiasUteis("2026-09-11", 1), "2026-09-14", "sexta + 1 útil = segunda");
-assert.equal(DIAS_UTEIS_PRAZO_FORNECEDOR, 7);
+// 12. Dias corridos somam o calendário cheio, inclusive fim de semana.
+assert.equal(somarDiasCorridos("2026-09-10", 20), "2026-09-30");
+assert.equal(somarDiasCorridos("2026-09-11", 1), "2026-09-12", "sexta + 1 corrido = sábado");
+assert.equal(somarDiasCorridos("2026-12-20", 20), "2027-01-09", "deve virar o ano");
+assert.equal(somarDiasCorridos("", 20), "", "data inválida devolve vazio");
+assert.equal(DIAS_FABRICACAO_FORNECEDOR, 20);
 
 // 13. entradaNFCompleta continua exigindo entrada em todas as OCs.
 assert.equal(entradaNFCompleta({ compras: { integracao: { ocERP: [] } } }), "");
 assert.equal(entradaNFCompleta({ compras: { integracao: { ocERP: [
   { recebidaEm: "2026-09-14T09:00:00" }, { recebidaEm: "" }] } } }), "");
 
-console.log("Avanço das etapas de compras pelo ERP validado (13 cenários).");
+console.log("Avanço das etapas de compras pelo ERP validado (14 cenários).");

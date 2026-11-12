@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.23.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.24.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.23.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.24.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.23.0";
+const VERSAO_ATUAL = "2.24.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -696,6 +696,7 @@ let estado = { usuario:null, busca:"", filtrosChip:["Todos"], projetos:[], usuar
   movFiltroData:"", movFiltroUsuario:"", movFiltroEtapa:"",
   comprasBusca:"", comprasFiltro:"abertos", comprasResponsavel:"", comprasFornecedor:"",
   moduloAtual: "usinagem",
+  anoGer: "",   // ano selecionado nos indicadores de portfolio do Dashboard Gerencial
   // Desenvolvimentos que ESTE navegador mandou atualizar no ERP e cuja resposta ainda nao chegou.
   aguardandoERP: new Set() };
 let unsubProjetos = null, unsubUsuarios = null, unsubEstoque = [], chaveEstoqueAssinado = "", estoquePorLote = new Map(), avisoDesativado = false;
@@ -1301,7 +1302,7 @@ function irPara(v, id){
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.toggle("ativo", n.dataset.view===v));
   ["dashboard","kanban","lista","status-report","gerencial","compras","usuarios","movimentacoes","projeto"].forEach(x=>
     document.getElementById("view-"+x).classList.toggle("hidden", x!==v));
-  document.getElementById("chips").style.display = (v==="projeto"||v==="gerencial"||v==="compras"||v==="usuarios"||v==="movimentacoes"||v==="status-report") ? "none":"flex";
+  document.getElementById("chips").style.display = (v==="projeto"||v==="compras"||v==="usuarios"||v==="movimentacoes"||v==="status-report") ? "none":"flex";
   renderTudo();
 }
 function grafico(id, cfg){                       // recria Chart.js sem vazamento
@@ -2568,6 +2569,60 @@ function renderProjeto(){
 /* ============================================================
    14. VIEW — DASHBOARD GERENCIAL
    ============================================================ */
+/* ---- Indicadores de portfolio: tipo, familia e meses com atuacao de engenharia ---- */
+// Etapas em que o desenvolvimento esta parado esperando terceiros (Fornecedor/Fabricacao) ou
+// ainda na fila sem ninguem ter pegado (Recebido): nao contam como mes de atuacao da engenharia.
+const ETAPAS_SEM_ATUACAO = new Set(["Recebido","Fornecedor","Fabrica\u00e7\u00e3o"]);
+const TIPO_COR = {"Novo":"#0F5FA8","Altera\u00e7\u00e3o":"#EA5B0C","Melhoria":"#107C41","Internaliza\u00e7\u00e3o":"#7C5CBF","BGI":"#F59E0B","N\u00e3o informado":"#9CA3AF"};
+const MES_ABREV = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const tipoDe = p => ((p && p.tipo) || "").trim() || "N\u00e3o informado";
+const ordemTipo = t => { const i = TIPOS.indexOf(t); return i < 0 ? 99 : i; };
+// O campo familia e de texto livre: agrupa normalizando caixa e espacos, sem alterar o dado gravado.
+const familiaDe = p => ((p && p.familia) || "").trim().replace(/\s+/g," ").toUpperCase() || "Sem fam\u00edlia";
+const mesChave = v => {
+  if(!v) return "";
+  if(typeof v === "string") return v.slice(0,7);
+  const dt = (v instanceof Date) ? v : new Date(v);
+  return isNaN(dt) ? "" : dt.toISOString().slice(0,7);
+};
+// Acumula no conjunto todas as chaves YYYY-MM entre os dois meses (inclusive).
+function acumularMeses(destino, mIni, mFim){
+  if(!mIni) return;
+  if(!mFim || mFim < mIni) mFim = mIni;
+  let [a, m] = mIni.split("-").map(Number);
+  const [aF, mF] = mFim.split("-").map(Number);
+  if(!a || !m || !aF || !mF) return;
+  let guarda = 0;
+  while((a < aF || (a === aF && m <= mF)) && guarda++ < 600){
+    destino.add(a + "-" + String(m).padStart(2,"0"));
+    if(++m > 12){ m = 1; a++; }
+  }
+}
+// Meses em que a engenharia efetivamente atuou no desenvolvimento. Cada registro do historico marca
+// a CHEGADA na etapa, entao o periodo da etapa vai dali ate a chegada da etapa seguinte (ou ate hoje,
+// se o desenvolvimento ainda esta nela). As etapas de espera sao descartadas.
+function mesesAtuacao(p, isM){
+  const meses = new Set();
+  if(!p) return meses;
+  const bruto = (isM ? (p.montagem && p.montagem.historico) : p.historico) || [];
+  const evts = bruto.filter(h => h && h.data && h.etapa).slice()
+                    .sort((x,y) => String(x.data).localeCompare(String(y.data)));
+  if(!evts.length){
+    const ini = mesChave(isM ? dataInicioMontagem(p) : p.dataInicio);
+    if(ini) meses.add(ini);
+    return meses;
+  }
+  const encerrado = isM ? concluidoMontagem(p) : concluido(p);
+  const mesHoje = mesChave(HOJE);
+  for(let i = 0; i < evts.length; i++){
+    if(ETAPAS_SEM_ATUACAO.has(evts[i].etapa)) continue;
+    const mIni = mesChave(evts[i].data);
+    const mFim = (i + 1 < evts.length) ? mesChave(evts[i+1].data) : (encerrado ? mIni : mesHoje);
+    acumularMeses(meses, mIni, mFim);
+  }
+  return meses;
+}
+
 function renderGerencial(){
   let psRaw = filtroMes(projetosVisiveis());
   const isM = estado.moduloAtual === "montagem";
@@ -2648,6 +2703,45 @@ function renderGerencial(){
   const cliOrd = Object.keys(porCliente).sort((a,b)=>porCliente[b]-porCliente[a]);
   const cliData = cliOrd.map(c=>porCliente[c]);
 
+  // ---- Indicadores de portfolio: quantos desenvolvimentos, de que tipo e de que familia ----
+  const atuacao = ps.map(p => ({p, meses: mesesAtuacao(p, isM)}));
+  const anoCorrente = String(HOJE.getFullYear());
+  const anosDisp = [...new Set(atuacao.flatMap(x => [...x.meses].map(m => m.slice(0,4))).filter(Boolean))].sort().reverse();
+  if(!anosDisp.includes(anoCorrente)) anosDisp.unshift(anoCorrente);
+  let anoSel = estado.anoGer || anoCorrente;
+  if(anoSel !== "todos" && !anosDisp.includes(anoSel)) anoSel = anosDisp[0] || anoCorrente;
+
+  const mesesEixo = anoSel === "todos"
+    ? [...new Set(atuacao.flatMap(x => [...x.meses]))].sort()
+    : Array.from({length:12}, (_,i) => anoSel + "-" + String(i+1).padStart(2,"0"));
+  const rotuloMes = m => MES_ABREV[Number(m.slice(5,7))-1] + (anoSel === "todos" ? "/" + m.slice(2,4) : "");
+
+  const tiposPresentes = [...new Set(atuacao.map(x => tipoDe(x.p)))].sort((a,b) => ordemTipo(a) - ordemTipo(b) || a.localeCompare(b));
+  const dsMensal = tiposPresentes.map(t => ({
+    label: t,
+    data: mesesEixo.map(m => atuacao.filter(x => tipoDe(x.p) === t && x.meses.has(m)).length),
+    backgroundColor: TIPO_COR[t] || "#9CA3AF", borderRadius: 3, maxBarThickness: 34
+  }));
+
+  // No ano: conta cada desenvolvimento UMA vez, mesmo que tenha atuacao em varios meses.
+  const noAno = atuacao.filter(x => anoSel === "todos" ? x.meses.size > 0 : [...x.meses].some(m => m.slice(0,4) === anoSel));
+  const totalAno = noAno.length;
+  const tiposAno = tiposPresentes.filter(t => noAno.some(x => tipoDe(x.p) === t));
+  const dadosTipoAno = tiposAno.map(t => noAno.filter(x => tipoDe(x.p) === t).length);
+
+  const famMapa = {};
+  noAno.forEach(x => {
+    const f = familiaDe(x.p), t = tipoDe(x.p);
+    (famMapa[f] = famMapa[f] || {})[t] = (famMapa[f][t] || 0) + 1;
+  });
+  const totalFam = f => Object.values(famMapa[f]).reduce((a,b) => a + b, 0);
+  const famOrd = Object.keys(famMapa).sort((a,b) =>
+    (a === "Sem fam\u00edlia") - (b === "Sem fam\u00edlia") || totalFam(b) - totalFam(a) || a.localeCompare(b));
+  const dsFamilia = tiposAno.map(t => ({
+    label: t, data: famOrd.map(f => famMapa[f][t] || 0),
+    backgroundColor: TIPO_COR[t] || "#9CA3AF", borderRadius: 3, maxBarThickness: 22
+  }));
+
   document.getElementById("view-gerencial").innerHTML = `
     <h1 class="text-xl font-bold mb-1 surgir">Dashboard Gerencial ${isM?"(Montagem)":""}</h1>
     <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos, desempenho, gargalos e distribuição</p>
@@ -2658,6 +2752,41 @@ function renderGerencial(){
         <div class="text-xl font-bold truncate flex items-center">${k[1]}</div></div>`).join("")}
     </div>
     
+    <div class="card p-5 surgir mb-4">
+      <div class="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <div class="font-semibold text-sm">Desenvolvimentos por m\u00eas e por tipo</div>
+          <div class="text-[11px] text-gray-400 mt-0.5">Conta os meses em que a engenharia atuou &mdash; n\u00e3o conta o tempo parado em ${isM?"Fabrica\u00e7\u00e3o":"Fornecedor"} nem a fila em Recebido${isM?" \u00b7 somente itens com montagem (exclui pist\u00e3o)":""}</div>
+        </div>
+        <select class="inp !w-auto !py-1 !text-[12px] flex-none" onchange="estado.anoGer=this.value;renderGerencial()">
+          ${anosDisp.map(a=>`<option value="${a}" ${a===anoSel?"selected":""}>${a}</option>`).join("")}
+          <option value="todos" ${anoSel==="todos"?"selected":""}>Todos os anos</option>
+        </select>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] mt-3 mb-4" style="color:var(--texto-2)">
+        ${tiposPresentes.map(t=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${TIPO_COR[t]||"#9CA3AF"}"></span>${esc(t)}</span>`).join("")}
+      </div>
+      <div class="grid md:grid-cols-3 gap-5">
+        <div class="md:col-span-2">
+          <div class="text-[11px] font-semibold mb-2" style="color:var(--texto-2)">Com atua\u00e7\u00e3o no m\u00eas <span class="font-normal text-gray-400">\u00b7 um desenvolvimento aparece em todo m\u00eas em que houve trabalho</span></div>
+          <div style="height:230px; position:relative;">${mesesEixo.length?`<canvas id="gTipoMes"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Dados insuficientes</div>`}</div>
+        </div>
+        <div>
+          <div class="text-[11px] font-semibold mb-2" style="color:var(--texto-2)">${anoSel==="todos"?"Todo o hist\u00f3rico":"Ano de "+anoSel} <span class="font-normal text-gray-400">\u00b7 ${totalAno} ${totalAno===1?"desenvolvimento":"desenvolvimentos"}</span></div>
+          <div style="height:230px; position:relative;">${tiposAno.length?`<canvas id="gTipoAno"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Nenhum desenvolvimento no per\u00edodo</div>`}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5 surgir mb-4">
+      <div class="font-semibold text-sm">Fam\u00edlias \u00b7 ${anoSel==="todos"?"todo o hist\u00f3rico":anoSel}</div>
+      <div class="text-[11px] text-gray-400 mt-0.5">Desenvolvimentos distintos com atua\u00e7\u00e3o no per\u00edodo, repartidos por tipo</div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] mt-3 mb-4" style="color:var(--texto-2)">
+        ${tiposAno.map(t=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${TIPO_COR[t]||"#9CA3AF"}"></span>${esc(t)}</span>`).join("")}
+      </div>
+      <div style="height:${Math.max(170, famOrd.length*32+40)}px; position:relative;">${famOrd.length?`<canvas id="gFamilia"></canvas>`:`<div class="h-full flex items-center justify-center text-gray-400 text-xs italic">Nenhum desenvolvimento no per\u00edodo</div>`}</div>
+    </div>
+
     <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="card p-5 surgir md:col-span-1">
         <div class="font-semibold text-sm mb-1">Evolução do Lead Time Histórico</div>
@@ -2692,6 +2821,28 @@ function renderGerencial(){
   const base = {plugins:{legend:{display:false}},responsive:true,maintainAspectRatio:false,
     scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:60,minRotation:45}},y:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}}}};
   const baseHoriz = {...base, indexAxis:"y", scales:{x:{beginAtZero:true,ticks:{font:{size:10}},grid:{color:"#EFEFF3"}},y:{grid:{display:false},ticks:{font:{size:10}}}}};
+
+  if(mesesEixo.length && dsMensal.length){
+    grafico("gTipoMes",{type:"bar",data:{labels:mesesEixo.map(rotuloMes),datasets:dsMensal},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{footer:itens=>"Total: "+itens.reduce((a,i)=>a+i.parsed.y,0)}}},
+        scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},
+                y:{stacked:true,beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}}}}});
+  }
+  if(tiposAno.length){
+    grafico("gTipoAno",{type:"doughnut",data:{labels:tiposAno,datasets:[{data:dadosTipoAno,backgroundColor:tiposAno.map(t=>TIPO_COR[t]||"#9CA3AF"),borderColor:"#fff",borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:"58%",
+        plugins:{legend:{display:false},datalabels:{color:"#fff",font:{weight:"700",size:11},formatter:v=>v>0?v:""}}}});
+  }
+  if(famOrd.length){
+    grafico("gFamilia",{type:"bar",data:{labels:famOrd,datasets:dsFamilia},
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:"y",
+        plugins:{legend:{display:false},datalabels:{display:false},
+          tooltip:{callbacks:{footer:itens=>"Total: "+itens.reduce((a,i)=>a+i.parsed.x,0)}}},
+        scales:{x:{stacked:true,beginAtZero:true,ticks:{precision:0,font:{size:10}},grid:{color:"#EFEFF3"}},
+                y:{stacked:true,grid:{display:false},ticks:{font:{size:10},color:ctx=>famOrd[ctx.index]==="Sem fam\u00edlia"?"#9CA3AF":"#525260"}}}}});
+  }
 
   if(mesesLTOrd.length) {
     grafico("gEvolucaoLT",{type:"line",data:{labels:mesesLTOrd,datasets:[{data:ltEvolucaoData,borderColor:"#107C41",backgroundColor:"rgba(16,124,65,.1)",fill:true,tension:.35,pointRadius:4,pointBackgroundColor:"#107C41"}]},

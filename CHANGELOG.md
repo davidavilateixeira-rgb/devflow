@@ -1,3 +1,30 @@
+## [2.24.0] - 2026-11-12
+
+### Adicionado
+- Nova faixa de **indicadores de portfolio** no Dashboard Gerencial, logo abaixo dos KPIs e antes dos graficos de lead time, respondendo "quantos desenvolvimentos tivemos, de que tipo e de que familia". Tres graficos novos: `gTipoMes` (barras empilhadas, desenvolvimentos com atuacao em cada mes, repartidos por tipo), `gTipoAno` (rosca com os desenvolvimentos **distintos** do periodo por tipo) e `gFamilia` (barras horizontais empilhadas por familia e tipo).
+- Seletor de ano no cabecalho da faixa (`estado.anoGer`), com os anos presentes nos dados, o ano corrente sempre disponivel e a opcao "Todos os anos". Em um ano especifico o eixo mostra os doze meses (`jan`..`dez`); em "Todos os anos", `mes/aa` em ordem cronologica.
+- Nova funcao `mesesAtuacao(p, isM)`, que devolve o conjunto de chaves `YYYY-MM` em que a engenharia efetivamente atuou no desenvolvimento. Cada registro do `historico` marca a CHEGADA na etapa, entao o periodo de uma etapa vai dali ate a chegada da etapa seguinte (ou ate hoje, se o item ainda esta nela). Sem historico, cai no mes de `dataInicio`.
+- Nova constante `ETAPAS_SEM_ATUACAO = {"Recebido", "Fornecedor", "Fabricacao"}`: `Fornecedor` (Usinagem) e `Fabricacao` (Montagem) sao espera por terceiros e `Recebido` e fila sem dono, entao nenhuma das tres consome mes de engenharia. Um desenvolvimento parado meio ano no fornecedor nao aparece nas barras desses meses.
+- Helpers de apoio `TIPO_COR`, `MES_ABREV`, `tipoDe`, `ordemTipo`, `familiaDe`, `mesChave` e `acumularMeses`.
+
+### Alterado
+- As duas leituras ficaram separadas de proposito: as barras mensais sao **carga** (o mesmo desenvolvimento aparece em todo mes em que houve trabalho, e o subtitulo diz isso), enquanto a rosca e o grafico de familias contam cada desenvolvimento **uma unica vez** no periodo. Assim o total do ano nunca e a soma das barras.
+- `familiaDe` agrupa normalizando caixa e espacos (`"  Pistao   de  Freio "` e `"PISTAO DE FREIO"` viram a mesma barra), sem alterar o dado gravado, ja que o campo `familia` e de texto livre. Desenvolvimentos sem familia aparecem como `Sem familia`, sempre por ultimo e com o rotulo em cinza, em vez de sumirem do grafico.
+- `tipoDe` rotula como `Nao informado` (cinza) os registros antigos sem `tipo`, pelo mesmo motivo.
+- Em Montagem a faixa segue a regra ja existente do modulo (somente itens com montagem, excluindo pistao) e o subtitulo passa a dizer isso explicitamente, para os numeros de Montagem e de Usinagem nao parecerem divergencia.
+- A barra de chips passa a aparecer tambem na view `gerencial`. O `filtroMes()` ja era aplicado aos graficos do Dashboard Gerencial, mas os chips ficavam escondidos (`irPara`): um filtro de familia ligado no Kanban chegava ao gerencial sem o usuario ver nem conseguir limpar.
+- Novo campo `anoGer` em `estado`.
+
+### Validacao
+- `node --check` sobre o bloco de script do `index.html`: sem erro de sintaxe.
+- Novo `scripts/test_meses_atuacao.mjs`, que extrai os helpers direto do `index.html` e os avalia com stubs: 18 verificacoes aprovadas. Cobre o ciclo completo com espera de fornecedor no meio, item em aberto parado no fornecedor, item em aberto em etapa de atuacao (conta ate o mes corrente), historico vazio, historico fora de ordem, virada de ano, dia 1 do mes (que nao pode escorregar para o mes anterior por fuso), registro sem data, a `Fabricacao` da Montagem, a normalizacao de familia/tipo e os limites de `acumularMeses`.
+- `scripts/test_avanco_erp.mjs` (14 cenarios) e `scripts/test_relatorio_fo050.mjs` aprovados, sem alteracao.
+- Inspecao visual da view renderizada com 28 projetos ficticios passando pelo `normalizarProjeto` e pelo `renderGerencial` reais, nos tres recortes (ano corrente, "Todos os anos" e um ano anterior) e nos dois modulos (Usinagem e Montagem), sem erro de console.
+- Versao `2.24.0` consistente entre `VERSAO_ATUAL`, os badges e `public/version.json` (`scripts/validar_versao.py`).
+
+### Backup
+- `backups/index_v2.23.0.html` (SHA-256 `CE10D36033C83488F5D9A85DCC474577F9179B3B6144DD30295D04C05A922F49`)
+
 ## [2.23.0] - 2026-11-11
 
 ### Alterado

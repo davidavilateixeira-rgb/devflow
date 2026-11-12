@@ -27,9 +27,9 @@ const dataInicioMontagem = (p) => (p.montagem && p.montagem.dataInicio) || p.dat
 const concluido = (p) => !!p.__concluido;
 const concluidoMontagem = (p) => !!(p.montagem && p.montagem.__concluido);
 
-const { mesesAtuacao, familiaDe, tipoDe, acumularMeses, mesChave } =
+const { mesesAtuacao, familiaDe, tipoDe, acumularMeses, mesChave, mesInicioDev, mesConclusaoDev } =
   new Function("TIPOS", "HOJE", "dataInicioMontagem", "concluido", "concluidoMontagem",
-    fonte + "\nreturn {mesesAtuacao, familiaDe, tipoDe, acumularMeses, mesChave, ordemTipo, TIPO_COR, ETAPAS_SEM_ATUACAO};"
+    fonte + "\nreturn {mesesAtuacao, familiaDe, tipoDe, acumularMeses, mesChave, ordemTipo, TIPO_COR, ETAPAS_SEM_ATUACAO, mesInicioDev, mesConclusaoDev};"
   )(TIPOS, HOJE, dataInicioMontagem, concluido, concluidoMontagem);
 
 let falhas = 0, total = 0;
@@ -110,6 +110,31 @@ conferir("fim antes do inicio vira so o inicio", [...s2], ["2026-05"]);
 const s3 = new Set(); acumularMeses(s3, "", "2026-03");
 conferir("inicio vazio nao acumula", [...s3], []);
 conferir("mesChave de Date usa UTC", mesChave(new Date("2026-03-01T02:00:00Z")), "2026-03");
+
+console.log("\n8. Inicio e conclusao (cards de contagem)");
+conferir("mes de inicio na Usinagem", mesInicioDev({ dataInicio: "2026-04-18" }, false), "2026-04");
+conferir("mes de inicio na Montagem usa a data da montagem",
+  mesInicioDev({ dataInicio: "2026-01-09", montagem: { dataInicio: "2026-05-02" } }, true), "2026-05");
+conferir("em aberto nao tem mes de conclusao", mesConclusaoDev({
+  dataInicio: "2026-02-01", historico: [h("An\u00e1lise", "2026-02-01")],
+}, false), "");
+conferir("concluido usa a dataReal gravada", mesConclusaoDev({
+  dataInicio: "2025-09-01", dataReal: "2026-03-17", __concluido: true,
+  historico: [h("An\u00e1lise", "2025-09-01"), h("Libera\u00e7\u00e3o", "2026-03-10")],
+}, false), "2026-03");
+conferir("sem dataReal cai no ultimo registro do historico", mesConclusaoDev({
+  dataInicio: "2025-09-01", __concluido: true,
+  historico: [h("Libera\u00e7\u00e3o", "2026-01-22"), h("An\u00e1lise", "2025-09-01")],
+}, false), "2026-01");
+conferir("conclusao da Montagem", mesConclusaoDev({
+  dataInicio: "2025-11-01",
+  montagem: { dataInicio: "2025-12-01", dataReal: "2026-06-04", __concluido: true,
+              historico: [h("An\u00e1lise", "2025-12-01"), h("Libera\u00e7\u00e3o", "2026-06-01")] },
+}, true), "2026-06");
+conferir("concluido em 2026 mas iniciado em 2025 (os cards nao se somam)",
+  [mesInicioDev({ dataInicio: "2025-08-03" }, false),
+   mesConclusaoDev({ dataInicio: "2025-08-03", dataReal: "2026-02-11", __concluido: true, historico: [] }, false)],
+  ["2025-08", "2026-02"]);
 
 console.log(`\n${total - falhas}/${total} verificacoes aprovadas.`);
 process.exit(falhas ? 1 : 0);

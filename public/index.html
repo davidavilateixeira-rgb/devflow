@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.24.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.25.0</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.24.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.25.0</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.24.0";
+const VERSAO_ATUAL = "2.25.0";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -2623,6 +2623,19 @@ function mesesAtuacao(p, isM){
   return meses;
 }
 
+// Mes de entrada do desenvolvimento (YYYY-MM).
+const mesInicioDev = (p, isM) => mesChave(isM ? dataInicioMontagem(p) : p.dataInicio);
+// Mes em que o desenvolvimento foi concluido, ou "" se ainda esta aberto. Prefere a data real
+// gravada; sem ela, cai no ultimo registro do historico (que e a chegada na etapa final).
+function mesConclusaoDev(p, isM){
+  if(!(isM ? concluidoMontagem(p) : concluido(p))) return "";
+  const real = isM ? (p.montagem && p.montagem.dataReal) : p.dataReal;
+  if(real) return mesChave(real);
+  const hist = (isM ? (p.montagem && p.montagem.historico) : p.historico) || [];
+  const datas = hist.filter(h => h && h.data).map(h => String(h.data)).sort();
+  return datas.length ? mesChave(datas[datas.length-1]) : "";
+}
+
 function renderGerencial(){
   let psRaw = filtroMes(projetosVisiveis());
   const isM = estado.moduloAtual === "montagem";
@@ -2742,6 +2755,24 @@ function renderGerencial(){
     backgroundColor: TIPO_COR[t] || "#9CA3AF", borderRadius: 3, maxBarThickness: 22
   }));
 
+  // Contadores do periodo: quantos entraram, quantos sairam e o que sobrou em aberto.
+  const noPeriodo = k => !!k && (anoSel === "todos" || k.slice(0,4) === anoSel);
+  const etapaFunc = isM ? etapaNomeMontagem : etapaNome;
+  const etapaEspera = isM ? "Fabrica\u00e7\u00e3o" : "Fornecedor";
+  const iniciadosAno = ps.filter(p => noPeriodo(mesInicioDev(p, isM)));
+  const concluidosAno = ps.filter(p => noPeriodo(mesConclusaoDev(p, isM)));
+  const iniciadosAbertos = iniciadosAno.filter(p => !cFunc(p));
+  const emAndamentoHoje = ps.filter(p => !cFunc(p));
+  const esperandoHoje = emAndamentoHoje.filter(p => etapaFunc(p) === etapaEspera);
+  const rotuloPeriodo = anoSel === "todos" ? "no hist\u00f3rico" : "em " + anoSel;
+  const contadores = [
+    ["Iniciados " + rotuloPeriodo, iniciadosAno.length, "#0F5FA8"],
+    ["Conclu\u00eddos " + rotuloPeriodo, concluidosAno.length, "#107C41"],
+    ["Iniciados " + rotuloPeriodo + " e ainda abertos", iniciadosAbertos.length, "#EA5B0C"],
+    ["Em andamento hoje (toda a carteira)", emAndamentoHoje.length, "#525260"],
+    ["Parados em " + etapaEspera + " hoje", esperandoHoje.length, "#C42B1C"]
+  ];
+
   document.getElementById("view-gerencial").innerHTML = `
     <h1 class="text-xl font-bold mb-1 surgir">Dashboard Gerencial ${isM?"(Montagem)":""}</h1>
     <p class="text-[13px] mb-3 surgir" style="color:var(--texto-2)">Indicadores executivos, desempenho, gargalos e distribuição</p>
@@ -2763,6 +2794,13 @@ function renderGerencial(){
           <option value="todos" ${anoSel==="todos"?"selected":""}>Todos os anos</option>
         </select>
       </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mt-4">
+        ${contadores.map(c=>`<div class="rounded-lg px-3 py-2.5" style="background:var(--cinza-bg)">
+          <div class="text-[22px] font-bold leading-none" style="color:${c[2]}">${c[1]}</div>
+          <div class="text-[10.5px] font-semibold mt-1.5 leading-tight" style="color:var(--texto-2)">${esc(c[0])}</div>
+        </div>`).join("")}
+      </div>
+      <div class="text-[10.5px] text-gray-400 mt-2">Conclu\u00eddos conta pela data de conclus\u00e3o, ent\u00e3o inclui itens iniciados em anos anteriores &mdash; os dois primeiros n\u00fameros n\u00e3o se somam.</div>
       <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] mt-3 mb-4" style="color:var(--texto-2)">
         ${tiposPresentes.map(t=>`<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background:${TIPO_COR[t]||"#9CA3AF"}"></span>${esc(t)}</span>`).join("")}
       </div>

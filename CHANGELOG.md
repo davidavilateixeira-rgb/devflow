@@ -1,3 +1,25 @@
+## [2.25.0] - 2026-11-12
+
+### Adicionado
+- Cinco contadores no topo da faixa de portfolio do Dashboard Gerencial, respondendo de relance o que os graficos so entregavam depois de leitura: `Iniciados` e `Concluidos` no periodo, `Iniciados no periodo e ainda abertos`, `Em andamento hoje (toda a carteira)` e `Parados em Fornecedor/Fabricacao hoje`. Os tres primeiros seguem o seletor de ano; os dois ultimos sao sempre a foto de hoje e dizem isso no rotulo.
+- Nova `mesInicioDev(p, isM)`, que devolve o mes de entrada (`dataInicio`, ou `dataInicioMontagem` na Montagem).
+- Nova `mesConclusaoDev(p, isM)`, que devolve o mes de conclusao ou `""` para quem segue aberto. Prefere a `dataReal` gravada e, sem ela, cai no ultimo registro do historico (a chegada na etapa final), que e a mesma fonte ja usada pelo grafico de throughput.
+
+### Alterado
+- `Concluidos` conta pela data de conclusao, entao inclui itens iniciados em anos anteriores: um desenvolvimento aberto em 2025 e entregue em 2026 entra em `Concluidos em 2026` sem entrar em `Iniciados em 2026`. Como os dois numeros nao se somam de proposito, uma linha abaixo dos contadores avisa isso, em vez de deixar a conta parecer errada.
+- `Iniciados no periodo e ainda abertos` e o recorte do proprio periodo (quantos entraram e seguem na mesa), enquanto `Em andamento hoje` e a carteira inteira, independente de quando entrou. Sao perguntas diferentes e por isso viraram dois cartoes.
+- A faixa passa a declarar `etapaFunc` (`etapaNome` ou `etapaNomeMontagem`) para identificar quem esta parado na etapa de espera do modulo.
+
+### Validacao
+- `node --check` sobre o bloco de script do `index.html`: sem erro de sintaxe.
+- `scripts/test_meses_atuacao.mjs` ampliado para 25 verificacoes, todas aprovadas. Os sete cenarios novos cobrem o mes de inicio na Usinagem e na Montagem, item aberto sem mes de conclusao, conclusao pela `dataReal`, conclusao pelo ultimo registro quando nao ha `dataReal`, conclusao na Montagem e o caso que motivou o aviso na tela (iniciado em 2025, concluido em 2026).
+- `scripts/test_avanco_erp.mjs` (14 cenarios) e `scripts/test_relatorio_fo050.mjs` aprovados, sem alteracao.
+- Contadores conferidos contra contagens independentes na view renderizada com 28 projetos ficticios: 28 projetos, 17 iniciados em 2026, 1 concluido em 2026, 16 iniciados em 2026 ainda abertos, 26 em andamento e 4 parados em Fornecedor, batendo com `concluido()` e `etapaNome()` avaliados a parte.
+- Versao `2.25.0` consistente entre `VERSAO_ATUAL`, os badges e `public/version.json` (`scripts/validar_versao.py`).
+
+### Backup
+- `backups/index_v2.24.0.html` (SHA-256 `94FBB52017C550F8F794BB868C898D0E782363A5D0544274C1C9A168949D8B2B`)
+
 ## [2.24.0] - 2026-11-12
 
 ### Adicionado

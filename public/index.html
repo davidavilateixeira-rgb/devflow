@@ -181,7 +181,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     <div class="flex items-center gap-3 mb-6">
       <img src="logo_viemar.png" alt="Viemar Logo" class="h-10 w-auto object-contain">
       <div>
-        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.25.0</span></div>
+        <div class="font-bold text-lg leading-tight flex items-center gap-2">DevFlow <span class="badge b-cinza text-[10px] !px-1.5 leading-none">v2.25.1</span></div>
         <div class="text-[11px]" style="color:var(--texto-2)">Engenharia de Processos · VMR</div>
       </div>
     </div>
@@ -219,7 +219,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
     </button>
     <img src="logo_viemar.png" alt="Viemar Logo" class="h-8 w-auto object-contain">
     <div>
-      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.25.0</span></div>
+      <div class="font-bold text-sm leading-tight flex items-center gap-1.5">DevFlow <span class="badge b-cinza text-[9px] !px-1 leading-none">v2.25.1</span></div>
       <div class="text-[10px]" style="color:var(--texto-2)">Engenharia de Processos</div>
     </div>
   </div>
@@ -334,7 +334,7 @@ label.lbl{font-size:.72rem;font-weight:600;color:var(--texto-2);display:block;ma
 <div id="modalCadastro" class="hidden"></div>
 
 <script>
-const VERSAO_ATUAL = "2.25.0";
+const VERSAO_ATUAL = "2.25.1";
 const CHAVE_SIDEBAR_OCULTA = "devflow.sidebar.oculta";
 function atualizarEstadoSidebar(oculta){
   const app = document.getElementById("app");
@@ -1784,6 +1784,12 @@ function renderStatusReport() {
       }
     }
 
+    // Em "Fornecedor" a previsao pode ter vindo do ERP (estimativa de fabricacao) ou ter sido
+    // confirmada com o fornecedor. O Status Report diz qual das duas, como o cadastro e o follow-up.
+    const origemPrazo = (!isM && etapaAtualStr === "Fornecedor" && p.prazoFornecedor)
+      ? (prazoFornecedorEstimado(p) ? "estimada" : "confirmada")
+      : "";
+
     let statusPrazo = "sem_prazo";
     let diffDias = null;
     if (isConcluido) {
@@ -1825,6 +1831,7 @@ function renderStatusReport() {
       resp,
       diasNaE,
       prazoEtapa,
+      origemPrazo,
       statusPrazo,
       diffDias,
       ultCom,
@@ -1975,6 +1982,13 @@ function renderStatusReport() {
                     <span class="badge b-verde font-semibold !text-[11px]">${fmtL(d.prazoEtapa)}</span>
                     <div class="text-[10px] text-emerald-700 mt-0.5">Faltam ${d.diffDias}d</div>
                   </div>`;
+              }
+              // Em "Fornecedor" a data nunca aparece sozinha: diz se e estimativa do ERP ou prazo
+              // confirmado com o fornecedor, para ninguem tratar uma coisa como a outra.
+              if (d.origemPrazo && d.prazoEtapa && !d.isConcluido) {
+                badgePrazoHtml += d.origemPrazo === "estimada"
+                  ? `<div class="text-[10px] mt-0.5 font-medium text-amber-700" title="${esc(textoOrigemPrazoFornecedor(p))}: ${DIAS_FABRICACAO_FORNECEDOR} dias corridos após a aprovação da OC. A data real só vale quando alguém a informa manualmente.">⚠️ Estimada pelo sistema</div>`
+                  : `<div class="text-[10px] mt-0.5 font-medium text-emerald-700" title="${esc(textoOrigemPrazoFornecedor(p))}. Prazo acertado com o fornecedor, informado manualmente.">✓ Confirmada pelo fornecedor</div>`;
               }
 
               return `

@@ -1,3 +1,26 @@
+## [2.25.1] - 2026-11-13
+
+### Adicionado
+- A coluna `Prazo da Etapa` do Status Report Executivo passa a dizer a ORIGEM da data quando a etapa atual e `Fornecedor`: `Estimada pelo sistema` (ambar) quando a previsao veio do ERP, que estima 20 dias de fabricacao contados da aprovacao da OC, e `Confirmada pelo fornecedor` (verde) quando alguem informou o prazo acertado. Antes a data aparecia sozinha e as duas situacoes eram lidas como prazo firme; o cadastro e o follow-up ja faziam essa distincao.
+- Novo campo `origemPrazo` nos dados de cada linha do Status Report, com os valores `"estimada"`, `"confirmada"` ou `""`. Vale so para a Usinagem com `prazoFornecedor` preenchido, ja que a Montagem nao tem etapa de fornecedor.
+- Novo `scripts/test_prazo_estimado_status_report.mjs`, que extrai o proprio bloco de montagem da coluna do `index.html` e o avalia, para o teste nao divergir do codigo de producao.
+
+### Alterado
+- A origem acompanha os tres semaforos de prazo (atrasado, atencao e no prazo) sem alterar a cor do selo da data: o semaforo continua dizendo se vence, e a linha abaixo diz de onde a data veio. Itens concluidos, etapas fora de `Fornecedor` e linhas sem prazo seguem sem nenhuma das duas marcas.
+
+### Validacao
+- `node --check` sobre o bloco de script do `index.html`: sem erro de sintaxe.
+- `scripts/test_prazo_estimado_status_report.mjs`: 11 verificacoes aprovadas, cobrindo o caso do DEV-040 (Fornecedor, no prazo, data do ERP), o equivalente confirmado, as duas origens nos semaforos atrasado e atencao, a preservacao do selo vermelho, etapa diferente de `Fornecedor`, item concluido e linha sem prazo.
+- `scripts/test_avanco_erp.mjs` (14 cenarios), `scripts/test_meses_atuacao.mjs` (25 verificacoes) e `scripts/test_relatorio_fo050.mjs` aprovados, sem alteracao.
+- Inspecao visual do Status Report renderizado com tres itens parados em `Fornecedor` (estimado no prazo, estimado vencido e confirmado no prazo), passando pelo `normalizarProjeto` real: a coluna mostrou `05/11/2026 / 8d em atraso / Estimada pelo sistema`, `01/12/2026 / Faltam 18d / Estimada pelo sistema` e `05/12/2026 / Faltam 22d / Confirmada pelo fornecedor`.
+- Versao `2.25.1` consistente entre `VERSAO_ATUAL`, os badges e `public/version.json` (`scripts/validar_versao.py`).
+
+### Observacao
+- A marca depende de `prazoFornecedorEstimado` estar gravado no documento. O avanco automatico pelo ERP grava `true` ao adotar a estimativa e todo preenchimento manual grava `false`; registros anteriores a 2.23.0 sao inferidos pelos comentarios em `normalizarProjeto`.
+
+### Backup
+- `backups/index_v2.25.0.html` (SHA-256 `4902F952026A18AAE1422D186D08DC12D6FC0D0C8F41528C0C5E5BE361ADD953`)
+
 ## [2.25.0] - 2026-11-12
 
 ### Adicionado
